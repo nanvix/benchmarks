@@ -33,6 +33,8 @@ then
 	exit 1
 fi
 
+build2 $BINDIR $BINDIR/mppa256-rqueue-master "$BINDIR/mppa256-rqueue-slave" benchmark-mppa256-rqueue.img
+build2 $BINDIR $BINDIR/mppa256-portal-master "$BINDIR/mppa256-portal-slave" benchmark-mppa256-portal.img
 build2 $BINDIR $BINDIR/mailbox-master "$BINDIR/mailbox-slave" benchmark-mailbox.img
 build2 $BINDIR $BINDIR/rmem-master "$BINDIR/rmem-slave" benchmark-rmem.img
 build2 $BINDIR $BINDIR/portal-master "$BINDIR/portal-slave" benchmark-portal.img

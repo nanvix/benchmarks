@@ -44,7 +44,3 @@ all: $(OBJ)
 clean:
 	rm -rf $(OBJ)
 
-# Cleans everything.
-distclean: clean
-	rm -rf $(ELFBIN)
-

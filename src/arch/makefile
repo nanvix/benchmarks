@@ -21,26 +21,22 @@
 #
 
 # Conflicts.
-.PHONY: master
-.PHONY: slave
+.PHONY: portal
+.PHONY: rqueue
 
 # Builds binaries.
-all: master slave
+all: portal rqueue
 
-# Builds master binary.
-master:
-ifeq ($(ARCH),k1bio)
-	cd master && $(MAKE) all
-endif
+# Builds Portal microbenchmarks
+portal:
+	cd portal && $(MAKE) all
 
-# Builds slave binary.
-slave:
-ifeq ($(ARCH),k1bdp)
-	cd slave && $(MAKE) all
-endif
+# Builds Rqueue microbenchmarks.
+rqueue:
+	cd rqueue && $(MAKE) all
 
 # Cleans compilation files.
 clean:
-	cd master && $(MAKE) clean
-	cd slave && $(MAKE) clean
+	cd portal && $(MAKE) clean
+	cd rqueue && $(MAKE) clean
 

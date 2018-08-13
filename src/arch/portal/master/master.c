@@ -74,7 +74,7 @@ static void spawn_remotes(void)
 	char niterations_str[4];
 	char bufsize_str[10];
 	const char *argv[] = {
-		"/benchmark/mppa256-portal-slave",
+		"/mppa256-portal-slave",
 		niterations_str,
 		bufsize_str,
 		kernel,
@@ -190,7 +190,7 @@ static void kernel_gather(void)
 		if (k == 0)
 			continue;
 
-		printf("nodeos;%s;%d;%d;%.2lf;%.2lf\n",
+		printf("nodeos;portal;%s;%d;%d;%.2lf;%.2lf\n",
 			kernel,
 			bufsize,
 			nclusters,
@@ -242,7 +242,7 @@ static void kernel_broadcast(void)
 		if (k == 0)
 			continue;
 
-		printf("nodeos;%s;%d;%d;%.2lf;%.2lf\n",
+		printf("nodeos;portal;%s;%d;%d;%.2lf;%.2lf\n",
 			kernel,
 			bufsize,
 			nclusters,
@@ -313,7 +313,7 @@ static void kernel_pingpong(void)
 		if (k == 0)
 			continue;
 
-		printf("nodeos;%s;%d;%d;%.2lf;%.2lf\n",
+		printf("nodeos;portal;%s;%d;%d;%.2lf;%.2lf\n",
 			kernel,
 			bufsize,
 			nclusters,

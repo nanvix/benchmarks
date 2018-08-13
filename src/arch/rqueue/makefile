@@ -21,31 +21,26 @@
 #
 
 # Conflicts.
-.PHONY: io
-.PHONY: compute
+.PHONY: master
+.PHONY: slave
 
 # Builds binaries.
-all: io compute
+all: master slave
 
-# Builds io binary.
-io:
+# Builds master binary.
+master:
 ifeq ($(ARCH),k1bio)
-	cd io && $(MAKE) all
+	cd master && $(MAKE) all
 endif
 
-# Builds compute binary.
-compute:
+# Builds slave binary.
+slave:
 ifeq ($(ARCH),k1bdp)
-	cd compute && $(MAKE) all
+	cd slave && $(MAKE) all
 endif
 
 # Cleans compilation files.
 clean:
-	cd io && $(MAKE) clean
-	cd compute && $(MAKE) clean
-
-# Cleans everything.
-distclean: clean
-	cd io && $(MAKE) distclean
-	cd compute && $(MAKE) distclean
+	cd master && $(MAKE) clean
+	cd slave && $(MAKE) clean
 

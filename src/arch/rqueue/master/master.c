@@ -72,7 +72,7 @@ static void spawn_remotes(void)
 {
 	char niterations_str[3];
 	const char *argv[] = {
-		"/benchmark/mppa256-rqueue-slave",
+		"/mppa256-rqueue-slave",
 		niterations_str,
 		kernel,
 		NULL
@@ -199,7 +199,7 @@ static void kernel_broadcast(void)
 		if (((k == 0) || (k == (niterations + 1))))
 			continue;
 
-		printf("nodeos;mailbox;%s;%d;%d;%lf;%lf\n",
+		printf("nodeos;rqueue;%s;%d;%d;%lf;%lf\n",
 			kernel,
 			MSG_SIZE,
 			nclusters,
@@ -239,7 +239,7 @@ static void kernel_gather(void)
 		if (((k == 0) || (k == (niterations + 1))))
 			continue;
 
-		printf("nodeos;mailbox;%s;%d;%d;%lf;%lf\n",
+		printf("nodeos;rqueue;%s;%d;%d;%lf;%lf\n",
 			kernel,
 			MSG_SIZE,
 			nclusters,
@@ -287,7 +287,7 @@ static void kernel_pingpong(void)
 		if (((k == 0) || (k == (niterations + 1))))
 			continue;
 
-		printf("nodeos;mailbox;%s;%d;%d;%lf;%lf\n",
+		printf("nodeos;rqueue;%s;%d;%d;%lf;%lf\n",
 			kernel,
 			MSG_SIZE,
 			nclusters,

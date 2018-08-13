@@ -28,6 +28,28 @@ NITERATIONS=5
 BUFSIZE=262144
 
 case "$1" in
+	mppa256-portal)
+		echo "Running NodeOs Portal Microbenchmarks"
+		for kernelname in "broadcast" "gather" "pingpong";
+		do
+			run2                                               \
+				"benchmark-mppa256-portal.img"                 \
+				"/mppa256-portal-master"                       \
+				"$NCLUSTERS $NITERATIONS $BUFSIZE $kernelname" \
+			| grep -v "\[nanvix\]"
+		done
+	;;
+	mppa256-rqueue)
+		echo "Running NodeOS Rqueue Microbenchmarks"
+		for kernelname in "broadcast" "gather" "pingpong";
+		do
+			run2                                      \
+				"benchmark-mppa256-rqueue.img"        \
+				"/mppa256-rqueue-master"              \
+				"$NCLUSTERS $NITERATIONS $kernelname" \
+			| grep -v "\[nanvix\]"
+		done
+	;;
 	nanvix-mailbox)
 		echo "Running Nanvix Unnamed Mailbox Microbenchmarks"
 		for kernelname in "broadcast" "gather" "pingpong";
