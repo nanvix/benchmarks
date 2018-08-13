@@ -52,13 +52,22 @@ export CRT1 = $(LIBDIR)/crt1.o
 #===============================================================================
 
 # Conflicts.
+.PHONY: mailbox
 .PHONY: rmem
 
 # Builds binaries.
-all:
+all: mailbox rmem
+
+# Unnamed mailbox microbenchmark.
+mailbox:
+	cd mailbox && $(MAKE) all
+
+# RMem microbenchmark.
+rmem:
 	cd rmem && $(MAKE) all
 
 # Cleans compilation files.
 clean:
+	cd mailbox && $(MAKE) clean
 	cd rmem && $(MAKE) clean
 

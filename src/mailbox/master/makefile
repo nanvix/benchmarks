@@ -20,19 +20,28 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-BINDIR=$1
+# C Source Files
+SRC = $(wildcard *.c)
 
-source "scripts/arch/mppa256.sh"
+# Object Files
+OBJ = $(SRC:.c=.o)
 
-#
-# Missing arguments.
-#
-if [ -z $BINDIR ] ;
-then
-	echo "missing argument: binary directory"
-	exit 1
-fi
+# Binary Files
+export ELFBIN = $(BINDIR)/mailbox-master
 
-build2 $BINDIR $BINDIR/mailbox-master "$BINDIR/mailbox-slave" benchmark-mailbox.img
-build2 $BINDIR $BINDIR/rmem-master "$BINDIR/rmem-slave" benchmark-rmem.img
+#===============================================================================
+
+# Builds the kernel.
+all: $(OBJ)
+	mkdir -p $(BINDIR)
+	$(CC) $(LDFLAGS) $(OBJ) $(CRT0) -o $(ELFBIN) $(LIBS)
+
+# Builds object files.
+%.o: %.c
+	$(CC) $(CFLAGS) $< -c -o $@
+
+# Cleans compilation files.
+clean:
+	rm -rf $(OBJ)
+	rm -rf $(ELFBIN)
 

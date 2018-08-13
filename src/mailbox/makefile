@@ -20,19 +20,32 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-BINDIR=$1
+# Conflicts.
+.PHONY: master
+.PHONY: slave
 
-source "scripts/arch/mppa256.sh"
+# Builds binaries.
+all: master slave
 
-#
-# Missing arguments.
-#
-if [ -z $BINDIR ] ;
-then
-	echo "missing argument: binary directory"
-	exit 1
-fi
+# Builds master binary.
+master:
+ifeq ($(BUILD_SERVERS),true)
+	cd master && $(MAKE) all
+endif
 
-build2 $BINDIR $BINDIR/mailbox-master "$BINDIR/mailbox-slave" benchmark-mailbox.img
-build2 $BINDIR $BINDIR/rmem-master "$BINDIR/rmem-slave" benchmark-rmem.img
+# Builds slave binary.
+slave:
+ifeq ($(BUILD_SERVERS),false)
+	cd slave && $(MAKE) all
+endif
+
+# Cleans compilation files.
+clean:
+	cd master && $(MAKE) clean
+	cd slave && $(MAKE) clean
+
+# Cleans everything.
+distclean: clean
+	cd master && $(MAKE) distclean
+	cd slave && $(MAKE) distclean
 

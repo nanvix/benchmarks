@@ -28,9 +28,20 @@ NITERATIONS=5
 BUFSIZE=262144
 
 case "$1" in
+	nanvix-mailbox)
+		echo "Running Nanvix Unnamed Mailbox Microbenchmarks"
+		for kernelname in "broadcast" "gather" "pingpong";
+		do
+			run2                                      \
+				"benchmark-mailbox.img"               \
+				"/mailbox-master"                     \
+				"$NCLUSTERS $NITERATIONS $kernelname" \
+			| grep -v "\[nanvix\]"
+		done
+	;;
 	nanvix-rmem)
 		echo "Running Nanvix RMem Microbenchmarks"
-		for kernelname in read write;
+		for kernelname in "read" "write";
 		do
 			run2                                               \
 				"benchmark-rmem.img"                           \
