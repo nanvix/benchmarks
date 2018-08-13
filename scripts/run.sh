@@ -30,11 +30,14 @@ BUFSIZE=262144
 case "$1" in
 	mppa256-async)
 		echo "Running BareOS Async Microbenchmarks"
-		run2                              \
-			"benchmark-mppa256-async.img" \
-			"/mppa256-async-master"       \
-			"$NCLUSTERS $BUFSIZE"         \
-		| grep -v "\[nanvix\]"
+		for kernelname in "broadcast" "gather" "pingpong";
+		do
+			run2                                  \
+				"benchmark-mppa256-async.img"     \
+				"/mppa256-async-master"           \
+				"$NCLUSTERS $BUFSIZE $kernelname" \
+			| grep -v "\[nanvix\]"
+		done
 	;;
 	mppa256-portal)
 		echo "Running NodeOs Portal Microbenchmarks"

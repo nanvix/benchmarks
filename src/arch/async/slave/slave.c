@@ -34,25 +34,41 @@
 
 #include "../kernel.h"
 
+/**
+ * @brief Buffer size.
+ */
+static int bufsize = 0;
+
+/**
+ * @brief Buffer.
+ */
 static char buffer[MAX_BUFFER_SIZE];
 
-int main(int argc, const char **argv)
+/*============================================================================*
+ * Gather Kernel                                                              *
+ *============================================================================*/
+
+/**
+ * @brief Gather kernel. 
+ */
+static void kernel_gather(void)
 {
 	long t[2];
-	int size;
 	int clusterid;
 	off64_t offset;
 	long total_time;
-
-	assert(argc == 3);
-	assert((size = atoi(argv[2])) <= MAX_BUFFER_SIZE);
 
 	mppa_rpc_client_init();
 	mppa_async_init();
 
 	clusterid = __k1_get_cluster_id();
 
-	assert(mppa_async_malloc(MPPA_ASYNC_DDR_0,  NR_CCLUSTER*size, &offset, NULL) == 0);
+	assert(mppa_async_malloc(
+		MPPA_ASYNC_DDR_0, 
+		NR_CCLUSTER*bufsize,
+		&offset,
+		NULL) == 0
+	);
 
 	for (int i = 0; i < NITERATIONS; i++)
 	{
@@ -61,8 +77,8 @@ int main(int argc, const char **argv)
 
 		assert(mppa_async_put(buffer,
 				MPPA_ASYNC_DDR_0,
-				offset + clusterid*size,
-				size,
+				offset + clusterid*bufsize,
+				bufsize,
 				NULL) == 0
 		);
 		assert(mppa_async_fence(MPPA_ASYNC_DDR_0, NULL) == 0);
@@ -77,12 +93,28 @@ int main(int argc, const char **argv)
 		printf("%s;%d;%d;%ld\n",
 			"write",
 			clusterid,
-			size,
+			bufsize,
 			total_time
 		);
 	}
 
 	assert(mppa_async_free(MPPA_ASYNC_DDR_0, offset, NULL) == 0);
+}
+
+/*============================================================================*
+ * MPPA-256 Async Microbenchmark Driver                                       *
+ *============================================================================*/
+
+/**
+ * @brief MPPA-256 Async Microbenchmark Driver
+ */
+int main(int argc, const char **argv)
+{
+	/* Retrieve kernel parameters. */
+	assert(argc == 2);
+	bufsize = atoi(argv[1]);
+
+	kernel_gather();
 
 	mppa_async_final();
 

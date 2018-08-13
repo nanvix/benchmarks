@@ -22,6 +22,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <mppa_power.h>
 #include <mppa_async.h>
@@ -30,31 +31,97 @@
 
 #include "../kernel.h"
 
-int main(int argc, const char **argv)
+/**
+ * @brief Benchmark parameters.
+ */
+/**@{*/
+static int nclusters = 0;         /**< Number of remotes processes. */
+static int bufsize = 0;           /**< Buffer size.                 */
+static const char *kernel = NULL; /**< Benchmark kernel.            */
+/**@}*/
+
+/*============================================================================*
+ * Utilities                                                                  *
+ *============================================================================*/
+
+/**
+ * @brief Spawns remote processes.
+ */
+static void spawn_remotes(void)
 {
-	((void) argc);
-	((void) argv);
+	char bufsize_str[10];
+	const char *argv[] = {
+		"/mppa256-async-slave",
+		bufsize_str,
+		NULL
+	};
 
-	int size;
+	/* Spawn remotes. */
+	sprintf(bufsize_str, "%d", bufsize);
+	for(int i = 0; i < nclusters; i++)
+	{
+		assert(mppa_power_base_spawn(
+			i,
+			argv[0],
+			argv,
+			NULL,
+			MPPA_POWER_SHUFFLING_ENABLED) != -1
+		);
+	}
+}
+
+/**
+ * @brief Wait for remote processes.
+ */
+static void join_remotes(void)
+{
+	for(int i = 0; i < nclusters; i++)
+		assert(mppa_power_base_waitpid(i, NULL, 0) >= 0);
+}
+
+/*============================================================================*
+ * MPPA-256 Async Microbenchmark Driver                                       *
+ *============================================================================*/
+
+/**
+ * @brief Portal microbenchmark.
+ */
+static void benchmark(void)
+{
 	utask_t t;
-	int status;
-	int nclusters;
 
-	assert(argc == 3);
-	assert((nclusters = atoi(argv[1])) <= NR_CCLUSTER);
-	assert((size = atoi(argv[2])) <= MAX_BUFFER_SIZE);
-
+	/* Initialization. */
 	mppa_rpc_server_init(1, 0, nclusters);
 	mppa_async_server_init();
-
-	const char *args[] = { "/mppa256-async-slave", argv[1] , argv[2], NULL };
-	for(int i = 0; i < nclusters; i++)
-		assert(mppa_power_base_spawn(i, args[0], args, NULL, MPPA_POWER_SHUFFLING_ENABLED) != -1);
-
 	utask_create(&t, NULL, (void*)mppa_rpc_server_start, NULL);
+	spawn_remotes();
 
-	for(int i = 0; i < nclusters; i++)
-		assert(mppa_power_base_waitpid(i, &status, 0) >= 0);
+	/* Run kernel. */
+	if (!strcmp(kernel, "gather"))
+		{ /* noop */ ; } ;
+	
+	/* House keeping. */
+	join_remotes();
+}
+
+/**
+ * @brief Async Microbenchmark Driver
+ */
+int main(int argc, const char **argv)
+{
+	assert(argc == 4);
+
+	/* Retrieve kernel parameters. */
+	nclusters = atoi(argv[1]);
+	bufsize = atoi(argv[2]);
+	kernel = argv[3];
+
+	/* Parameter checking. */
+	assert((nclusters > 0) && (nclusters <= NR_CCLUSTER));
+	assert((bufsize > 0) && (bufsize <= (MAX_BUFFER_SIZE)));
+	assert((bufsize%2) == 0);
+
+	benchmark();
 
 	return 0;
 }
