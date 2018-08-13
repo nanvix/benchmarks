@@ -50,7 +50,7 @@ endif
 
 # Cleans everything.
 clean:
-	rm -rf rmem-benchmark.img
+	rm -rf *.img
 ifeq ($(TARGET),mppa256)
 	cd $(SRCDIR) && $(MAKE) clean ARCH=k1bdp
 	cd $(SRCDIR) && $(MAKE) clean ARCH=k1bio
