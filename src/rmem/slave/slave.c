@@ -61,6 +61,36 @@ static int barrier;
 static char buffer[BUFFER_SIZE_MAX];
 
 /*============================================================================*
+ * Utilities                                                                  *
+ *============================================================================*/
+
+/**
+ * @brief Residual timer.
+ */
+static uint64_t residual = 0;
+
+/**
+ * @brief Callibrates the timer.
+ */
+static void timer_init(void)
+{
+	uint64_t t1, t2;
+
+	t1 = sys_timer_get();
+	t2 = sys_timer_get();
+
+	residual = t2 - t1;
+}
+
+/**
+ * @brief Computes the difference between two timers.
+ */
+static inline uint64_t timer_diff(uint64_t t1, uint64_t t2)
+{
+	return (t2 - t1 - residual);
+}
+
+/*============================================================================*
  * Read Kernel                                                                *
  *============================================================================*/
 
@@ -84,7 +114,7 @@ static void kernel_read(int outbox)
 		t2 = sys_timer_get();
 		assert(barrier_wait(barrier) == 0);
 
-		total = sys_timer_diff(t1, t2)/((double) sys_get_core_freq());
+		total = timer_diff(t1, t2)/((double) sys_get_core_freq());
 		msg.time = total;
 
 		/* Send statistics. */
@@ -112,7 +142,7 @@ static void kernel_write(int outbox)
 		t2 = sys_timer_get();
 		assert(barrier_wait(barrier) == 0);
 
-		total = sys_timer_diff(t1, t2)/((double) sys_get_core_freq());
+		total = timer_diff(t1, t2)/((double) sys_get_core_freq());
 		msg.time = total;
 
 		/* Send statistics. */
@@ -162,8 +192,11 @@ int main2(int argc, const char **argv)
 {
 	int nclusters;
 	const char *kernel;
+
+	CHECK_MAILBOX_MSG_SIZE(struct message);
 	
 	/* Initialization. */
+	timer_init();
 	nodenum = sys_get_node_num();
 
 	/* Retrieve kernel parameters. */

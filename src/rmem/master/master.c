@@ -55,7 +55,7 @@ static int pids[NANVIX_PROC_MAX];
 static char buffer[BUFFER_SIZE_MAX];
 
 /*============================================================================*
- * Utility                                                                    *
+ * Utilities                                                                  *
  *============================================================================*/
 
 /**
@@ -129,9 +129,6 @@ static void join_remotes(void)
  */
 static void kernel(int inbox)
 {
-	/* Sanity check at compile time: Mailbox compliant */
-	CHECK_MAILBOX_MSG_SIZE(struct message);
-
 	/* Initialization. */
 	memset(buffer, 1, bufsize);
 
@@ -205,6 +202,9 @@ static void benchmark(void)
 int main2(int argc, const char **argv)
 {
 	assert(argc == 5);
+
+	/* Sanity check at compile time: Mailbox compliant */
+	CHECK_MAILBOX_MSG_SIZE(struct message);
 
 	/* Retrieve kernel parameters. */
 	nclusters = atoi(argv[1]);
