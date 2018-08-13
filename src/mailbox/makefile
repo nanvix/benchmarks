@@ -44,8 +44,3 @@ clean:
 	cd master && $(MAKE) clean
 	cd slave && $(MAKE) clean
 
-# Cleans everything.
-distclean: clean
-	cd master && $(MAKE) distclean
-	cd slave && $(MAKE) distclean
-

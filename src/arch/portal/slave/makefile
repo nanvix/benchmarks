@@ -43,4 +43,5 @@ all: $(OBJ)
 # Cleans compilation files.
 clean:
 	rm -rf $(OBJ)
+	rm -rf $(ELFBIN)
 
