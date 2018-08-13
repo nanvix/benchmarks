@@ -4,8 +4,8 @@ Nanvix Benchmarks
 What is This Repository About?
 -------------------------------
 
-In this repository you will find some microbenhcmarks for the Nanvix
-operating system. All microbenchmarks are meant to run in the `Nanvix
+In this repository you will find some microbenchmarks for the Nanvix
+operating system. All benchmarks are meant to run in the `Nanvix
 Multikernel v1.0-beta.3` release. Currently, the following
 microbenchmarks are featured:
 
@@ -39,7 +39,7 @@ Note that the multikernel is only available for the Kalray MPPA-256 target.
 Run Instructions
 ----------------------
 
-1. Run the Benchmarks
+1. Run the Microbenchmarks
 
 	`bash scripts/run.sh`
 
