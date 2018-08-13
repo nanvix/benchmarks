@@ -24,9 +24,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <mppa/osconfig.h>
-
 #include <nanvix/syscalls.h>
+#include <nanvix/pm.h>
 
 #include "../kernel.h"
 
@@ -34,11 +33,6 @@
  * @brief Master node NoC ID.
  */
 static int master_node;
-
-/**
- * @brief Underlying NoC node ID.
- */
-static int nodenum;
 
 /**
  * @brief Number of benchmark interations.
@@ -67,7 +61,7 @@ static void kernel_broadcast(void)
 	int inportal;
 
 	/* Open output portal. */
-	assert((inportal = sys_portal_create(nodenum)) >= 0);
+	assert((inportal = get_inportal()) >= 0);
 
 	/* Benchmark. */
 	for (int k = 0; k <= niterations; k++)
@@ -75,9 +69,6 @@ static void kernel_broadcast(void)
 		assert(sys_portal_allow(inportal, master_node) == 0);
 		assert(sys_portal_read(inportal, buffer, bufsize) == bufsize);
 	}
-
-	/* House keeping. */
-	assert(sys_portal_unlink(inportal) == 0);
 }
 
 /*============================================================================*
@@ -112,7 +103,7 @@ static void kernel_pingpong(void)
 	int inportal;
 	int outportal;
 
-	assert((inportal = sys_portal_create(nodenum)) >= 0);
+	assert((inportal = get_inportal()) >= 0);
 	assert((outportal = sys_portal_open(master_node)) >= 0);
 
 	/* Benchmark. */
@@ -122,9 +113,6 @@ static void kernel_pingpong(void)
 		assert(sys_portal_read(inportal, buffer, bufsize) == bufsize);
 		assert(sys_portal_write(outportal, buffer, bufsize) == bufsize);
 	}
-
-	/* House keeping. */
-	assert(sys_portal_unlink(inportal) == 0);
 	assert(sys_portal_close(outportal) == 0);
 }
 
@@ -158,16 +146,12 @@ static void sync_master(int first_remote, int last_remote)
 /**
  * @brief HAL Portal Microbenchmark Driver
  */
-int main(int argc, const char **argv)
+int main2(int argc, const char **argv)
 {
 	const char *mode;
 	int first_remote;
 	int last_remote;
 	
-	/* Initialization. */
-	kernel_setup();
-	nodenum = sys_get_node_num();
-
 	/* Retrieve kernel parameters. */
 	assert(argc == 7);
 	master_node = atoi(argv[1]);
@@ -186,9 +170,6 @@ int main(int argc, const char **argv)
 		kernel_gather();
 	else if (!strcmp(mode, "pingpong"))
 		kernel_pingpong();
-
-	/* House keeping. */
-	kernel_cleanup();
 
 	return (EXIT_SUCCESS);
 }

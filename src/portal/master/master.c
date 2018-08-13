@@ -23,12 +23,13 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
-#include <mppa/osconfig.h>
 #include <mppaipc.h>
 
 #include <nanvix/syscalls.h>
 #include <nanvix/limits.h>
+#include <nanvix/pm.h>
 
 #include "../kernel.h"
 
@@ -70,7 +71,7 @@ static void spawn_remotes(void)
 	char bufsize_str[20];
 	int nodes[nclusters + 1];
 	const char *argv[] = {
-		"/benchmark/hal-portal-slave",
+		"/portal-slave",
 		master_node,
 		first_remote,
 		last_remote,
@@ -189,14 +190,11 @@ static void kernel_broadcast(void)
 static void kernel_gather(void)
 {
 	int inportal;
-	int nodenum;
 	double total;
 	uint64_t t1, t2;
 
-	nodenum = sys_get_node_num();
-
 	/* Initialization. */
-	assert((inportal = sys_portal_create(nodenum)) >= 0);
+	assert((inportal = get_inportal()) >= 0);
 
 	/* Benchmark. */
 	for (int k = 0; k <= niterations; k++)
@@ -226,9 +224,6 @@ static void kernel_gather(void)
 			(nclusters*bufsize)/total
 		);
 	}
-
-	/* House keeping. */
-	assert(sys_portal_unlink(inportal) == 0);
 }
 
 /**
@@ -237,15 +232,12 @@ static void kernel_gather(void)
 static void kernel_pingpong(void)
 {
 	int inportal;
-	int nodenum;
 	double total;
 	uint64_t t1, t2;
 	int outportals[nclusters];
 
-	nodenum = sys_get_node_num();
-
 	/* Initialization. */
-	assert((inportal = sys_portal_create(nodenum)) >= 0);
+	assert((inportal = get_inportal()) >= 0);
 	open_portals(outportals);
 
 	/* Benchmark. */
@@ -278,7 +270,6 @@ static void kernel_pingpong(void)
 
 	/* House keeping. */
 	close_portals(outportals);
-	assert(sys_portal_unlink(inportal) == 0);
 }
 
 /**
@@ -287,7 +278,6 @@ static void kernel_pingpong(void)
 static void benchmark(void)
 {
 	/* Initialization. */
-	kernel_setup();
 	spawn_remotes();
 
 	if (!strcmp(kernel, "broadcast"))
@@ -299,7 +289,6 @@ static void benchmark(void)
 	
 	/* House keeping. */
 	join_remotes();
-	kernel_cleanup();
 }
 
 /*============================================================================*
@@ -309,7 +298,7 @@ static void benchmark(void)
 /**
  * @brief HAL Portal Microbenchmark Driver
  */
-int main(int argc, const char **argv)
+int main2(int argc, const char **argv)
 {
 	assert(argc == 5);
 

@@ -39,6 +39,17 @@ case "$1" in
 			| grep -v "\[nanvix\]"
 		done
 	;;
+	nanvix-portal)
+		echo "Running Nanvix Unnamed Portal Microbenchmarks"
+		for kernelname in "broadcast" "gather" "pingpong";
+		do
+			run2                                               \
+				"benchmark-portal.img"                         \
+				"/portal-master"                               \
+				"$NCLUSTERS $NITERATIONS $BUFSIZE $kernelname" \
+			| grep -v "\[nanvix\]"
+		done
+	;;
 	nanvix-rmem)
 		echo "Running Nanvix RMem Microbenchmarks"
 		for kernelname in "read" "write";
