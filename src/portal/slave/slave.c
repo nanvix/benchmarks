@@ -117,7 +117,7 @@ static void kernel_pingpong(void)
 }
 
 /*============================================================================*
- * HAL Portal Microbenchmark Driver                                           *
+ * Unnamed Portal Microbenchmark Driver                                       *
  *============================================================================*/
 
 /**
@@ -144,7 +144,7 @@ static void sync_master(int first_remote, int last_remote)
 }
 
 /**
- * @brief HAL Portal Microbenchmark Driver
+ * @brief Unnamed Portal Microbenchmark Driver
  */
 int main2(int argc, const char **argv)
 {

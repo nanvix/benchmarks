@@ -25,8 +25,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include <mppa/osconfig.h>
-
 #include <nanvix/syscalls.h>
 
 #include "../kernel.h"
@@ -88,7 +86,7 @@ static void kernel_barrier(void)
 }
 
 /*============================================================================*
- * HAL Sync Microbenchmark Driver                                             *
+ * Sync Microbenchmark Driver                                                 *
  *============================================================================*/
 
 /**
@@ -100,16 +98,15 @@ static void sync_master(void)
 }
 
 /**
- * @brief HAL Sync Microbenchmark Driver
+ * @brief Sync Microbenchmark Driver
  */
-int main(int argc, const char **argv)
+int main2(int argc, const char **argv)
 {
 	const char *kernel;
 	int first_remote;
 	int last_remote;
 	
 	/* Initialization. */
-	kernel_setup();
 	nodenum = sys_get_node_num();
 
 	/* Retrieve kernel parameters. */
@@ -139,9 +136,6 @@ int main(int argc, const char **argv)
 		kernel_barrier();
 
 	assert(sys_sync_close(outsync) == 0);
-
-	/* House keeping. */
-	kernel_cleanup();
 
 	return (EXIT_SUCCESS);
 }

@@ -61,7 +61,19 @@ case "$1" in
 			| grep -v "\[nanvix\]"
 		done
 	;;
+	nanvix-sync)
+		echo "Running Nanvix Synchronization Point Microbenchmarks"
+		for kernelname in "barrier";
+		do
+			run2                                      \
+				"benchmark-sync.img"                  \
+				"/sync-master"                        \
+				"$NCLUSTERS $NITERATIONS $kernelname" \
+			| grep -v "\[nanvix\]"
+		done
+	;;
 	*)
+		echo "Usage: run.sh {nanvix-mailbox | nanvix-portal | nanvix-sync}"
 		echo "Usage: run.sh {nanvix-rmem}"
 		exit 1
 	;;

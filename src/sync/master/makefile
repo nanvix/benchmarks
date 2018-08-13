@@ -27,14 +27,14 @@ SRC = $(wildcard *.c)
 OBJ = $(SRC:.c=.o)
 
 # Binary Files
-export ELFBIN = $(BINDIR)/hal-sync-master
+ELFBIN = $(BINDIR)/sync-master
 
 #===============================================================================
 
 # Builds the kernel.
 all: $(OBJ)
 	mkdir -p $(BINDIR)
-	$(CC) $(LDFLAGS) $(OBJ) -o $(ELFBIN) $(LIBKERNEL) $(LIBMPPAIPC)
+	$(CC) $(LDFLAGS) $(OBJ) $(CRT0) -o $(ELFBIN) $(LIBS)
 
 # Builds object files.
 %.o: %.c
@@ -43,8 +43,5 @@ all: $(OBJ)
 # Cleans compilation files.
 clean:
 	rm -rf $(OBJ)
-
-# Cleans everything.
-distclean: clean
 	rm -rf $(ELFBIN)
 

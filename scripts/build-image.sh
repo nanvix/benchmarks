@@ -36,4 +36,5 @@ fi
 build2 $BINDIR $BINDIR/mailbox-master "$BINDIR/mailbox-slave" benchmark-mailbox.img
 build2 $BINDIR $BINDIR/rmem-master "$BINDIR/rmem-slave" benchmark-rmem.img
 build2 $BINDIR $BINDIR/portal-master "$BINDIR/portal-slave" benchmark-portal.img
+build2 $BINDIR $BINDIR/sync-master "$BINDIR/sync-slave" benchmark-sync.img
 

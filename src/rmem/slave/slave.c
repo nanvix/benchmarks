@@ -151,7 +151,7 @@ static void kernel_write(int outbox)
 }
 
 /**
- * @brief HAL RMem microbenchmark.
+ * @brief RMem microbenchmark.
  *
  * @param kernel    Benchmark kernel.
  * @param nclusters Number of clusters.
@@ -182,11 +182,11 @@ static void benchmark(const char *kernel, int nclusters)
 }
 
 /*============================================================================*
- * HAL RMem Microbenchmark Driver                                             *
+ * RMem Microbenchmark Driver                                                 *
  *============================================================================*/
 
 /**
- * @brief HAL RMem Microbenchmark Driver
+ * @brief RMem Microbenchmark Driver
  */
 int main2(int argc, const char **argv)
 {

@@ -172,7 +172,7 @@ static void kernel(int inbox)
 }
 
 /**
- * @brief HAL RMem microbenchmark.
+ * @brief RMem microbenchmark.
  */
 static void benchmark(void)
 {
@@ -197,7 +197,7 @@ static void benchmark(void)
  *============================================================================*/
 
 /**
- * @brief HAL RMem Microbenchmark Driver
+ * @brief RMem Microbenchmark Driver
  */
 int main2(int argc, const char **argv)
 {

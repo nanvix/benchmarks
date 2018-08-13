@@ -143,7 +143,7 @@ static void sync_master(int first_remote, int last_remote)
 }
 
 /**
- * @brief HAL Mailbox Microbenchmark Driver
+ * @brief Unnamed Mailbox Microbenchmark Driver
  */
 int main2(int argc, const char **argv)
 {

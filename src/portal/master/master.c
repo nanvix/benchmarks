@@ -273,7 +273,7 @@ static void kernel_pingpong(void)
 }
 
 /**
- * @brief HAL Portal microbenchmark.
+ * @brief Unnamed Portal microbenchmark.
  */
 static void benchmark(void)
 {
@@ -292,11 +292,11 @@ static void benchmark(void)
 }
 
 /*============================================================================*
- * HAL Portal Microbenchmark Driver                                           *
+ * Unnamed Portal Microbenchmark Driver                                       *
  *============================================================================*/
 
 /**
- * @brief HAL Portal Microbenchmark Driver
+ * @brief Unnamed Portal Microbenchmark Driver
  */
 int main2(int argc, const char **argv)
 {

@@ -55,9 +55,10 @@ export CRT1 = $(LIBDIR)/crt1.o
 .PHONY: mailbox
 .PHONY: portal
 .PHONY: rmem
+.PHONY: sync
 
 # Builds binaries.
-all: mailbox portal rmem
+all: mailbox portal rmem sync
 
 # Unnamed mailbox microbenchmark.
 mailbox:
@@ -71,9 +72,14 @@ portal:
 rmem:
 	cd rmem && $(MAKE) all
 
+# Synchronization point microbenchmark.
+sync:
+	cd sync && $(MAKE) all
+
 # Cleans compilation files.
 clean:
 	cd mailbox && $(MAKE) clean
 	cd portal && $(MAKE) clean
 	cd rmem && $(MAKE) clean
+	cd sync && $(MAKE) clean
 

@@ -23,9 +23,8 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include <pthread.h>
+#include <stdlib.h>
 
-#include <mppa/osconfig.h>
 #include <mppaipc.h>
 
 #include <nanvix/syscalls.h>
@@ -71,7 +70,7 @@ static void spawn_remotes(void)
 	char last_remote[4];
 	char niterations_str[4];
 	const char *argv[] = {
-		"/benchmark/hal-sync-slave",
+		"/sync-slave",
 		master_node,
 		first_remote,
 		last_remote,
@@ -151,14 +150,13 @@ static void kernel_barrier(void)
 
 
 /**
- * @brief HAL Sync microbenchmark.
+ * @brief Sync microbenchmark.
  */
 static void benchmark(void)
 {
 	int nodes[nclusters + 1];
 
 	/* Initialization. */
-	kernel_setup();
 	nodenum = sys_get_node_num();
 
 	/* Build nodes list. */
@@ -179,17 +177,16 @@ static void benchmark(void)
 	
 	/* House keeping. */
 	join_remotes();
-	kernel_cleanup();
 }
 
 /*============================================================================*
- * HAL Sync Microbenchmark Driver                                             *
+ * Sync Microbenchmark Driver                                                 *
  *============================================================================*/
 
 /**
- * @brief HAL Sync Microbenchmark Driver
+ * @brief Sync Microbenchmark Driver
  */
-int main(int argc, const char **argv)
+int main2(int argc, const char **argv)
 {
 	assert(argc == 4);
 

@@ -262,7 +262,7 @@ static void kernel_pingpong(void)
 }
 
 /**
- * @brief HAL Mailbox microbenchmark.
+ * @brief Unnamed Mailbox microbenchmark.
  */
 static void benchmark(void)
 {
@@ -287,7 +287,7 @@ static void benchmark(void)
  *============================================================================*/
 
 /**
- * @brief HAL Mailbox Microbenchmark Driver
+ * @brief Unnamed Mailbox Microbenchmark Driver
  */
 int main2(int argc, const char **argv)
 {
