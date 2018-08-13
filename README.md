@@ -1,5 +1,5 @@
-Nanvix Examples
-================
+Nanvix Benchmarks
+=================
 
 What is This Repository About?
 -------------------------------
