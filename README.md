@@ -4,9 +4,9 @@ Nanvix Benchmarks
 What is This Repository About?
 -------------------------------
 
-In this repository you will find some microbenhcmarks 
-for the Nanvix Operating System. All examples are meant to run in the
-`Nanvix Multikernel v1.0-beta.3` release. Currently, the following
+In this repository you will find some microbenhcmarks for the Nanvix
+operating system. All microbenchmarks are meant to run in the `Nanvix
+Multikernel v1.0-beta.3` release. Currently, the following
 microbenchmarks are featured:
 
 * rmem-benchmark: reads/writes data sequentially from/to the remote memory.
