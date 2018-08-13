@@ -54,7 +54,7 @@ static int pids[NANVIX_PROC_MAX];
 static char buffer[BUFFER_SIZE_MAX];
 
 /*============================================================================*
- * Utility                                                                    *
+ * Utilities                                                                  *
  *============================================================================*/
 
 /**
@@ -116,6 +116,32 @@ static void join_remotes(void)
 		assert(mppa_waitpid(pids[i], NULL, 0) != -1);
 }
 
+/**
+ * @brief Residual timer.
+ */
+static uint64_t residual = 0;
+
+/**
+ * @brief Callibrates the timer.
+ */
+static void timer_init(void)
+{
+	uint64_t t1, t2;
+
+	t1 = sys_timer_get();
+	t2 = sys_timer_get();
+
+	residual = t2 - t1;
+}
+
+/**
+ * @brief Computes the difference between two timers.
+ */
+static inline uint64_t timer_diff(uint64_t t1, uint64_t t2)
+{
+	return (t2 - t1 - residual);
+}
+
 /*============================================================================*
  * Kernel                                                                     *
  *============================================================================*/
@@ -165,7 +191,7 @@ static void kernel_broadcast(void)
 			assert(sys_portal_write(outportals[i], buffer, bufsize) == bufsize);
 		t2 = sys_timer_get();
 
-		total = sys_timer_diff(t1, t2)/((double) sys_get_core_freq());
+		total = timer_diff(t1, t2)/((double) sys_get_core_freq());
 
 		/* Warmup. */
 		if (k == 0)
@@ -207,7 +233,7 @@ static void kernel_gather(void)
 			t1 = sys_timer_get();
 				assert(sys_portal_read(inportal, buffer, bufsize) == bufsize);
 			t2 = sys_timer_get();
-			t3 += sys_timer_diff(t1, t2);
+			t3 += timer_diff(t1, t2);
 		}
 
 		total = t3/((double) sys_get_core_freq());
@@ -253,7 +279,7 @@ static void kernel_pingpong(void)
 		}
 		t2 = sys_timer_get();
 
-		total = sys_timer_diff(t1, t2)/((double) sys_get_core_freq());
+		total = timer_diff(t1, t2)/((double) sys_get_core_freq());
 
 		/* Warmup. */
 		if (k == 0)
@@ -278,6 +304,7 @@ static void kernel_pingpong(void)
 static void benchmark(void)
 {
 	/* Initialization. */
+	timer_init();
 	spawn_remotes();
 
 	if (!strcmp(kernel, "broadcast"))

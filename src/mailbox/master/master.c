@@ -63,7 +63,7 @@ static int nodenum;
 static int inbox;
 
 /*============================================================================*
- * Utility                                                                    *
+ * Utilities                                                                  *
  *============================================================================*/
 
 /**
@@ -143,6 +143,32 @@ static void close_mailboxes(const int *outboxes)
 		assert((sys_mailbox_close(outboxes[i])) == 0);
 }
 
+/**
+ * @brief Residual timer.
+ */
+static uint64_t residual = 0;
+
+/**
+ * @brief Callibrates the timer.
+ */
+static void timer_init(void)
+{
+	uint64_t t1, t2;
+
+	t1 = sys_timer_get();
+	t2 = sys_timer_get();
+
+	residual = t2 - t1;
+}
+
+/**
+ * @brief Computes the difference between two timers.
+ */
+static inline uint64_t timer_diff(uint64_t t1, uint64_t t2)
+{
+	return (t2 - t1 - residual);
+}
+
 /*============================================================================*
  * Kernels                                                                    *
  *============================================================================*/
@@ -169,7 +195,7 @@ static void kernel_broadcast(void)
 			assert(sys_mailbox_write(outboxes[i], buffer, MAILBOX_MSG_SIZE) == MAILBOX_MSG_SIZE);
 		t2 = sys_timer_get();
 
-		total = sys_timer_diff(t1, t2)/((double) sys_get_core_freq());
+		total = timer_diff(t1, t2)/((double) sys_get_core_freq());
 
 		/* Warmup. */
 		if (((k == 0) || (k == (niterations + 1))))
@@ -204,7 +230,7 @@ static void kernel_gather(void)
 			assert(sys_mailbox_read(inbox, buffer, MAILBOX_MSG_SIZE) == MAILBOX_MSG_SIZE);
 		t2 = sys_timer_get();
 
-		total = sys_timer_diff(t1, t2)/((double) sys_get_core_freq());
+		total = timer_diff(t1, t2)/((double) sys_get_core_freq());
 
 		/* Warmup. */
 		if (((k == 0) || (k == (niterations + 1))))
@@ -242,7 +268,7 @@ static void kernel_pingpong(void)
 			assert(sys_mailbox_read(inbox, buffer, MAILBOX_MSG_SIZE) == MAILBOX_MSG_SIZE);
 		t2 = sys_timer_get();
 
-		total = sys_timer_diff(t1, t2)/((double) sys_get_core_freq());
+		total = timer_diff(t1, t2)/((double) sys_get_core_freq());
 
 		/* Warmup. */
 		if (((k == 0) || (k == (niterations + 1))))
@@ -267,6 +293,7 @@ static void kernel_pingpong(void)
 static void benchmark(void)
 {
 	/* Initialization. */
+	timer_init();
 	nodenum = sys_get_node_num();
 	assert((inbox = get_inbox()) >= 0);
 	spawn_remotes();
