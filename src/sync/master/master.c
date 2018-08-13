@@ -23,14 +23,13 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
+#include <pthread.h>
 
+#include <mppa/osconfig.h>
 #include <mppaipc.h>
 
 #include <nanvix/syscalls.h>
 #include <nanvix/limits.h>
-#include <nanvix/pm.h>
-#include <nanvix/mm.h>
 
 #include "../kernel.h"
 
@@ -38,10 +37,9 @@
  * @brief Benchmark parameters.
  */
 /**@{*/
-static int nclusters = 0;             /**< Number of remotes processes.    */
-static int niterations = 0;           /**< Number of benchmark parameters. */
-static int bufsize = 0;               /**< Buffer size.                    */
-static const char *kernelname = NULL; /**< Benchmark kernel.               */
+static int nclusters = 0;         /**< Number of remotes processes.    */
+static int niterations = 0;       /**< Number of benchmark parameters. */
+static const char *kernel = NULL; /**< Benchmark kernel.               */
 /**@}*/
 
 /**
@@ -50,57 +48,48 @@ static const char *kernelname = NULL; /**< Benchmark kernel.               */
 static int pids[NANVIX_PROC_MAX];
 
 /**
- * @brief Buffer.
+ * @brief Underlying NoC node ID.
  */
-static char buffer[BUFFER_SIZE_MAX];
-
-/*============================================================================*
- * Utilities                                                                  *
- *============================================================================*/
+static int nodenum;
 
 /**
- * @brief Barrier for global synchronization.
+ * @brief Input synchronization point.
  */
-static int barrier;
+static int insync;
+
+/*============================================================================*
+ * Utility                                                                    *
+ *============================================================================*/
 
 /**
  * @brief Spawns remote processes.
  */
 static void spawn_remotes(void)
 {
-	int nodenum;
 	char master_node[4];
-	char nclusters_str[4];
+	char first_remote[4];
+	char last_remote[4];
 	char niterations_str[4];
-	char bufsize_str[20];
-	int nodes[nclusters + 1];
 	const char *argv[] = {
-		"/rmem-slave",
+		"/benchmark/hal-sync-slave",
 		master_node,
-		nclusters_str,
+		first_remote,
+		last_remote,
 		niterations_str,
-		bufsize_str,
-		kernelname,
+		kernel,
 		NULL
 	};
 
-	nodenum = sys_get_node_num();
-
-	/* Build nodes list. */
-	nodes[0] = nodenum;
-	for (int i = 0; i < nclusters; i++)
-		nodes[i + 1] = i;
-
-	/* Create global barrier. */
-	assert((barrier = barrier_create(nodes, nclusters + 1)) >= 0);
-
 	/* Spawn remotes. */
 	sprintf(master_node, "%d", nodenum);
-	sprintf(nclusters_str, "%d", nclusters);
+	sprintf(first_remote, "%d", 0);
+	sprintf(last_remote, "%d", nclusters);
 	sprintf(niterations_str, "%d", niterations);
-	sprintf(bufsize_str, "%d", bufsize);
 	for (int i = 0; i < nclusters; i++)
 		assert((pids[i] = mppa_spawn(i, NULL, argv[0], argv, NULL)) != -1);
+
+	/* Sync. */
+	assert(sys_sync_wait(insync) == 0);
 }
 
 /**
@@ -108,14 +97,8 @@ static void spawn_remotes(void)
  */
 static void join_remotes(void)
 {
-	/* Sync. */
-	assert(barrier_wait(barrier) == 0);
-
 	for (int i = 0; i < nclusters; i++)
 		assert(mppa_waitpid(pids[i], NULL, 0) != -1);
-
-	/* House keeping. */
-	assert(barrier_unlink(barrier) == 0);
 }
 
 /*============================================================================*
@@ -123,99 +106,100 @@ static void join_remotes(void)
  *============================================================================*/
 
 /**
- * @brief Microbenchmark kernel.
- *
- * @param inbox Input box for receiving statistics.
+ * @brief Barrier kernel.
  */
-static void kernel(int inbox)
+static void kernel_barrier(void)
 {
-	/* Initialization. */
-	memset(buffer, 1, bufsize);
+	int syncid;
+	int nodes[nclusters + 1];
+
+	/* Build nodes list. */
+	nodes[0] = nodenum;
+	for (int i = 0; i < nclusters; i++)
+		nodes[i + 1] = i;
+
+	/* Open synchronization point. */
+	assert((syncid = sys_sync_open(nodes, nclusters + 1, SYNC_ONE_TO_ALL)) >= 0);
 
 	/* Benchmark. */
-	for (int k = 0; k <= niterations; k++)
+	for (int k = 0; k <= (niterations + 1); k++)
 	{
-		double mean;
-		double total[nclusters];
+		double total;
+		uint64_t t1, t2;
 
-		assert(barrier_wait(barrier) == 0);
-		assert(barrier_wait(barrier) == 0);
+		t1 = sys_timer_get();
+			assert(sys_sync_signal(syncid) == 0);
+			assert(sys_sync_wait(insync) == 0);
+		t2 = sys_timer_get();
 
-		/* Gather statistics. */
-		for (int i = 0; i < nclusters; i++)
-		{
-			struct message msg;
-
-			assert(mailbox_read(inbox, &msg, sizeof(struct message)) == 0);
-			total[i] = msg.time;
-		}
+		total = sys_timer_diff(t1, t2)/((double) sys_get_core_freq());
 
 		/* Warmup. */
-		if (k == 0)
+		if (((k == 0) || (k == (niterations + 1))))
 			continue;
 
-		/* Compute mean time. */
-		mean = 0.0;
-		for (int i = 0; i < nclusters; i++)
-			mean += total[i];
-		mean /= nclusters;
-
-		/* Dump statistics. */
-		printf("nanvix;%s;%d;%d;%.2lf;%.2lf\n",
-			kernelname,
-			bufsize,
+		printf("nanvix;%s;%d;%.2lf\n",
+			kernel,
 			nclusters,
-			mean*MEGA,
-			bufsize/mean
+			(total*MEGA)/nclusters
 		);
 	}
+	
+	/* House keeping. */
+	assert(sys_sync_close(syncid) == 0);
 }
 
+
 /**
- * @brief HAL RMem microbenchmark.
+ * @brief HAL Sync microbenchmark.
  */
 static void benchmark(void)
 {
-	int inbox;
+	int nodes[nclusters + 1];
 
 	/* Initialization. */
-	assert((inbox = mailbox_create("benchmark-driver")) >= 0);
+	kernel_setup();
+	nodenum = sys_get_node_num();
+
+	/* Build nodes list. */
+	nodes[0] = nodenum;
+	for (int i = 0; i < nclusters; i++)
+		nodes[i + 1] = i;
+
+	/* Create synchronization point. */
+	assert((insync = sys_sync_create(nodes, nclusters + 1, SYNC_ALL_TO_ONE)) >= 0);
+
 	spawn_remotes();
 
-	if (!strcmp(kernelname, "read"))
-		kernel(inbox);
-	else if (!strcmp(kernelname, "write"))
-		kernel(inbox);
+	if (!strcmp(kernel, "barrier"))
+		kernel_barrier();
+
+	/* House keeping. */
+	assert(sys_sync_unlink(insync) == 0);
 	
 	/* House keeping. */
-	assert(mailbox_unlink(inbox) == 0);
 	join_remotes();
+	kernel_cleanup();
 }
 
 /*============================================================================*
- * RMem Microbenchmark Driver                                                 *
+ * HAL Sync Microbenchmark Driver                                             *
  *============================================================================*/
 
 /**
- * @brief HAL RMem Microbenchmark Driver
+ * @brief HAL Sync Microbenchmark Driver
  */
-int main2(int argc, const char **argv)
+int main(int argc, const char **argv)
 {
-	assert(argc == 5);
-
-	/* Sanity check at compile time: Mailbox compliant */
-	CHECK_MAILBOX_MSG_SIZE(struct message);
+	assert(argc == 4);
 
 	/* Retrieve kernel parameters. */
 	nclusters = atoi(argv[1]);
 	niterations = atoi(argv[2]);
-	bufsize = atoi(argv[3]);
-	kernelname = argv[4];
+	kernel = argv[3];
 
 	/* Parameter checking. */
 	assert(niterations > 0);
-	assert((bufsize > 0) && (bufsize <= (BUFFER_SIZE_MAX)));
-	assert((bufsize%2) == 0);
 
 	benchmark();
 
