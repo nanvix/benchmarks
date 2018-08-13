@@ -20,36 +20,71 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <nanvix/arch/mppa.h>
 #include <assert.h>
 #include <stdlib.h>
-#include "kernel.h"
+#include <string.h>
+#include <stdio.h>
+#include <stdint.h>
+
+#include <HAL/hal/core/timer.h> 
+#include <mppa_power.h>
+#include <mppa_async.h>
+#include <mppa_remote.h>
+#include <utask.h>
+
+#include "../kernel.h"
+
+static char buffer[MAX_BUFFER_SIZE];
 
 int main(int argc, const char **argv)
 {
-	((void) argc);
-	((void) argv);
-
+	long t[2];
 	int size;
-	utask_t t;
-	int status;
-	int nclusters;
+	int clusterid;
+	off64_t offset;
+	long total_time;
 
 	assert(argc == 3);
-	assert((nclusters = atoi(argv[1])) <= NR_CCLUSTER);
 	assert((size = atoi(argv[2])) <= MAX_BUFFER_SIZE);
 
-	mppa_rpc_server_init(1, 0, nclusters);
-	mppa_async_server_init();
+	mppa_rpc_client_init();
+	mppa_async_init();
 
-	const char *args[] = { "slave.elf", argv[1] , argv[2], NULL };
-	for(int i = 0; i < nclusters; i++)
-		assert(mppa_power_base_spawn(i, args[0], args, NULL, MPPA_POWER_SHUFFLING_ENABLED) != -1);
+	clusterid = __k1_get_cluster_id();
 
-	utask_create(&t, NULL, (void*)mppa_rpc_server_start, NULL);
+	assert(mppa_async_malloc(MPPA_ASYNC_DDR_0,  NR_CCLUSTER*size, &offset, NULL) == 0);
 
-	for(int i = 0; i < nclusters; i++)
-		assert(mppa_power_base_waitpid(i, &status, 0) >= 0);
+	for (int i = 0; i < NITERATIONS; i++)
+	{
+		mppa_rpc_barrier_all();
+		t[0] = __k1_read_dsu_timestamp();
 
-	return 0;
+		assert(mppa_async_put(buffer,
+				MPPA_ASYNC_DDR_0,
+				offset + clusterid*size,
+				size,
+				NULL) == 0
+		);
+		assert(mppa_async_fence(MPPA_ASYNC_DDR_0, NULL) == 0);
+
+		mppa_rpc_barrier_all();
+		t[1] = __k1_read_dsu_timestamp();
+
+		if (i == 0)
+			continue;
+
+		total_time = t[1] - t[0];
+		printf("%s;%d;%d;%ld\n",
+			"write",
+			clusterid,
+			size,
+			total_time
+		);
+	}
+
+	assert(mppa_async_free(MPPA_ASYNC_DDR_0, offset, NULL) == 0);
+
+	mppa_async_final();
+
+	return (EXIT_SUCCESS);
 }

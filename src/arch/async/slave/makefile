@@ -20,24 +20,38 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-BINDIR=$1
+# C Source Files
+SRC = $(wildcard *.c)
 
-source "scripts/arch/mppa256.sh"
+# Object Files
+OBJ = $(SRC:.c=.o)
 
-#
-# Missing arguments.
-#
-if [ -z $BINDIR ] ;
-then
-	echo "missing argument: binary directory"
-	exit 1
-fi
+# Binary Files
+ELFBIN = $(BINDIR)/mppa256-async-slave
 
-build2 $BINDIR $BINDIR/mppa256-async-master "$BINDIR/mppa256-async-slave" benchmark-mppa256-async.img
-build2 $BINDIR $BINDIR/mppa256-rqueue-master "$BINDIR/mppa256-rqueue-slave" benchmark-mppa256-rqueue.img
-build2 $BINDIR $BINDIR/mppa256-portal-master "$BINDIR/mppa256-portal-slave" benchmark-mppa256-portal.img
-build2 $BINDIR $BINDIR/mailbox-master "$BINDIR/mailbox-slave" benchmark-mailbox.img
-build2 $BINDIR $BINDIR/rmem-master "$BINDIR/rmem-slave" benchmark-rmem.img
-build2 $BINDIR $BINDIR/portal-master "$BINDIR/portal-slave" benchmark-portal.img
-build2 $BINDIR $BINDIR/sync-master "$BINDIR/sync-slave" benchmark-sync.img
+# Compiler Options
+CFLAGS += -march=k1b -mos=bare -mcluster=node
+
+# Toolchain Configuration
+LDFLAGS = -march=k1b -mos=bare -mcluster=node
+
+# Libraries.
+LIBS  = -mhypervisor -lutask -lmppa_async -lmppa_request_engine
+LIBS += -lmppapower -lmppanoc -lmpparouting
+
+#===============================================================================
+
+# Builds the kernel.
+all: $(OBJ)
+	mkdir -p $(BINDIR)
+	$(CC) $(LDFLAGS) -mos=bare $(OBJ) -o $(ELFBIN) $(LIBS)
+
+# Builds object files.
+%.o: %.c
+	$(CC) $(CFLAGS) $< -c -o $@
+
+# Cleans compilation files.
+clean:
+	rm -rf $(OBJ)
+	rm -rf $(ELFBIN)
 

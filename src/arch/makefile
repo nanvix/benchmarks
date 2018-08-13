@@ -21,11 +21,16 @@
 #
 
 # Conflicts.
+.PHONY: async
 .PHONY: portal
 .PHONY: rqueue
 
 # Builds binaries.
-all: portal rqueue
+all: async portal rqueue
+
+# Builds Async microbenchmarks
+async:
+	cd async && $(MAKE) all
 
 # Builds Portal microbenchmarks
 portal:
@@ -37,6 +42,7 @@ rqueue:
 
 # Cleans compilation files.
 clean:
+	cd async && $(MAKE) clean
 	cd portal && $(MAKE) clean
 	cd rqueue && $(MAKE) clean
 

@@ -20,40 +20,33 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-#=============================================================================
-# Async Latency Benchmark
-#=============================================================================
+# Conflicts.
+.PHONY: master
+.PHONY: slave
 
-io-bin += master.elf
-master.elf-srcs := $(SRCDIR)/test/async/master.c
+export CFLAGS  = -ansi -std=c99
+export CFLAGS += -Wall -Wextra -Werror
+export CFLAGS += -Winit-self -Wswitch-default -Wfloat-equal
+export CFLAGS += -Wundef -Wshadow -Wuninitialized
+export CFLAGS += -O3
+export CFLAGS += -I $(INCDIR)
 
-# Toolchain Configuration
-master.elf-system := bare
-master.elf-cflags += -D_KALRAY_MPPA_256_LOW_LEVEL
-master.elf-lflags := -mhypervisor -lutask -lmppa_async -lmppa_request_engine
-master.elf-lflags += -lmppapower -lmppanoc -lmpparouting
-master.elf-lflags += -lpcie_queue
+# Builds binaries.
+all: master slave
 
-cluster-bin += slave.elf
-slave.elf-srcs := $(SRCDIR)/test/async/slave.c \
-				  $(SRCDIR)/kernel/arch/mppa/core.c    \
-				  $(SRCDIR)/kernel/arch/mppa/timer.c
+# Builds master binary.
+master:
+ifeq ($(ARCH),k1bio)
+	cd master && $(MAKE) all
+endif
 
-# Toolchain Configuration
-slave.elf-system := bare
-slave.elf-cflags += -D_KALRAY_MPPA_256_LOW_LEVEL
-slave.elf-lflags := -mhypervisor -lutask -lmppa_async -lmppa_request_engine
-slave.elf-lflags += -lmppapower -lmppanoc -lmpparouting
-slave.elf-lflags += -Wl,--defsym=USER_STACK_SIZE=0x2000
-slave.elf-lflags += -Wl,--defsym=KSTACK_SIZE=0x1000
+# Builds slave binary.
+slave:
+ifeq ($(ARCH),k1bdp)
+	cd slave && $(MAKE) all
+endif
 
-async-objs := master.elf slave.elf
-async-name := async.img
-
-#=============================================================================
-# MPPA Binary
-#=============================================================================
-
-mppa-bin := async
-
-include $(K1_TOOLCHAIN_DIR)/share/make/Makefile.kalray
+# Cleans compilation files.
+clean:
+	cd master && $(MAKE) clean
+	cd slave && $(MAKE) clean

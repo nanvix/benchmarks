@@ -37,6 +37,8 @@
 	 */
 	#define MAX_BUFFER_SIZE (1024*KB)
 
+	#define NR_CCLUSTER 16
+
 	/**
 	 * @brief Number of benchmark iterations.
 	 */
