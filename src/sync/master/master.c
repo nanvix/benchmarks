@@ -137,7 +137,7 @@ static void kernel_barrier(void)
 		if (((k == 0) || (k == (niterations + 1))))
 			continue;
 
-		printf("nanvix;%s;%d;%.2lf\n",
+		printf("nanvix;sync;%s;%d;%.2lf\n",
 			kernel,
 			nclusters,
 			(total*MEGA)/nclusters

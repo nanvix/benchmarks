@@ -171,7 +171,7 @@ static void kernel_broadcast(void)
 		if (k == 0)
 			continue;
 
-		printf("nanvix;%s;%d;%d;%.2lf;%.2lf\n",
+		printf("nanvix;portal;%s;%d;%d;%.2lf;%.2lf\n",
 			kernel,
 			bufsize,
 			nclusters,
@@ -216,7 +216,7 @@ static void kernel_gather(void)
 		if (k == 0)
 			continue;
 
-		printf("nanvix;%s;%d;%d;%.2lf;%.2lf\n",
+		printf("nanvix;portal;%s;%d;%d;%.2lf;%.2lf\n",
 			kernel,
 			bufsize,
 			nclusters,
@@ -259,7 +259,7 @@ static void kernel_pingpong(void)
 		if (k == 0)
 			continue;
 
-		printf("nanvix;%s;%d;%d;%.2lf;%.2lf\n",
+		printf("nanvix;portal;%s;%d;%d;%.2lf;%.2lf\n",
 			kernel,
 			bufsize,
 			nclusters,

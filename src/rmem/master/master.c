@@ -161,7 +161,7 @@ static void kernel(int inbox)
 		mean /= nclusters;
 
 		/* Dump statistics. */
-		printf("nanvix;%s;%d;%d;%.2lf;%.2lf\n",
+		printf("nanvix;rmem;%s;%d;%d;%.2lf;%.2lf\n",
 			kernelname,
 			bufsize,
 			nclusters,
