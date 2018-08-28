@@ -32,8 +32,8 @@
 	 */
 	struct message
 	{
-		char unused[56]; /**< Not used.              */
-		double time;     /**< Time (in microseconds) */
+		char unused[112]; /**< Not used.              */
+		double time;      /**< Time (in microseconds) */
 	};
 
 	/**

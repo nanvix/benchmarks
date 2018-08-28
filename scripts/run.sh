@@ -23,8 +23,8 @@
 source "scripts/arch/mppa256.sh"
 
 # Default parameters.
-NCLUSTERS=16
-NITERATIONS=5
+NCLUSTERS=$2
+NITERATIONS=$3
 BUFSIZE=262144
 
 case "$1" in
@@ -52,25 +52,19 @@ case "$1" in
 	;;
 	mppa256-rqueue)
 		echo "Running NodeOS Rqueue Microbenchmarks"
-		for kernelname in "broadcast" "gather" "pingpong";
-		do
-			run2                                      \
-				"benchmark-mppa256-rqueue.img"        \
-				"/mppa256-rqueue-master"              \
-				"$NCLUSTERS $NITERATIONS $kernelname" \
-			| grep -v "\[nanvix\]"
-		done
+		run2                                   \
+			"benchmark-mppa256-rqueue.img"     \
+			"/mppa256-rqueue-master"           \
+			"$NCLUSTERS $NITERATIONS pingpong" \
+		| grep -v "\[nanvix\]"
 	;;
 	nanvix-mailbox)
 		echo "Running Nanvix Unnamed Mailbox Microbenchmarks"
-		for kernelname in "broadcast" "gather" "pingpong";
-		do
-			run2                                      \
-				"benchmark-mailbox.img"               \
-				"/mailbox-master"                     \
-				"$NCLUSTERS $NITERATIONS $kernelname" \
-			| grep -v "\[nanvix\]"
-		done
+		run2                                   \
+			"benchmark-mailbox.img"            \
+			"/mailbox-master"                  \
+			"$NCLUSTERS $NITERATIONS pingpong" \
+		| grep -v "\[nanvix\]"
 	;;
 	nanvix-portal)
 		echo "Running Nanvix Unnamed Portal Microbenchmarks"

@@ -30,9 +30,23 @@
 #include "../kernel.h"
 
 /**
- * @brief Master node NoC ID.
+ * @brief Global benchmark parameters.
  */
-static int masternode;
+/**@{*/
+static int first_cluster;   /**< ID of first cluster.            */
+static int last_cluster;    /**< ID of last cluster.             */
+static int niterations = 0; /**< Number of benchmark parameters. */
+/**@}*/
+
+/**
+ * @brief Input mailbox.
+ */
+static int inbox;
+
+/**
+ * @brief Global sync.
+ */
+static int sync;
 
 /**
  * @brief Underlying NoC node ID.
@@ -40,55 +54,9 @@ static int masternode;
 static int nodenum;
 
 /**
- * @brief Number of benchmark interations.
+ * @brief Master node NoC ID.
  */
-static int niterations = 0;
-
-/**
- * @brief Buffer.
- */
-static char buffer[MAILBOX_MSG_SIZE];
-
-/**
- * @brief Inbox for receiving messages.
- */
-static int inbox;
-
-/*============================================================================*
- * Broadcast Kernel                                                           *
- *============================================================================*/
-
-/**
- * @brief Broadcast kernel. 
- */
-static void kernel_broadcast(void)
-{
-	/* Benchmark. */
-	for (int k = 0; k <= (niterations + 1); k++)
-		assert(sys_mailbox_read(inbox, buffer, MAILBOX_MSG_SIZE) == MAILBOX_MSG_SIZE);
-}
-
-/*============================================================================*
- * Gather Kernel                                                              *
- *============================================================================*/
-
-/**
- * @brief Gather kernel. 
- */
-static void kernel_gather(void)
-{
-	int outbox;
-
-	/* Open output box. */
-	assert((outbox = sys_mailbox_open(masternode)) >= 0);
-
-	/* Benchmark. */
-	for (int k = 0; k <= (niterations + 1); k++)
-		assert(sys_mailbox_write(outbox, buffer, MAILBOX_MSG_SIZE) == MAILBOX_MSG_SIZE);
-
-	/* House keeping. */
-	assert(sys_mailbox_close(outbox) == 0);
-}
+static int masternode;
 
 /*============================================================================*
  * Ping-Pong Kernel                                                           *
@@ -100,6 +68,9 @@ static void kernel_gather(void)
 static void kernel_pingpong(void)
 {
 	int outbox;
+	struct message msg;
+
+	msg.nodenum = nodenum;
 
 	/* Open output box. */
 	assert((outbox = sys_mailbox_open(masternode)) >= 0);
@@ -107,8 +78,12 @@ static void kernel_pingpong(void)
 	/* Benchmark. */
 	for (int k = 0; k <= (niterations + 1); k++)
 	{
-		assert(sys_mailbox_read(inbox, buffer, MAILBOX_MSG_SIZE) == MAILBOX_MSG_SIZE);
-		assert(sys_mailbox_write(outbox, buffer, MAILBOX_MSG_SIZE) == MAILBOX_MSG_SIZE);
+		/* Unblock master. */
+		assert(sys_sync_signal(sync) == 0);
+
+		/* Ping-pong. */
+		assert(sys_mailbox_write(outbox, &msg, MAILBOX_MSG_SIZE) == MAILBOX_MSG_SIZE);
+		assert(sys_mailbox_read(inbox, &msg, MAILBOX_MSG_SIZE) == MAILBOX_MSG_SIZE);
 	}
 
 	/* House keeping. */
@@ -120,26 +95,32 @@ static void kernel_pingpong(void)
  *============================================================================*/
 
 /**
- * @brief Syncs with remote master.
+ * @brief Unnamed Mailbox microbenchmark.
  *
- * @param first_remote First remote in the nodes list.
- * @param last_remote  Last remote in the nodes list.
+ * @param kernel Name of the target kernel.
  */
-static void sync_master(int first_remote, int last_remote)
+static void benchmark(const char *kernel)
 {
-	const int nremotes = last_remote - first_remote;
-	int syncid;
-	int nodes[nremotes + 1];
+	const int nclusters = last_cluster - first_cluster;
+	int nodes[nclusters + 1];
+
+	nodenum = sys_get_node_num();
 
 	/* Build nodes list. */
 	nodes[0] = masternode;
-	for (int i = 0; i < nremotes; i++)
-		nodes[i + 1] = first_remote + i;
+	for (int i = 0; i < nclusters; i++)
+		nodes[i + 1] = first_cluster + i;
 
-	/* Sync. */
-	assert((syncid = sys_sync_open(nodes, nremotes + 1, SYNC_ALL_TO_ONE)) >= 0);
-	assert(sys_sync_signal(syncid) == 0);
-	assert(sys_sync_close(syncid) == 0);
+	/* Initialization. */
+	assert((inbox = get_inbox()) >= 0);
+	assert((sync = sys_sync_open(nodes, nclusters + 1, SYNC_ALL_TO_ONE)) >= 0);
+
+	/* Run kernel. */
+	if (!strcmp(kernel, "pingpong"))
+		kernel_pingpong();
+	
+	/* House keeping. */
+	assert(sys_sync_close(sync) == 0);
 }
 
 /**
@@ -147,32 +128,14 @@ static void sync_master(int first_remote, int last_remote)
  */
 int main2(int argc, const char **argv)
 {
-	const char *mode;
-	int first_remote;
-	int last_remote;
-	
-	/* Initialization. */
-	nodenum = sys_get_node_num();
-
 	/* Retrieve kernel parameters. */
 	assert(argc == 6);
 	masternode = atoi(argv[1]);
-	first_remote = atoi(argv[2]);
-	last_remote = atoi(argv[3]);
+	first_cluster = atoi(argv[2]);
+	last_cluster = atoi(argv[3]);
 	niterations = atoi(argv[4]);
-	mode = argv[5];
 
-	assert((inbox = get_inbox()) >= 0);
-
-	sync_master(first_remote, last_remote);
-
-	/* Run kernel. */
-	if (!strcmp(mode, "broadcast"))
-		kernel_broadcast();
-	else if (!strcmp(mode, "gather"))
-		kernel_gather();
-	else if (!strcmp(mode, "pingpong"))
-		kernel_pingpong();
+	benchmark(argv[5]);
 
 	return (EXIT_SUCCESS);
 }

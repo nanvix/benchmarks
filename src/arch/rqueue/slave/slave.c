@@ -32,9 +32,11 @@
 #include "../kernel.h"
 
 /**
- * @brief Number of benchmark interations.
+ * @brief Global benchmark parameters.
  */
-static int niterations = 0;
+/**@{*/
+static int niterations = 0; /**< Number of benchmark parameters. */
+/**@}*/
 
 /**
  * @brief Input rqueue.
@@ -42,45 +44,14 @@ static int niterations = 0;
 static int inbox;
 
 /**
- * @brief Buffer.
+ * @brief Global sync.
  */
-static char buffer[MSG_SIZE];
-
-/*============================================================================*
- * Broadcast Kernel                                                           *
- *============================================================================*/
+static int sync;
 
 /**
- * @brief Broadcast kernel. 
+ * @brief Cluster ID.
  */
-static void kernel_broadcast(void)
-{
-	/* Benchmark. */
-	for (int k = 0; k <= (niterations + 1); k++)
-		assert(mppa_read(inbox, buffer, MSG_SIZE) == MSG_SIZE);
-}
-
-/*============================================================================*
- * Gather Kernel                                                              *
- *============================================================================*/
-
-/**
- * @brief Gather kernel. 
- */
-static void kernel_gather(void)
-{
-	int outbox;
-
-	/* Open output portal. */
-	assert((outbox = mppa_open(RQUEUE_MASTER, O_WRONLY)) != -1);
-
-	/* Benchmark. */
-	for (int k = 0; k <= (niterations + 1); k++)
-		assert(mppa_write(outbox, buffer, MSG_SIZE) == MSG_SIZE);
-
-	/* House keeping. */
-	assert(mppa_close(outbox) != -1);
-}
+static int clusterid;
 
 /*============================================================================*
  * Ping-Pong Kernel                                                           *
@@ -92,15 +63,26 @@ static void kernel_gather(void)
 static void kernel_pingpong(void)
 {
 	int outbox;
+	struct message msg;
 
-	/* Open output portal. */
+	msg.clusterid = clusterid;
+
+	/* Open output mailbox. */
 	assert((outbox = mppa_open(RQUEUE_MASTER, O_WRONLY)) != -1);
 
 	/* Benchmark. */
 	for (int k = 0; k <= (niterations + 1); k++)
 	{
-		assert(mppa_read(inbox, buffer, MSG_SIZE) == MSG_SIZE);
-		assert(mppa_write(outbox, buffer, MSG_SIZE) == MSG_SIZE);
+		uint64_t mask;
+
+		/* Unblock master. */
+		mask = 1 << clusterid;
+		assert(mppa_write(sync, &mask, sizeof(uint64_t)) != -1);
+
+
+		/* Ping-pong. */
+		assert(mppa_write(outbox, &msg, MSG_SIZE) == MSG_SIZE);
+		assert(mppa_read(inbox, &msg, MSG_SIZE) == MSG_SIZE);
 	}
 
 	/* House keeping. */
@@ -108,47 +90,44 @@ static void kernel_pingpong(void)
 }
 
 /*============================================================================*
- * HAL Rqueue Microbenchmark Driver                                           *
+ * MPPA-256 Rqueue Microbenchmark Driver                                      *
  *============================================================================*/
 
 /**
- * @brief HAL Rqueue Microbenchmark Driver
+ * @brief Rqueue microbenchmark.
+ *
+ * @param kernel Name of the target kernel.
  */
-int main(int argc, const char **argv)
+static void benchmark(const char *kernel)
 {
-	int sync_fd;
-	uint64_t mask;
-	int clusterid;
 	char pathname[128];
-	const char *kernel;
-
-	/* Retrieve kernel parameters. */
-	assert(argc == 3);
-	niterations = atoi(argv[1]);
-	kernel = argv[2];
 
 	clusterid = __k1_get_cluster_id();
 
 	/* Initialization. */
 	sprintf(pathname, RQUEUE_SLAVE, clusterid, 58 + clusterid, 59 + clusterid);
 	assert((inbox = mppa_open(pathname, O_RDONLY)) != -1);
-	assert((sync_fd = mppa_open(SYNC_MASTER, O_WRONLY)) != -1);
-
-	/* Unblock master. */
-	mask = 1 << clusterid;
-	assert(mppa_write(sync_fd, &mask, sizeof(uint64_t)) != -1);
+	assert((sync = mppa_open(SYNC_MASTER, O_WRONLY)) != -1);
 
 	/* Run kernel. */
-	if (!strcmp(kernel, "broadcast"))
-		kernel_broadcast();
-	else if (!strcmp(kernel, "gather"))
-		kernel_gather();
-	else if (!strcmp(kernel, "pingpong"))
+	if (!strcmp(kernel, "pingpong"))
 		kernel_pingpong();
 
 	/* House keeping. */
-	assert(mppa_close(sync_fd) != -1);
+	assert(mppa_close(sync) != -1);
 	assert(mppa_close(inbox) != -1);
+}
+
+/**
+ * @brief Rqueue Microbenchmark Driver
+ */
+int main(int argc, const char **argv)
+{
+	/* Retrieve kernel parameters. */
+	assert(argc == 3);
+	niterations = atoi(argv[1]);
+
+	benchmark(argv[2]);
 
 	return (EXIT_SUCCESS);
 }

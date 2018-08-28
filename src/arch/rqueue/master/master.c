@@ -33,12 +33,12 @@
 #include "../kernel.h"
 
 /**
- * @brief Benchmark parameters.
+ * @brief Global benchmark parameters.
  */
 /**@{*/
 static int nclusters = 0;         /**< Number of remotes processes.    */
 static int niterations = 0;       /**< Number of benchmark parameters. */
-static const char *kernel = NULL; /**< Benchmark kernel.               */
+static const char *kernel = NULL; /**< Name of the target kernel.      */
 /**@}*/
 
 /**
@@ -47,19 +47,14 @@ static const char *kernel = NULL; /**< Benchmark kernel.               */
 static int inbox;
 
 /**
- * @brief Master sync.
+ * @brief Global sync.
  */
-static int sync_master;
+static int sync;
 
 /**
  * @brief ID of slave processes.
  */
 static int pids[NR_CCLUSTER];
-
-/**
- * @brief Buffer.
- */
-static char buffer[NR_CCLUSTER*MSG_SIZE];
 
 /*============================================================================*
  * Utilities                                                                  *
@@ -165,96 +160,11 @@ static void timer_init(void)
 }
 
 /*============================================================================*
- * Broadcast Kernel                                                           *
- *============================================================================*/
-
-/**
- * @brief Broadcast kernel.
- */
-static void kernel_broadcast(void)
-{
-	uint64_t mask;
-	int outboxes[nclusters];
-
-	open_outboxes(outboxes);
-
-	/* Wait for slaves. */
-	assert(mppa_read(sync_master, &mask, sizeof(uint64_t)) != -1);
-
-	/* Benchmark. */
-	for (int k = 0; k <= (niterations + 1); k++)
-	{
-		double total;
-		uint64_t t1, t2;
-
-		/* Send data. */
-		t1 = timer_get();
-		for (int i = 0; i < nclusters; i++)
-			assert(mppa_write(outboxes[i], buffer, MSG_SIZE) == MSG_SIZE);
-		t2 = timer_get();
-
-		total = timer_diff(t1, t2)/((double) MPPA256_FREQ);
-
-		/* Warmup. */
-		if (((k == 0) || (k == (niterations + 1))))
-			continue;
-
-		printf("nodeos;rqueue;%s;%d;%d;%lf;%lf\n",
-			kernel,
-			MSG_SIZE,
-			nclusters,
-			total/nclusters,
-			(nclusters*MSG_SIZE)/total
-		);
-	}
-
-	/* House keeping. */
-	close_outboxes(outboxes);
-}
-
-/*============================================================================*
- * Gather Kernel                                                              *
- *============================================================================*/
-
-/**
- * @brief Gather kernel.
- */
-static void kernel_gather(void)
-{
-	/* Benchmark. */
-	for (int k = 0; k <= (niterations + 1); k++)
-	{
-		double total;
-		uint64_t t1, t2;
-
-		/* Read data. */
-		t1 = timer_get();
-		for (int i = 0; i < nclusters; i++)
-			assert(mppa_read(inbox, buffer, MSG_SIZE) == MSG_SIZE);
-		t2 = timer_get();
-
-		total = timer_diff(t1, t2)/((double) MPPA256_FREQ);
-
-		/* Warmup. */
-		if (((k == 0) || (k == (niterations + 1))))
-			continue;
-
-		printf("nodeos;rqueue;%s;%d;%d;%lf;%lf\n",
-			kernel,
-			MSG_SIZE,
-			nclusters,
-			total/nclusters,
-			(nclusters*MSG_SIZE)/total
-		);
-	}
-}
-
-/*============================================================================*
  * Ping-Pong Kernel                                                           *
  *============================================================================*/
 
 /**
- * @brief Ping-Pong kernel. 
+ * @brief Ping-Pong kernel.
  */
 static void kernel_pingpong(void)
 {
@@ -263,36 +173,48 @@ static void kernel_pingpong(void)
 
 	open_outboxes(outboxes);
 
-	/* Wait for slaves. */
-	assert(mppa_read(sync_master, &mask, sizeof(uint64_t)) != -1);
-
 	/* Benchmark. */
 	for (int k = 0; k <= (niterations + 1); k++)
 	{
-		double total;
-		uint64_t t1, t2;
+		double total, tread, twrite;
 
-		/* Send data. */
-		t1 = timer_get();
+		tread = twrite = 0;
+
+		/* Wait for slaves. */
+		assert(mppa_read(sync, &mask, sizeof(uint64_t)) != -1);
+
+		/* Ping-pong. */
 		for (int i = 0; i < nclusters; i++)
 		{
-			assert(mppa_write(outboxes[i], buffer, MSG_SIZE) == MSG_SIZE);
-			assert(mppa_read(inbox, buffer, MSG_SIZE) == MSG_SIZE);
-		}
-		t2 = timer_get();
+			uint64_t t1, t2;
+			struct message msg;
 
-		total = timer_diff(t1, t2)/((double) MPPA256_FREQ);
+			/* Receive data. */
+			t1 = timer_get();
+				assert(mppa_read(inbox, &msg, MSG_SIZE) == MSG_SIZE);
+			t2 = timer_get();
+			tread += timer_diff(t1, t2)/((double) MPPA256_FREQ);
+
+			/* Send data. */
+			t1 = timer_get();
+				assert(mppa_write(outboxes[msg.clusterid], &msg, MSG_SIZE) == MSG_SIZE);
+			t2 = timer_get();
+			twrite += timer_diff(t1, t2)/((double) MPPA256_FREQ);
+		}
 
 		/* Warmup. */
 		if (((k == 0) || (k == (niterations + 1))))
 			continue;
 
-		printf("nodeos;rqueue;%s;%d;%d;%lf;%lf\n",
+		total = tread + twrite;
+
+		printf("nodeos;rqueue;%s;%d;%d;%lf;0.0;%lf;%lf\n",
 			kernel,
 			MSG_SIZE,
 			nclusters,
 			total/nclusters,
-			2*(nclusters*MSG_SIZE)/total
+			tread/nclusters,
+			twrite/nclusters
 		);
 	}
 
@@ -311,27 +233,22 @@ static void benchmark(void)
 {
 	uint64_t mask;
 	
-	mask = ~((1 << nclusters) - 1);
-
 	/* Initialization. */
+	mask = ~((1 << nclusters) - 1);
 	assert((inbox = mppa_open(RQUEUE_MASTER, O_RDONLY)) != -1);
-	assert((sync_master = mppa_open(SYNC_MASTER, O_RDONLY)) != -1);
-	assert(mppa_ioctl(sync_master, MPPA_RX_SET_MATCH, mask) != -1);
+	assert((sync = mppa_open(SYNC_MASTER, O_RDONLY)) != -1);
+	assert(mppa_ioctl(sync, MPPA_RX_SET_MATCH, mask) != -1);
 	spawn_remotes();
 
 	timer_init();
 
 	/* Run kernel. */
-	if (!strcmp(kernel, "broadcast"))
-		kernel_broadcast();
-	else if (!strcmp(kernel, "gather"))
-		kernel_gather();
-	else if (!strcmp(kernel, "pingpong"))
+	if (!strcmp(kernel, "pingpong"))
 		kernel_pingpong();
 	
 	/* House keeping. */
 	join_remotes();
-	assert(mppa_close(sync_master) != -1);
+	assert(mppa_close(sync) != -1);
 	assert(mppa_close(inbox) != -1);
 }
 

@@ -34,13 +34,23 @@
 #include "../kernel.h"
 
 /**
- * @brief Benchmark parameters.
+ * @brief Global benchmark parameters.
  */
 /**@{*/
 static int nclusters = 0;         /**< Number of remotes processes.    */
 static int niterations = 0;       /**< Number of benchmark parameters. */
-static const char *kernel = NULL; /**< Benchmark kernel.               */
+static const char *kernel = NULL; /**< Name of the target kernel.      */
 /**@}*/
+
+/**
+ * @brief Input mailbox.
+ */
+static int inbox;
+
+/**
+ * @brief Global sync.
+ */
+static int sync;
 
 /**
  * @brief ID of slave processes.
@@ -48,19 +58,10 @@ static const char *kernel = NULL; /**< Benchmark kernel.               */
 static int pids[NANVIX_PROC_MAX];
 
 /**
- * @brief Buffer.
- */
-static char buffer[MAILBOX_MSG_SIZE];
-
-/**
  * @brief Underlying NoC node ID.
  */
 static int nodenum;
 
-/**
- * @brief Inbox for receiving messages.
- */
-static int inbox;
 
 /*============================================================================*
  * Utilities                                                                  *
@@ -71,12 +72,10 @@ static int inbox;
  */
 static void spawn_remotes(void)
 {
-	int syncid;
 	char master_node[4];
 	char first_remote[4];
 	char last_remote[4];
 	char niterations_str[4];
-	int nodes[nclusters + 1];
 	const char *argv[] = {
 		"/mailbox-slave",
 		master_node,
@@ -87,14 +86,6 @@ static void spawn_remotes(void)
 		NULL
 	};
 
-	/* Build nodes list. */
-	nodes[0] = nodenum;
-	for (int i = 0; i < nclusters; i++)
-		nodes[i + 1] = i;
-
-	/* Create synchronization point. */
-	assert((syncid = sys_sync_create(nodes, nclusters + 1, SYNC_ALL_TO_ONE)) >= 0);
-
 	/* Spawn remotes. */
 	sprintf(master_node, "%d", nodenum);
 	sprintf(first_remote, "%d", 0);
@@ -102,12 +93,6 @@ static void spawn_remotes(void)
 	sprintf(niterations_str, "%d", niterations);
 	for (int i = 0; i < nclusters; i++)
 		assert((pids[i] = mppa_spawn(i, NULL, argv[0], argv, NULL)) != -1);
-
-	/* Sync. */
-	assert(sys_sync_wait(syncid) == 0);
-
-	/* House keeping. */
-	assert(sys_sync_unlink(syncid) == 0);
 }
 
 /**
@@ -143,6 +128,10 @@ static void close_mailboxes(const int *outboxes)
 		assert((sys_mailbox_close(outboxes[i])) == 0);
 }
 
+/*============================================================================*
+ * Timer                                                                      *
+ *============================================================================*/
+
 /**
  * @brief Residual timer.
  */
@@ -170,89 +159,14 @@ static inline uint64_t timer_diff(uint64_t t1, uint64_t t2)
 }
 
 /*============================================================================*
- * Kernels                                                                    *
+ * Ping-Pong Kernel                                                           *
  *============================================================================*/
-
-/**
- * @brief Broadcast kernel.
- */
-static void kernel_broadcast(void)
-{
-	int outboxes[nclusters];
-
-	/* Initialization. */
-	open_mailboxes(outboxes);
-	memset(buffer, 1, MAILBOX_MSG_SIZE);
-
-	/* Benchmark. */
-	for (int k = 0; k <= (niterations + 1); k++)
-	{
-		double total;
-		uint64_t t1, t2;
-
-		t1 = sys_timer_get();
-		for (int i = 0; i < nclusters; i++)
-			assert(sys_mailbox_write(outboxes[i], buffer, MAILBOX_MSG_SIZE) == MAILBOX_MSG_SIZE);
-		t2 = sys_timer_get();
-
-		total = timer_diff(t1, t2)/((double) sys_get_core_freq());
-
-		/* Warmup. */
-		if (((k == 0) || (k == (niterations + 1))))
-			continue;
-
-		printf("nanvix;mailbox;%s;%d;%d;%lf;%lf\n",
-			kernel,
-			MAILBOX_MSG_SIZE,
-			nclusters,
-			total/nclusters,
-			(nclusters*MAILBOX_MSG_SIZE)/total
-		);
-	}
-	
-	/* Close output mailboxes. */
-	close_mailboxes(outboxes);
-}
-
-/**
- * @brief Gather kernel.
- */
-static void kernel_gather(void)
-{
-	double total;
-	uint64_t t1, t2;
-
-	/* Benchmark. */
-	for (int k = 0; k <= (niterations + 1); k++)
-	{
-		t1 = sys_timer_get();
-		for (int i = 0; i < nclusters; i++)
-			assert(sys_mailbox_read(inbox, buffer, MAILBOX_MSG_SIZE) == MAILBOX_MSG_SIZE);
-		t2 = sys_timer_get();
-
-		total = timer_diff(t1, t2)/((double) sys_get_core_freq());
-
-		/* Warmup. */
-		if (((k == 0) || (k == (niterations + 1))))
-			continue;
-
-		printf("nanvix;mailbox;%s;%d;%d;%lf;%lf\n",
-			kernel,
-			MAILBOX_MSG_SIZE,
-			nclusters,
-			total/nclusters,
-			(nclusters*MAILBOX_MSG_SIZE)/total
-		);
-	}
-}
 
 /**
  * @brief Ping-Pong kernel.
  */
 static void kernel_pingpong(void)
 {
-	double total;
-	uint64_t t1, t2;
 	int outboxes[nclusters];
 
 	/* Initialization. */
@@ -261,25 +175,62 @@ static void kernel_pingpong(void)
 	/* Benchmark. */
 	for (int k = 0; k <= (niterations + 1); k++)
 	{
-		t1 = sys_timer_get();
-		for (int i = 0; i < nclusters; i++)
-			assert(sys_mailbox_write(outboxes[i], buffer, MAILBOX_MSG_SIZE) == MAILBOX_MSG_SIZE);
-		for (int i = 0; i < nclusters; i++)
-			assert(sys_mailbox_read(inbox, buffer, MAILBOX_MSG_SIZE) == MAILBOX_MSG_SIZE);
-		t2 = sys_timer_get();
+		struct message msg;
+		uint64_t t1, t2, t3, t4;
+		double tmp1, tmp2, total, tkernel, tread, twrite;
 
-		total = timer_diff(t1, t2)/((double) sys_get_core_freq());
+		tkernel = tread = twrite = 0;
+
+		/* Sync. */
+		assert(sys_sync_wait(sync) == 0);
+
+		for (int i = 0; i < nclusters; i++)
+		{
+			/* Receive data. */
+			assert(sys_mailbox_ioctl(inbox, MAILBOX_IOCTL_GET_LATENCY, &t3) == 0);
+				t1 = sys_timer_get();
+					assert(sys_mailbox_read(
+						inbox,
+						&msg,
+						MAILBOX_MSG_SIZE) == MAILBOX_MSG_SIZE
+					);
+				t2 = sys_timer_get();
+			assert(sys_mailbox_ioctl(inbox, MAILBOX_IOCTL_GET_LATENCY, &t4) == 0);
+			tmp1 = (t4 - t3)/((double) sys_get_core_freq());
+			tmp2 = timer_diff(t1, t2)/((double) sys_get_core_freq());
+			tread += tmp2;
+			tkernel += tmp2 - tmp1;
+
+			/* Send data. */
+			assert(sys_mailbox_ioctl(outboxes[msg.nodenum], MAILBOX_IOCTL_GET_LATENCY, &t3) == 0);
+				t1 = sys_timer_get();
+					assert(sys_mailbox_write(
+						outboxes[msg.nodenum],
+						&msg,
+						MAILBOX_MSG_SIZE) == MAILBOX_MSG_SIZE
+					);
+				t2 = sys_timer_get();
+			assert(sys_mailbox_ioctl(outboxes[msg.nodenum], MAILBOX_IOCTL_GET_LATENCY, &t4) == 0);
+			tmp1 = (t4 - t3)/((double) sys_get_core_freq());
+			tmp2 = timer_diff(t1, t2)/((double) sys_get_core_freq());
+			twrite += tmp1;
+			tkernel += tmp2 - tmp1;
+		}
 
 		/* Warmup. */
 		if (((k == 0) || (k == (niterations + 1))))
 			continue;
 
-		printf("nanvix;mailbox;%s;%d;%d;%lf;%lf\n",
+		total = tkernel + tread + twrite;
+
+		printf("nanvix;mailbox;%s;%d;%d;%lf;%lf;%lf;%lf\n",
 			kernel,
 			MAILBOX_MSG_SIZE,
 			nclusters,
 			total/nclusters,
-			2*(nclusters*MAILBOX_MSG_SIZE)/total
+			tkernel/nclusters,
+			tread/nclusters,
+			twrite/nclusters
 		);
 	}
 
@@ -287,31 +238,39 @@ static void kernel_pingpong(void)
 	close_mailboxes(outboxes);
 }
 
+/*============================================================================*
+ * Unnamed Mailbox Microbenchmark Driver                                      *
+ *============================================================================*/
+
 /**
  * @brief Unnamed Mailbox microbenchmark.
  */
 static void benchmark(void)
 {
-	/* Initialization. */
-	timer_init();
+	int nodes[nclusters + 1];
+
 	nodenum = sys_get_node_num();
+
+	/* Build nodes list. */
+	nodes[0] = nodenum;
+	for (int i = 0; i < nclusters; i++)
+		nodes[i + 1] = i;
+
+	/* Initialization. */
 	assert((inbox = get_inbox()) >= 0);
+	assert((sync = sys_sync_create(nodes, nclusters + 1, SYNC_ALL_TO_ONE)) >= 0);
 	spawn_remotes();
 
-	if (!strcmp(kernel, "broadcast"))
-		kernel_broadcast();
-	else if (!strcmp(kernel, "gather"))
-		kernel_gather();
-	else if (!strcmp(kernel, "pingpong"))
+	timer_init();
+
+	/* Run kernel. */
+	if (!strcmp(kernel, "pingpong"))
 		kernel_pingpong();
 	
 	/* House keeping. */
+	assert(sys_sync_unlink(sync) == 0);
 	join_remotes();
 }
-
-/*============================================================================*
- * Unnamed Mailbox Microbenchmark Driver                                      *
- *============================================================================*/
 
 /**
  * @brief Unnamed Mailbox Microbenchmark Driver
