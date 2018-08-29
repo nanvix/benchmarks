@@ -99,6 +99,14 @@ case "$1" in
 			| grep -v "\[nanvix\]"
 		done
 	;;
+	nanvix-name)
+		echo "Running Nanvix Name Service Microbenchmarks"
+			run2                                 \
+				"benchmark-name.img"             \
+				"/name-master"                   \
+				"$NCLUSTERS $NITERATIONS lookup" \
+			| grep "\[nanvix\]\[name\] trunning"
+	;;
 	*)
 		echo "Usage: run.sh {nanvix-mailbox | nanvix-portal | nanvix-sync}"
 		echo "Usage: run.sh {nanvix-rmem}"
