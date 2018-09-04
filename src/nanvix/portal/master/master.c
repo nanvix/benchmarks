@@ -175,8 +175,8 @@ static void close_portals(const int *outportals)
  */
 static void kernel_broadcast(void)
 {
-	double total;
-	uint64_t t1, t2;
+	uint64_t t1, t2, t3, t4;
+	double tmp1, tmp2, total, tkernel, twrite;
 	int outportals[nclusters];
 
 	/* Initialization. */
@@ -184,25 +184,42 @@ static void kernel_broadcast(void)
 	memset(buffer, 1, bufsize);
 
 	/* Benchmark. */
-	for (int k = 0; k <= niterations; k++)
+	for (int k = 0; k <= (niterations + 1); k++)
 	{
-		t1 = sys_timer_get();
-		for (int i = 0; i < nclusters; i++)
-			assert(sys_portal_write(outportals[i], buffer, bufsize) == bufsize);
-		t2 = sys_timer_get();
+		tkernel = twrite = 0;
 
-		total = timer_diff(t1, t2)/((double) sys_get_core_freq());
+		for (int i = 0; i < nclusters; i++)
+		{
+			assert(sys_portal_ioctl(outportals[i], PORTAL_IOCTL_GET_LATENCY, &t3) == 0);
+				t1 = sys_timer_get();
+					assert(sys_portal_write(
+						outportals[i],
+						buffer,
+						bufsize) == bufsize
+					);
+				t2 = sys_timer_get();
+			assert(sys_portal_ioctl(outportals[i], PORTAL_IOCTL_GET_LATENCY, &t4) == 0);
+
+			tmp1 = (t4 - t3)/((double) sys_get_core_freq());
+			tmp2 = timer_diff(t1, t2)/((double) sys_get_core_freq());
+			twrite += tmp2;
+			tkernel += tmp2 - tmp1;
+		}
 
 		/* Warmup. */
-		if (k == 0)
+		if (((k == 0) || (k == (niterations + 1))))
 			continue;
 
-		printf("nanvix;portal;%s;%d;%d;%.2lf;%.2lf\n",
+		total = tkernel + twrite;
+
+		printf("nanvix;portal;%s;%d;%d;%lf;%lf;%lf;%lf\n",
 			kernel,
 			bufsize,
 			nclusters,
-			(total*MEGA)/nclusters,
-			(nclusters*bufsize)/total
+			(nclusters*bufsize)/twrite,
+			total,
+			tkernel,
+			twrite
 		);
 	}
 
@@ -216,86 +233,53 @@ static void kernel_broadcast(void)
 static void kernel_gather(void)
 {
 	int inportal;
-	double total;
-	uint64_t t1, t2;
+	uint64_t t1, t2, t3, t4;
+	double tmp1, tmp2, total, tkernel, tread;
 
 	/* Initialization. */
 	assert((inportal = get_inportal()) >= 0);
 
 	/* Benchmark. */
-	for (int k = 0; k <= niterations; k++)
+	for (int k = 0; k <= (niterations + 1); k++)
 	{
-		uint64_t t3 = 0;
+		tkernel = tread = 0;
 
 		for (int i = 0; i < nclusters; i++)
 		{
 			assert(sys_portal_allow(inportal, i) == 0);
-			t1 = sys_timer_get();
-				assert(sys_portal_read(inportal, buffer, bufsize) == bufsize);
-			t2 = sys_timer_get();
-			t3 += timer_diff(t1, t2);
+
+			assert(sys_portal_ioctl(inportal, PORTAL_IOCTL_GET_LATENCY, &t3) == 0);
+				t1 = sys_timer_get();
+					assert(sys_portal_read(
+						inportal,
+						buffer,
+						bufsize) == bufsize
+					);
+				t2 = sys_timer_get();
+			assert(sys_portal_ioctl(inportal, PORTAL_IOCTL_GET_LATENCY, &t4) == 0);
+
+			tmp1 = (t4 - t3)/((double) sys_get_core_freq());
+			tmp2 = timer_diff(t1, t2)/((double) sys_get_core_freq());
+			tread += tmp2;
+			tkernel += tmp2 - tmp1;
 		}
 
-		total = t3/((double) sys_get_core_freq());
-
 		/* Warmup. */
-		if (k == 0)
+		if (((k == 0) || (k == (niterations + 1))))
 			continue;
 
-		printf("nanvix;portal;%s;%d;%d;%.2lf;%.2lf\n",
+		total = tkernel + tread;
+
+		printf("nanvix;portal;%s;%d;%d;%lf;%lf;%lf;%lf\n",
 			kernel,
 			bufsize,
 			nclusters,
-			(total*MEGA)/nclusters,
-			(nclusters*bufsize)/total
+			(nclusters*bufsize)/tread,
+			total,
+			tkernel,
+			tread
 		);
 	}
-}
-
-/**
- * @brief Ping-Pong kernel.
- */
-static void kernel_pingpong(void)
-{
-	int inportal;
-	double total;
-	uint64_t t1, t2;
-	int outportals[nclusters];
-
-	/* Initialization. */
-	assert((inportal = get_inportal()) >= 0);
-	open_portals(outportals);
-
-	/* Benchmark. */
-	for (int k = 0; k <= niterations; k++)
-	{
-		t1 = sys_timer_get();
-		for (int i = 0; i < nclusters; i++)
-			assert(sys_portal_write(outportals[i], buffer, bufsize) == bufsize);
-		for (int i = 0; i < nclusters; i++)
-		{
-			assert(sys_portal_allow(inportal, i) == 0);
-			assert(sys_portal_read(inportal, buffer, bufsize) == bufsize);
-		}
-		t2 = sys_timer_get();
-
-		total = timer_diff(t1, t2)/((double) sys_get_core_freq());
-
-		/* Warmup. */
-		if (k == 0)
-			continue;
-
-		printf("nanvix;portal;%s;%d;%d;%.2lf;%.2lf\n",
-			kernel,
-			bufsize,
-			nclusters,
-			(total*MEGA)/nclusters,
-			2*(nclusters*bufsize)/total
-		);
-	}
-
-	/* House keeping. */
-	close_portals(outportals);
 }
 
 /**
@@ -311,8 +295,6 @@ static void benchmark(void)
 		kernel_broadcast();
 	else if (!strcmp(kernel, "gather"))
 		kernel_gather();
-	else if (!strcmp(kernel, "pingpong"))
-		kernel_pingpong();
 	
 	/* House keeping. */
 	join_remotes();

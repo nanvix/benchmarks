@@ -64,7 +64,7 @@ static void kernel_broadcast(void)
 	assert((inportal = get_inportal()) >= 0);
 
 	/* Benchmark. */
-	for (int k = 0; k <= niterations; k++)
+	for (int k = 0; k <= (niterations + 1); k++)
 	{
 		assert(sys_portal_allow(inportal, master_node) == 0);
 		assert(sys_portal_read(inportal, buffer, bufsize) == bufsize);
@@ -85,34 +85,9 @@ static void kernel_gather(void)
 	assert((outportal = sys_portal_open(master_node)) >= 0);
 
 	/* Benchmark. */
-	for (int k = 0; k <= niterations; k++)
+	for (int k = 0; k <= (niterations + 1); k++)
 		assert(sys_portal_write(outportal, buffer, bufsize) == bufsize);
 
-	assert(sys_portal_close(outportal) == 0);
-}
-
-/*============================================================================*
- * Ping-Pong Kernel                                                           *
- *============================================================================*/
-
-/**
- * @brief Ping-Pong kernel. 
- */
-static void kernel_pingpong(void)
-{
-	int inportal;
-	int outportal;
-
-	assert((inportal = get_inportal()) >= 0);
-	assert((outportal = sys_portal_open(master_node)) >= 0);
-
-	/* Benchmark. */
-	for (int k = 0; k <= niterations; k++)
-	{
-		assert(sys_portal_allow(inportal, master_node) == 0);
-		assert(sys_portal_read(inportal, buffer, bufsize) == bufsize);
-		assert(sys_portal_write(outportal, buffer, bufsize) == bufsize);
-	}
 	assert(sys_portal_close(outportal) == 0);
 }
 
@@ -168,8 +143,6 @@ int main2(int argc, const char **argv)
 		kernel_broadcast();
 	else if (!strcmp(mode, "gather"))
 		kernel_gather();
-	else if (!strcmp(mode, "pingpong"))
-		kernel_pingpong();
 
 	return (EXIT_SUCCESS);
 }

@@ -153,6 +153,8 @@ static void kernel_gather(void)
 {
 	int sync_fd;
 	int ranks[nclusters];
+	uint64_t t1, t2, t3, t4;
+	double tmp1, tmp2, total, tkernel, tread;
 
 	for (int i = 0; i < nclusters; i++)
 		ranks[i] = i;
@@ -161,14 +163,14 @@ static void kernel_gather(void)
 	assert((sync_fd = mppa_open(SYNC_SLAVES, O_WRONLY)) != -1);
 
 	/* Benchmark. */
-	for (int k = 0; k <= niterations; k++)
+	for (int k = 0; k <= (niterations + 1); k++)
 	{
-		double total;
 		uint64_t mask;
-		uint64_t t1, t2;
 		mppa_aiocb_t aiocb;
 
-		t1 = timer_get();
+		tkernel = tread = 0;
+
+		t3 = timer_get();
 
 			/* Setup read operation. */
 			mppa_aiocb_ctor(&aiocb, inportal, buffer, nclusters*bufsize);
@@ -181,21 +183,31 @@ static void kernel_gather(void)
 			assert(mppa_write(sync_fd, &mask, sizeof(uint64_t)) != -1);
 
 			/* Read data. */
-			assert(mppa_aio_wait(&aiocb) == nclusters*bufsize);
-		t2 = timer_get();
+			t1 = timer_get();
+				assert(mppa_aio_wait(&aiocb) == nclusters*bufsize);
+			t2 = timer_get();
 
-		total = timer_diff(t1, t2)/((double) MPPA256_FREQ);
+		t4 = timer_get();
+
+		tmp2 = (t4 - t3)/((double) MPPA256_FREQ);
+		tmp1 = timer_diff(t1, t2)/((double) MPPA256_FREQ);
+		tread += tmp1;
+		tkernel += tmp2 - tmp1;
 
 		/* Warmup. */
-		if (k == 0)
+		if (((k == 0) || (k == (niterations + 1))))
 			continue;
 
-		printf("nodeos;portal;%s;%d;%d;%.2lf;%.2lf\n",
+		total = tkernel + tread;
+
+		printf("nodeos;portal;%s;%d;%d;%lf;%lf;%lf;%lf\n",
 			kernel,
 			bufsize,
 			nclusters,
-			(total*MEGA)/nclusters,
-			(nclusters*bufsize)/total
+			(nclusters*bufsize)/tread,
+			total,
+			tkernel,
+			tread
 		);
 	}
 
@@ -214,6 +226,8 @@ static void kernel_broadcast(void)
 {
 	int ranks[nclusters];
 	int outportal;
+	uint64_t t1, t2, t3, t4;
+	double tmp1, tmp2, total, tkernel, twrite;
 
 	for (int i = 0; i < nclusters; i++)
 		ranks[i] = i;
@@ -221,110 +235,49 @@ static void kernel_broadcast(void)
 	assert((outportal = mppa_open(PORTAL_SLAVES, O_WRONLY)) != -1);
 
 	/* Benchmark. */
-	for (int k = 0; k <= niterations; k++)
+	for (int k = 0; k <= (niterations + 1); k++)
 	{
-		double total;
 		uint64_t mask;
-		uint64_t t1, t2;
 
-		/* Wait for slaves. */
-		assert(mppa_read(sync_master, &mask, sizeof(uint64_t)) != -1);
+		tkernel = twrite = 0;
 
-		/* Send data. */
-		t1 = timer_get();
-			assert(mppa_ioctl(outportal, MPPA_TX_SET_RX_RANKS, nclusters, ranks) != -1);
-			assert(mppa_pwrite(outportal, buffer, bufsize, 0) == bufsize);
-		t2 = timer_get();
+		t3 = timer_get();
 
-		total = timer_diff(t1, t2)/((double) MPPA256_FREQ);
+			/* Wait for slaves. */
+			assert(mppa_read(sync_master, &mask, sizeof(uint64_t)) != -1);
 
-		/* Warmup. */
-		if (k == 0)
-			continue;
-
-		printf("nodeos;portal;%s;%d;%d;%.2lf;%.2lf\n",
-			kernel,
-			bufsize,
-			nclusters,
-			(total*MEGA)/nclusters,
-			(nclusters*bufsize)/total
-		);
-	}
-
-	/* House keeping. */
-	assert(mppa_close(outportal) != -1);
-}
-
-/*============================================================================*
- * Ping-Pong Kernel                                                           *
- *============================================================================*/
-
-/**
- * @brief Ping-Pong kernel. 
- */
-static void kernel_pingpong(void)
-{
-	int sync_fd;
-	int outportal;
-
-	/* Open connectors. */
-	assert((sync_fd = mppa_open(SYNC_SLAVES, O_WRONLY)) != -1);
-	assert((outportal = mppa_open(PORTAL_SLAVES, O_WRONLY)) != -1);
-
-	/* Benchmark. */
-	for (int k = 0; k <= niterations; k++)
-	{
-		double total;
-		uint64_t mask;
-		uint64_t t1, t2;
-		mppa_aiocb_t aiocb;
-
-		/* Wait for slaves. */
-		assert(mppa_read(sync_master, &mask, sizeof(uint64_t)) != -1);
-
-		/* Ping-Pong. */
-		t1 = timer_get();
-		for (int i = 0; i < nclusters; i++)
-		{
 			/* Send data. */
-			assert(mppa_ioctl(outportal, MPPA_TX_SET_RX_RANK, i) != -1);
-			assert(mppa_pwrite(outportal, buffer, bufsize, 0) == bufsize);
-		}
+			t1 = timer_get();
+				assert(mppa_ioctl(outportal, MPPA_TX_SET_RX_RANKS, nclusters, ranks) != -1);
+				assert(mppa_pwrite(outportal, buffer, bufsize, 0) == bufsize);
+			t2 = timer_get();
 
-		for (int i = 0; i < nclusters; i++)
-		{
-			/* Setup read operation. */
-			mppa_aiocb_ctor(&aiocb, inportal, buffer, bufsize);
-			assert(mppa_aio_read(&aiocb) != -1);
+		t4 = timer_get();
 
-			/* Unblock remote. */
-			mask = 1 << i;
-			assert(mppa_ioctl(sync_fd, MPPA_TX_SET_RX_RANK, i) != -1);
-			assert(mppa_write(sync_fd, &mask, sizeof(uint64_t)) != -1);
-
-			/* Wait read operation to complete. */
-			assert(mppa_aio_wait(&aiocb) == bufsize);
-		}
-		t2 = timer_get();
-
-		total = timer_diff(t1, t2)/((double) MPPA256_FREQ);
+		tmp2 = (t4 - t3)/((double) MPPA256_FREQ);
+		tmp1 = timer_diff(t1, t2)/((double) MPPA256_FREQ);
+		twrite += tmp1;
+		tkernel += tmp2 - tmp1;
 
 		/* Warmup. */
-		if (k == 0)
+		if (((k == 0) || (k == (niterations + 1))))
 			continue;
 
-		printf("nodeos;portal;%s;%d;%d;%.2lf;%.2lf\n",
+		total = tkernel + twrite;
+
+		printf("nodeos;portal;%s;%d;%d;%lf;%lf;%lf;%lf\n",
 			kernel,
 			bufsize,
 			nclusters,
-			(total*MEGA)/nclusters,
-			2*(nclusters*bufsize)/total
+			(nclusters*bufsize)/twrite,
+			total,
+			tkernel,
+			twrite
 		);
 	}
 
 	/* House keeping. */
 	assert(mppa_close(outportal) != -1);
-	assert(mppa_close(sync_fd) != -1);
 }
 
 /*============================================================================*
@@ -353,8 +306,6 @@ static void benchmark(void)
 		kernel_gather();
 	else if (!strcmp(kernel, "broadcast"))
 		kernel_broadcast();
-	else if (!strcmp(kernel, "pingpong"))
-		kernel_pingpong();
 	
 	/* House keeping. */
 	join_remotes();

@@ -26,11 +26,6 @@
 	#include <stdint.h>
 
 	/**
-	 * @brief Mega (10^6).
-	 */
-	#define MEGA (1000000)
-
-	/**
 	 * @brief Mailbox message.
 	 */
 	struct message

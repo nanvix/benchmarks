@@ -41,7 +41,7 @@ case "$1" in
 	;;
 	mppa256-portal)
 		echo "Running NodeOs Portal Microbenchmarks"
-		for kernelname in "broadcast" "gather" "pingpong";
+		for kernelname in "broadcast" "gather";
 		do
 			run2                                               \
 				"benchmark-mppa256-portal.img"                 \
@@ -68,7 +68,7 @@ case "$1" in
 	;;
 	nanvix-portal)
 		echo "Running Nanvix Unnamed Portal Microbenchmarks"
-		for kernelname in "broadcast" "gather" "pingpong";
+		for kernelname in "broadcast" "gather";
 		do
 			run2                                               \
 				"benchmark-portal.img"                         \
