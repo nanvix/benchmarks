@@ -25,7 +25,7 @@ source "scripts/arch/mppa256.sh"
 # Default parameters.
 NCLUSTERS=$2
 NITERATIONS=$3
-BUFSIZE=262144
+BUFSIZE=$((1024*1024))
 
 case "$1" in
 	mppa256-async)
@@ -85,7 +85,7 @@ case "$1" in
 				"benchmark-rmem.img"                           \
 				"/rmem-master"                                 \
 				"$NCLUSTERS $NITERATIONS $BUFSIZE $kernelname" \
-			| grep -v "\[nanvix\]"
+			| grep "\[nanvix\]\[rmem\] uptime"
 		done
 	;;
 	nanvix-sync)

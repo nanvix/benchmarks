@@ -51,7 +51,7 @@ static int pids[NANVIX_PROC_MAX];
 /**
  * @brief Buffer.
  */
-static char buffer[BUFFER_SIZE_MAX];
+static char buffer[NANVIX_PROC_MAX*BUFFER_SIZE_MAX];
 
 /*============================================================================*
  * Utilities                                                                  *
@@ -175,51 +175,47 @@ static void close_portals(const int *outportals)
  */
 static void kernel_broadcast(void)
 {
-	uint64_t t1, t2, t3, t4;
-	double tmp1, tmp2, total, tkernel, twrite;
 	int outportals[nclusters];
 
 	/* Initialization. */
 	open_portals(outportals);
-	memset(buffer, 1, bufsize);
+	memset(buffer, 1, nclusters*bufsize);
 
 	/* Benchmark. */
 	for (int k = 0; k <= (niterations + 1); k++)
 	{
-		tkernel = twrite = 0;
+		uint64_t t1, t2;
+		uint64_t tkernel, tnetwork;
+
+		tkernel = tnetwork = 0;
 
 		for (int i = 0; i < nclusters; i++)
 		{
-			assert(sys_portal_ioctl(outportals[i], PORTAL_IOCTL_GET_LATENCY, &t3) == 0);
-				t1 = sys_timer_get();
-					assert(sys_portal_write(
-						outportals[i],
-						buffer,
-						bufsize) == bufsize
-					);
-				t2 = sys_timer_get();
-			assert(sys_portal_ioctl(outportals[i], PORTAL_IOCTL_GET_LATENCY, &t4) == 0);
+			t1 = sys_timer_get();
+				assert(sys_portal_write(
+					outportals[i],
+					&buffer[i*bufsize],
+					bufsize) == bufsize
+				);
+			t2 = sys_timer_get();
+			tkernel += timer_diff(t1, t2);
 
-			tmp1 = (t4 - t3)/((double) sys_get_core_freq());
-			tmp2 = timer_diff(t1, t2)/((double) sys_get_core_freq());
-			twrite += tmp2;
-			tkernel += tmp2 - tmp1;
+			assert(sys_portal_ioctl(outportals[i], PORTAL_IOCTL_GET_LATENCY, &t1) == 0);
+
+			tnetwork += t1;
+			tkernel -= t1;
 		}
 
 		/* Warmup. */
 		if (((k == 0) || (k == (niterations + 1))))
 			continue;
 
-		total = tkernel + twrite;
-
-		printf("nanvix;portal;%s;%d;%d;%lf;%lf;%lf;%lf\n",
+		printf("nanvix;portal;%s;%d;%d;%lf;%lf\n",
 			kernel,
 			bufsize,
 			nclusters,
-			(nclusters*bufsize)/twrite,
-			total,
-			tkernel,
-			twrite
+			tkernel/((double) sys_get_core_freq()),
+			tnetwork/((double) sys_get_core_freq())
 		);
 	}
 
@@ -233,8 +229,6 @@ static void kernel_broadcast(void)
 static void kernel_gather(void)
 {
 	int inportal;
-	uint64_t t1, t2, t3, t4;
-	double tmp1, tmp2, total, tkernel, tread;
 
 	/* Initialization. */
 	assert((inportal = get_inportal()) >= 0);
@@ -242,42 +236,44 @@ static void kernel_gather(void)
 	/* Benchmark. */
 	for (int k = 0; k <= (niterations + 1); k++)
 	{
-		tkernel = tread = 0;
+		uint64_t tnetwork, tkernel;
+
+		tkernel = tnetwork = 0;
 
 		for (int i = 0; i < nclusters; i++)
 		{
-			assert(sys_portal_allow(inportal, i) == 0);
+			uint64_t t1, t2;
 
-			assert(sys_portal_ioctl(inportal, PORTAL_IOCTL_GET_LATENCY, &t3) == 0);
-				t1 = sys_timer_get();
-					assert(sys_portal_read(
-						inportal,
-						buffer,
-						bufsize) == bufsize
-					);
-				t2 = sys_timer_get();
-			assert(sys_portal_ioctl(inportal, PORTAL_IOCTL_GET_LATENCY, &t4) == 0);
+			t1 = sys_timer_get();
+				assert(sys_portal_allow(inportal, i) == 0);
+			t2 = sys_timer_get();
+			tkernel += timer_diff(t1, t2);
 
-			tmp1 = (t4 - t3)/((double) sys_get_core_freq());
-			tmp2 = timer_diff(t1, t2)/((double) sys_get_core_freq());
-			tread += tmp2;
-			tkernel += tmp2 - tmp1;
+			t1 = sys_timer_get();
+				assert(sys_portal_read(
+					inportal,
+					&buffer[i*bufsize],
+					bufsize) == bufsize
+				);
+			t2 = sys_timer_get();
+			tkernel += timer_diff(t1, t2);
+
+			assert(sys_portal_ioctl(inportal, PORTAL_IOCTL_GET_LATENCY, &t1) == 0);
+
+			tnetwork += t1;
+			tkernel -= t1;
 		}
 
 		/* Warmup. */
 		if (((k == 0) || (k == (niterations + 1))))
 			continue;
 
-		total = tkernel + tread;
-
-		printf("nanvix;portal;%s;%d;%d;%lf;%lf;%lf;%lf\n",
+		printf("nanvix;portal;%s;%d;%d;%lf;%lf\n",
 			kernel,
 			bufsize,
 			nclusters,
-			(nclusters*bufsize)/tread,
-			total,
-			tkernel,
-			tread
+			tkernel/((double) sys_get_core_freq()),
+			tnetwork/((double) sys_get_core_freq())
 		);
 	}
 }
