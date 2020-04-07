@@ -21,14 +21,15 @@
  */
 
 #include <assert.h>
-#include <inttypes.h>
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
 #include <mppaipc.h>
-#include <mppa/osconfig.h>
-#include <HAL/hal/core/mp.h>
-#include <HAL/hal/core/diagnostic.h>
+
+#include <nanvix/syscalls.h>
+#include <nanvix/pm.h>
+#include <nanvix/limits.h>
 
 #include "../kernel.h"
 
@@ -42,7 +43,7 @@ static const char *kernel = NULL; /**< Name of the target kernel.      */
 /**@}*/
 
 /**
- * @brief Input rqueue.
+ * @brief Input mailbox.
  */
 static int inbox;
 
@@ -54,7 +55,13 @@ static int sync;
 /**
  * @brief ID of slave processes.
  */
-static int pids[NR_CCLUSTER];
+static int pids[NANVIX_PROC_MAX];
+
+/**
+ * @brief Underlying NoC node ID.
+ */
+static int nodenum;
+
 
 /*============================================================================*
  * Utilities                                                                  *
@@ -65,15 +72,24 @@ static int pids[NR_CCLUSTER];
  */
 static void spawn_remotes(void)
 {
-	char niterations_str[3];
+	char master_node[4];
+	char first_remote[4];
+	char last_remote[4];
+	char niterations_str[4];
 	const char *argv[] = {
-		"/mppa256-rqueue-slave",
+		"/mailbox-slave",
+		master_node,
+		first_remote,
+		last_remote,
 		niterations_str,
 		kernel,
 		NULL
 	};
 
 	/* Spawn remotes. */
+	sprintf(master_node, "%d", nodenum);
+	sprintf(first_remote, "%d", 0);
+	sprintf(last_remote, "%d", nclusters);
 	sprintf(niterations_str, "%d", niterations);
 	for (int i = 0; i < nclusters; i++)
 		assert((pids[i] = mppa_spawn(i, NULL, argv[0], argv, NULL)) != -1);
@@ -91,27 +107,25 @@ static void join_remotes(void)
 /**
  * @brief Opens output mailboxes.
  *
- * @param outboxes Location to store mailbox IDs.
+ * @param outboxes Location to store IDs of output mailboxes.
  */
-static void open_outboxes(int *outboxes)
+static void open_mailboxes(int *outboxes)
 {
-	char pathname[128];
-
+	/* Open output portales. */
 	for (int i = 0; i < nclusters; i++)
-	{
-		sprintf(pathname, RQUEUE_SLAVE, i, 58 + i, 59 + i);
-		assert((outboxes[i] = mppa_open(pathname, O_WRONLY)) != -1);
-	}
+		assert((outboxes[i] = sys_mailbox_open(i)) >= 0);
 }
 
 /**
- * @brief Close output mailboxes.
+ * @brief Closes output mailboxes.
+ *
+ * @param outboxes IDs of target output mailboxes.
  */
-static void close_outboxes(int *outboxes)
+static void close_mailboxes(const int *outboxes)
 {
-	/* Open output mailboxes. */
+	/* Close output mailboxes. */
 	for (int i = 0; i < nclusters; i++)
-		assert(mppa_close(outboxes[i]) != -1);
+		assert((sys_mailbox_close(outboxes[i])) == 0);
 }
 
 /*============================================================================*
@@ -119,44 +133,29 @@ static void close_outboxes(int *outboxes)
  *============================================================================*/
 
 /**
- * @brief Timer error.
+ * @brief Residual timer.
  */
-static uint64_t timer_error = 0;
+static uint64_t residual = 0;
 
 /**
- * @brief Gets the current timer value.
- *
- * @returns The current timer value;
- */
-static inline uint64_t timer_get(void)
-{
-	return (__k1_read_dsu_timestamp());
-}
-
-/**
- * @brief Computes the difference between two timer values.
- *
- * @param t1 Start time.
- * @param t2 End time.
- *
- * @returns The difference between the two timers (t2 - t1).
- */
-static inline uint64_t timer_diff(uint64_t t1, uint64_t t2)
-{
-	return (((t2 - t1) <= timer_error) ? timer_error : t2 - t1 - timer_error);
-}
-
-/**
- * @brief Calibrates the timer.
+ * @brief Callibrates the timer.
  */
 static void timer_init(void)
 {
-	uint64_t start, end;
+	uint64_t t1, t2;
 
-	start = timer_get();
-	end = timer_get();
+	t1 = sys_timer_get();
+	t2 = sys_timer_get();
 
-	timer_error = (end - start);
+	residual = t2 - t1;
+}
+
+/**
+ * @brief Computes the difference between two timers.
+ */
+static inline uint64_t timer_diff(uint64_t t1, uint64_t t2)
+{
+	return (t2 - t1 - residual);
 }
 
 /*============================================================================*
@@ -168,76 +167,98 @@ static void timer_init(void)
  */
 static void kernel_pingpong(void)
 {
-	uint64_t mask;
 	int outboxes[nclusters];
 
-	open_outboxes(outboxes);
+	/* Initialization. */
+	open_mailboxes(outboxes);
 
 	/* Benchmark. */
 	for (int k = 0; k <= (niterations + 1); k++)
 	{
-		double total, tread, twrite;
+		struct message msg;
+		uint64_t t1, t2, t3, t4;
+		double tmp1, tmp2, total, tkernel, tread, twrite;
 
-		tread = twrite = 0;
+		tkernel = tread = twrite = 0;
 
-		/* Wait for slaves. */
-		assert(mppa_read(sync, &mask, sizeof(uint64_t)) != -1);
+		/* Sync. */
+		assert(sys_sync_wait(sync) == 0);
 
-		/* Ping-pong. */
 		for (int i = 0; i < nclusters; i++)
 		{
-			uint64_t t1, t2;
-			struct message msg;
-
 			/* Receive data. */
-			t1 = timer_get();
-				assert(mppa_read(inbox, &msg, MSG_SIZE) == MSG_SIZE);
-			t2 = timer_get();
-			tread += timer_diff(t1, t2)/((double) MPPA256_FREQ);
+			assert(sys_mailbox_ioctl(inbox, MAILBOX_IOCTL_GET_LATENCY, &t3) == 0);
+				t1 = sys_timer_get();
+					assert(sys_mailbox_read(
+						inbox,
+						&msg,
+						MAILBOX_MSG_SIZE) == MAILBOX_MSG_SIZE
+					);
+				t2 = sys_timer_get();
+			assert(sys_mailbox_ioctl(inbox, MAILBOX_IOCTL_GET_LATENCY, &t4) == 0);
+			tmp1 = (t4 - t3)/((double) sys_get_core_freq());
+			tmp2 = timer_diff(t1, t2)/((double) sys_get_core_freq());
+			tread += tmp2;
+			tkernel += tmp2 - tmp1;
 
 			/* Send data. */
-			t1 = timer_get();
-				assert(mppa_write(outboxes[msg.clusterid], &msg, MSG_SIZE) == MSG_SIZE);
-			t2 = timer_get();
-			twrite += timer_diff(t1, t2)/((double) MPPA256_FREQ);
+			assert(sys_mailbox_ioctl(outboxes[msg.nodenum], MAILBOX_IOCTL_GET_LATENCY, &t3) == 0);
+				t1 = sys_timer_get();
+					assert(sys_mailbox_write(
+						outboxes[msg.nodenum],
+						&msg,
+						MAILBOX_MSG_SIZE) == MAILBOX_MSG_SIZE
+					);
+				t2 = sys_timer_get();
+			assert(sys_mailbox_ioctl(outboxes[msg.nodenum], MAILBOX_IOCTL_GET_LATENCY, &t4) == 0);
+			tmp1 = (t4 - t3)/((double) sys_get_core_freq());
+			tmp2 = timer_diff(t1, t2)/((double) sys_get_core_freq());
+			twrite += tmp1;
+			tkernel += tmp2 - tmp1;
 		}
 
 		/* Warmup. */
 		if (((k == 0) || (k == (niterations + 1))))
 			continue;
 
-		total = tread + twrite;
+		total = tkernel + tread + twrite;
 
-		printf("nodeos;rqueue;%s;%d;%d;%lf;0.0;%lf;%lf\n",
+		printf("nanvix;mailbox;%s;%d;%d;%lf;%lf;%lf;%lf\n",
 			kernel,
-			MSG_SIZE,
+			MAILBOX_MSG_SIZE,
 			nclusters,
 			total/nclusters,
+			tkernel/nclusters,
 			tread/nclusters,
 			twrite/nclusters
 		);
 	}
 
 	/* House keeping. */
-	close_outboxes(outboxes);
+	close_mailboxes(outboxes);
 }
 
 /*============================================================================*
- * MPPA-256 Rqueue Microbenchmark Driver                                      *
+ * Unnamed Mailbox Microbenchmark Driver                                      *
  *============================================================================*/
 
 /**
- * @brief Rqueue microbenchmark.
+ * @brief Unnamed Mailbox microbenchmark.
  */
 static void benchmark(void)
 {
-	uint64_t mask;
-	
+	int nodes[nclusters + 1];
+
+	nodenum = sys_get_node_num();
+
+	/* Build nodes list. */
+	nodes[0] = nodenum;
+	for (int i = 0; i < nclusters; i++)
+		nodes[i + 1] = i;
+
 	/* Initialization. */
-	mask = ~((1 << nclusters) - 1);
-	assert((inbox = mppa_open(RQUEUE_MASTER, O_RDONLY)) != -1);
-	assert((sync = mppa_open(SYNC_MASTER, O_RDONLY)) != -1);
-	assert(mppa_ioctl(sync, MPPA_RX_SET_MATCH, mask) != -1);
+	assert((inbox = get_inbox()) >= 0);
+	assert((sync = sys_sync_create(nodes, nclusters + 1, SYNC_ALL_TO_ONE)) >= 0);
 	spawn_remotes();
 
 	timer_init();
@@ -247,15 +268,14 @@ static void benchmark(void)
 		kernel_pingpong();
 	
 	/* House keeping. */
+	assert(sys_sync_unlink(sync) == 0);
 	join_remotes();
-	assert(mppa_close(sync) != -1);
-	assert(mppa_close(inbox) != -1);
 }
 
 /**
- * @brief Rqueue Microbenchmark Driver
+ * @brief Unnamed Mailbox Microbenchmark Driver
  */
-int main(int argc, const char **argv)
+int main2(int argc, const char **argv)
 {
 	assert(argc == 4);
 
@@ -265,7 +285,6 @@ int main(int argc, const char **argv)
 	kernel = argv[3];
 
 	/* Parameter checking. */
-	assert((nclusters > 0) && (nclusters <= NR_CCLUSTER));
 	assert(niterations > 0);
 
 	benchmark();

@@ -20,25 +20,27 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-BINDIR=$1
+# Conflicts.
+.PHONY: master
+.PHONY: slave
 
-source "scripts/arch/mppa256.sh"
+# Builds binaries.
+all: master slave
 
-#
-# Missing arguments.
-#
-if [ -z $BINDIR ] ;
-then
-	echo "missing argument: binary directory"
-	exit 1
-fi
+# Builds master binary.
+master:
+ifeq ($(BUILD_SERVERS),true)
+	cd master && $(MAKE) all
+endif
 
-build2 $BINDIR $BINDIR/mppa256-async-master "$BINDIR/mppa256-async-slave" benchmark-mppa256-async.img
-build2 $BINDIR $BINDIR/mppa256-rqueue-master "$BINDIR/mppa256-rqueue-slave" benchmark-mppa256-rqueue.img
-build2 $BINDIR $BINDIR/mppa256-portal-master "$BINDIR/mppa256-portal-slave" benchmark-mppa256-portal.img
-build2 $BINDIR $BINDIR/mailbox-master "$BINDIR/mailbox-slave" benchmark-mailbox.img
-build2 $BINDIR $BINDIR/rmem-master "$BINDIR/rmem-slave" benchmark-rmem.img
-build2 $BINDIR $BINDIR/portal-master "$BINDIR/portal-slave" benchmark-portal.img
-build2 $BINDIR $BINDIR/sync-master "$BINDIR/sync-slave" benchmark-sync.img
-build2 $BINDIR $BINDIR/name-master "$BINDIR/name-slave" benchmark-name.img
+# Builds slave binary.
+slave:
+ifeq ($(BUILD_SERVERS),false)
+	cd slave && $(MAKE) all
+endif
+
+# Cleans compilation files.
+clean:
+	cd master && $(MAKE) clean
+	cd slave && $(MAKE) clean
 

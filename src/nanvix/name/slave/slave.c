@@ -21,15 +21,13 @@
  */
 
 #include <assert.h>
-#include <inttypes.h>
 #include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
-#include <mppaipc.h>
-#include <mppa/osconfig.h>
-#include <HAL/hal/core/mp.h>
-#include <HAL/hal/core/diagnostic.h>
-
-#include "../kernel.h"
+#include <nanvix/syscalls.h>
+#include <nanvix/name.h>
+#include <nanvix/limits.h>
 
 /**
  * @brief Global benchmark parameters.
@@ -39,89 +37,54 @@ static int niterations = 0; /**< Number of benchmark parameters. */
 /**@}*/
 
 /**
- * @brief Input rqueue.
+ * @brief Underlying NoC node ID.
  */
-static int inbox;
-
-/**
- * @brief Global sync.
- */
-static int sync;
-
-/**
- * @brief Cluster ID.
- */
-static int clusterid;
+static int nodenum;
 
 /*============================================================================*
- * Ping-Pong Kernel                                                           *
+ * Lookup Kernel                                                              *
  *============================================================================*/
 
 /**
- * @brief Ping-Pong kernel. 
+ * @brief Lookup kernel. 
  */
-static void kernel_pingpong(void)
+static void kernel_lookup(void)
 {
-	int outbox;
-	struct message msg;
+	char pathname[NANVIX_PROC_NAME_MAX];
 
-	msg.clusterid = clusterid;
-
-	/* Open output mailbox. */
-	assert((outbox = mppa_open(RQUEUE_MASTER, O_WRONLY)) != -1);
+	sprintf(pathname, "cluster%d", nodenum);
+	assert(name_link(nodenum, pathname) == 0);
 
 	/* Benchmark. */
-	for (int k = 0; k <= (niterations + 1); k++)
-	{
-		uint64_t mask;
-
-		/* Unblock master. */
-		mask = 1 << clusterid;
-		assert(mppa_write(sync, &mask, sizeof(uint64_t)) != -1);
-
-
-		/* Ping-pong. */
-		assert(mppa_write(outbox, &msg, MSG_SIZE) == MSG_SIZE);
-		assert(mppa_read(inbox, &msg, MSG_SIZE) == MSG_SIZE);
-	}
+	for (int k = 0; k < niterations; k++)
+		assert(name_lookup(pathname) >= 0);
 
 	/* House keeping. */
-	assert(mppa_close(outbox) != -1);
+	assert(name_unlink(pathname) == 0);
 }
 
 /*============================================================================*
- * MPPA-256 Rqueue Microbenchmark Driver                                      *
+ * Unnamed Mailbox Microbenchmark Driver                                      *
  *============================================================================*/
 
 /**
- * @brief Rqueue microbenchmark.
+ * @brief Unnamed Mailbox microbenchmark.
  *
  * @param kernel Name of the target kernel.
  */
 static void benchmark(const char *kernel)
 {
-	char pathname[128];
-
-	clusterid = __k1_get_cluster_id();
-
-	/* Initialization. */
-	sprintf(pathname, RQUEUE_SLAVE, clusterid, 58 + clusterid, 59 + clusterid);
-	assert((inbox = mppa_open(pathname, O_RDONLY)) != -1);
-	assert((sync = mppa_open(SYNC_MASTER, O_WRONLY)) != -1);
+	nodenum = sys_get_node_num();
 
 	/* Run kernel. */
-	if (!strcmp(kernel, "pingpong"))
-		kernel_pingpong();
-
-	/* House keeping. */
-	assert(mppa_close(sync) != -1);
-	assert(mppa_close(inbox) != -1);
+	if (!strcmp(kernel, "lookup"))
+		kernel_lookup();
 }
 
 /**
- * @brief Rqueue Microbenchmark Driver
+ * @brief Unnamed Mailbox Microbenchmark Driver
  */
-int main(int argc, const char **argv)
+int main2(int argc, const char **argv)
 {
 	/* Retrieve kernel parameters. */
 	assert(argc == 3);

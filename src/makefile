@@ -57,9 +57,10 @@ export CRT1 = $(LIBDIR)/crt1.o
 .PHONY: portal
 .PHONY: rmem
 .PHONY: sync
+.PHONY: name
 
 # Builds binaries.
-all: arch mailbox portal rmem sync
+all: arch mailbox portal rmem sync name
 
 # Native microbenchmarks.
 arch:
@@ -67,25 +68,30 @@ arch:
 
 # Unnamed mailbox microbenchmark.
 mailbox:
-	cd mailbox && $(MAKE) all
+	cd nanvix/mailbox && $(MAKE) all
 
 # Unnamed portal microbenchmark.
 portal:
-	cd portal && $(MAKE) all
+	cd nanvix/portal && $(MAKE) all
 
 # RMem microbenchmark.
 rmem:
-	cd rmem && $(MAKE) all
+	cd nanvix/rmem && $(MAKE) all
 
 # Synchronization point microbenchmark.
 sync:
-	cd sync && $(MAKE) all
+	cd nanvix/sync && $(MAKE) all
+
+# Name Service microbenchmark.
+name:
+	cd nanvix/name && $(MAKE) all
 
 # Cleans compilation files.
 clean:
 	cd arch && $(MAKE) clean
-	cd mailbox && $(MAKE) clean
-	cd portal && $(MAKE) clean
-	cd rmem && $(MAKE) clean
-	cd sync && $(MAKE) clean
+	cd nanvix/mailbox && $(MAKE) clean
+	cd nanvix/portal && $(MAKE) clean
+	cd nanvix/rmem && $(MAKE) clean
+	cd nanvix/name && $(MAKE) clean
+	cd nanvix/sync && $(MAKE) clean
 

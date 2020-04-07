@@ -28,8 +28,8 @@
 #include <mppaipc.h>
 
 #include <nanvix/syscalls.h>
-#include <nanvix/pm.h>
 #include <nanvix/limits.h>
+#include <nanvix/pm.h>
 
 #include "../kernel.h"
 
@@ -39,6 +39,7 @@
 /**@{*/
 static int nclusters = 0;         /**< Number of remotes processes.    */
 static int niterations = 0;       /**< Number of benchmark parameters. */
+static int bufsize = 0;           /**< Buffer size.                    */
 static const char *kernel = NULL; /**< Benchmark kernel.               */
 /**@}*/
 
@@ -50,17 +51,7 @@ static int pids[NANVIX_PROC_MAX];
 /**
  * @brief Buffer.
  */
-static char buffer[MAILBOX_MSG_SIZE];
-
-/**
- * @brief Underlying NoC node ID.
- */
-static int nodenum;
-
-/**
- * @brief Inbox for receiving messages.
- */
-static int inbox;
+static char buffer[NANVIX_PROC_MAX*BUFFER_SIZE_MAX];
 
 /*============================================================================*
  * Utilities                                                                  *
@@ -72,20 +63,25 @@ static int inbox;
 static void spawn_remotes(void)
 {
 	int syncid;
+	int nodenum;
 	char master_node[4];
 	char first_remote[4];
 	char last_remote[4];
 	char niterations_str[4];
+	char bufsize_str[20];
 	int nodes[nclusters + 1];
 	const char *argv[] = {
-		"/mailbox-slave",
+		"/portal-slave",
 		master_node,
 		first_remote,
 		last_remote,
 		niterations_str,
+		bufsize_str,
 		kernel,
 		NULL
 	};
+
+	nodenum = sys_get_node_num();
 
 	/* Build nodes list. */
 	nodes[0] = nodenum;
@@ -100,6 +96,7 @@ static void spawn_remotes(void)
 	sprintf(first_remote, "%d", 0);
 	sprintf(last_remote, "%d", nclusters);
 	sprintf(niterations_str, "%d", niterations);
+	sprintf(bufsize_str, "%d", bufsize);
 	for (int i = 0; i < nclusters; i++)
 		assert((pids[i] = mppa_spawn(i, NULL, argv[0], argv, NULL)) != -1);
 
@@ -117,30 +114,6 @@ static void join_remotes(void)
 {
 	for (int i = 0; i < nclusters; i++)
 		assert(mppa_waitpid(pids[i], NULL, 0) != -1);
-}
-
-/**
- * @brief Opens output mailboxes.
- *
- * @param outboxes Location to store IDs of output mailboxes.
- */
-static void open_mailboxes(int *outboxes)
-{
-	/* Open output portales. */
-	for (int i = 0; i < nclusters; i++)
-		assert((outboxes[i] = sys_mailbox_open(i)) >= 0);
-}
-
-/**
- * @brief Closes output mailboxes.
- *
- * @param outboxes IDs of target output mailboxes.
- */
-static void close_mailboxes(const int *outboxes)
-{
-	/* Close output mailboxes. */
-	for (int i = 0; i < nclusters; i++)
-		assert((sys_mailbox_close(outboxes[i])) == 0);
 }
 
 /**
@@ -170,48 +143,84 @@ static inline uint64_t timer_diff(uint64_t t1, uint64_t t2)
 }
 
 /*============================================================================*
- * Kernels                                                                    *
+ * Kernel                                                                     *
  *============================================================================*/
+
+/**
+ * @brief Opens output portals.
+ *
+ * @param outportals Location to store IDs of output portals.
+ */
+static void open_portals(int *outportals)
+{
+	/* Open output portales. */
+	for (int i = 0; i < nclusters; i++)
+		assert((outportals[i] = sys_portal_open(i)) >= 0);
+}
+
+/**
+ * @brief Closes output portals.
+ *
+ * @param outportals IDs of target output portals.
+ */
+static void close_portals(const int *outportals)
+{
+	/* Close output portals. */
+	for (int i = 0; i < nclusters; i++)
+		assert((sys_portal_close(outportals[i])) == 0);
+}
 
 /**
  * @brief Broadcast kernel.
  */
 static void kernel_broadcast(void)
 {
-	int outboxes[nclusters];
+	int outportals[nclusters];
 
 	/* Initialization. */
-	open_mailboxes(outboxes);
-	memset(buffer, 1, MAILBOX_MSG_SIZE);
+	open_portals(outportals);
+	memset(buffer, 1, nclusters*bufsize);
 
 	/* Benchmark. */
 	for (int k = 0; k <= (niterations + 1); k++)
 	{
-		double total;
 		uint64_t t1, t2;
+		uint64_t tkernel, tnetwork;
 
-		t1 = sys_timer_get();
+		tkernel = tnetwork = 0;
+
 		for (int i = 0; i < nclusters; i++)
-			assert(sys_mailbox_write(outboxes[i], buffer, MAILBOX_MSG_SIZE) == MAILBOX_MSG_SIZE);
-		t2 = sys_timer_get();
+		{
+			t1 = sys_timer_get();
+				assert(sys_portal_write(
+					outportals[i],
+					&buffer[i*bufsize],
+					bufsize) == bufsize
+				);
+			t2 = sys_timer_get();
+			tkernel += timer_diff(t1, t2);
 
-		total = timer_diff(t1, t2)/((double) sys_get_core_freq());
+			assert(sys_portal_ioctl(outportals[i], PORTAL_IOCTL_GET_LATENCY, &t1) == 0);
+
+			tnetwork += t1;
+			tkernel -= t1;
+		}
 
 		/* Warmup. */
 		if (((k == 0) || (k == (niterations + 1))))
 			continue;
 
-		printf("nanvix;mailbox;%s;%d;%d;%lf;%lf\n",
+		printf("nanvix;portal;%s;%d;%d;%lf;%lf\n",
 			kernel,
-			MAILBOX_MSG_SIZE,
+			bufsize,
 			nclusters,
-			total/nclusters,
-			(nclusters*MAILBOX_MSG_SIZE)/total
+			tkernel/((double) sys_get_core_freq()),
+			tnetwork/((double) sys_get_core_freq())
 		);
 	}
-	
-	/* Close output mailboxes. */
-	close_mailboxes(outboxes);
+
+	/* House keeping. */
+	close_portals(outportals);
 }
 
 /**
@@ -219,114 +228,95 @@ static void kernel_broadcast(void)
  */
 static void kernel_gather(void)
 {
-	double total;
-	uint64_t t1, t2;
-
-	/* Benchmark. */
-	for (int k = 0; k <= (niterations + 1); k++)
-	{
-		t1 = sys_timer_get();
-		for (int i = 0; i < nclusters; i++)
-			assert(sys_mailbox_read(inbox, buffer, MAILBOX_MSG_SIZE) == MAILBOX_MSG_SIZE);
-		t2 = sys_timer_get();
-
-		total = timer_diff(t1, t2)/((double) sys_get_core_freq());
-
-		/* Warmup. */
-		if (((k == 0) || (k == (niterations + 1))))
-			continue;
-
-		printf("nanvix;mailbox;%s;%d;%d;%lf;%lf\n",
-			kernel,
-			MAILBOX_MSG_SIZE,
-			nclusters,
-			total/nclusters,
-			(nclusters*MAILBOX_MSG_SIZE)/total
-		);
-	}
-}
-
-/**
- * @brief Ping-Pong kernel.
- */
-static void kernel_pingpong(void)
-{
-	double total;
-	uint64_t t1, t2;
-	int outboxes[nclusters];
+	int inportal;
 
 	/* Initialization. */
-	open_mailboxes(outboxes);
+	assert((inportal = get_inportal()) >= 0);
 
 	/* Benchmark. */
 	for (int k = 0; k <= (niterations + 1); k++)
 	{
-		t1 = sys_timer_get();
-		for (int i = 0; i < nclusters; i++)
-			assert(sys_mailbox_write(outboxes[i], buffer, MAILBOX_MSG_SIZE) == MAILBOX_MSG_SIZE);
-		for (int i = 0; i < nclusters; i++)
-			assert(sys_mailbox_read(inbox, buffer, MAILBOX_MSG_SIZE) == MAILBOX_MSG_SIZE);
-		t2 = sys_timer_get();
+		uint64_t tnetwork, tkernel;
 
-		total = timer_diff(t1, t2)/((double) sys_get_core_freq());
+		tkernel = tnetwork = 0;
+
+		for (int i = 0; i < nclusters; i++)
+		{
+			uint64_t t1, t2;
+
+			t1 = sys_timer_get();
+				assert(sys_portal_allow(inportal, i) == 0);
+			t2 = sys_timer_get();
+			tkernel += timer_diff(t1, t2);
+
+			t1 = sys_timer_get();
+				assert(sys_portal_read(
+					inportal,
+					&buffer[i*bufsize],
+					bufsize) == bufsize
+				);
+			t2 = sys_timer_get();
+			tkernel += timer_diff(t1, t2);
+
+			assert(sys_portal_ioctl(inportal, PORTAL_IOCTL_GET_LATENCY, &t1) == 0);
+
+			tnetwork += t1;
+			tkernel -= t1;
+		}
 
 		/* Warmup. */
 		if (((k == 0) || (k == (niterations + 1))))
 			continue;
 
-		printf("nanvix;mailbox;%s;%d;%d;%lf;%lf\n",
+		printf("nanvix;portal;%s;%d;%d;%lf;%lf\n",
 			kernel,
-			MAILBOX_MSG_SIZE,
+			bufsize,
 			nclusters,
-			total/nclusters,
-			2*(nclusters*MAILBOX_MSG_SIZE)/total
+			tkernel/((double) sys_get_core_freq()),
+			tnetwork/((double) sys_get_core_freq())
 		);
 	}
-
-	/* House keeping. */
-	close_mailboxes(outboxes);
 }
 
 /**
- * @brief Unnamed Mailbox microbenchmark.
+ * @brief Unnamed Portal microbenchmark.
  */
 static void benchmark(void)
 {
 	/* Initialization. */
 	timer_init();
-	nodenum = sys_get_node_num();
-	assert((inbox = get_inbox()) >= 0);
 	spawn_remotes();
 
 	if (!strcmp(kernel, "broadcast"))
 		kernel_broadcast();
 	else if (!strcmp(kernel, "gather"))
 		kernel_gather();
-	else if (!strcmp(kernel, "pingpong"))
-		kernel_pingpong();
 	
 	/* House keeping. */
 	join_remotes();
 }
 
 /*============================================================================*
- * Unnamed Mailbox Microbenchmark Driver                                      *
+ * Unnamed Portal Microbenchmark Driver                                       *
  *============================================================================*/
 
 /**
- * @brief Unnamed Mailbox Microbenchmark Driver
+ * @brief Unnamed Portal Microbenchmark Driver
  */
 int main2(int argc, const char **argv)
 {
-	assert(argc == 4);
+	assert(argc == 5);
 
 	/* Retrieve kernel parameters. */
 	nclusters = atoi(argv[1]);
 	niterations = atoi(argv[2]);
-	kernel = argv[3];
+	bufsize = atoi(argv[3]);
+	kernel = argv[4];
 
 	/* Parameter checking. */
 	assert(niterations > 0);
+	assert((bufsize > 0) && (bufsize <= (BUFFER_SIZE_MAX)));
+	assert((bufsize%2) == 0);
 
 	benchmark();
 

@@ -61,93 +61,27 @@ static int barrier;
 static char buffer[BUFFER_SIZE_MAX];
 
 /*============================================================================*
- * Utilities                                                                  *
- *============================================================================*/
-
-/**
- * @brief Residual timer.
- */
-static uint64_t residual = 0;
-
-/**
- * @brief Callibrates the timer.
- */
-static void timer_init(void)
-{
-	uint64_t t1, t2;
-
-	t1 = sys_timer_get();
-	t2 = sys_timer_get();
-
-	residual = t2 - t1;
-}
-
-/**
- * @brief Computes the difference between two timers.
- */
-static inline uint64_t timer_diff(uint64_t t1, uint64_t t2)
-{
-	return (t2 - t1 - residual);
-}
-
-/*============================================================================*
  * Read Kernel                                                                *
  *============================================================================*/
 
 /**
  * @brief Read kernel.
- *
- * @param outbox Output mailbox for sending statistics.
  */
-static void kernel_read(int outbox)
+static void kernel_read(void)
 {
 	/* Benchmark. */
 	for (int k = 0; k <= niterations; k++)
-	{
-		double total;
-		uint64_t t1, t2;
-		struct message msg;
-
-		assert(barrier_wait(barrier) == 0);
-		t1 = sys_timer_get();
-			assert(memread(nodenum*bufsize, buffer, bufsize) == 0);
-		t2 = sys_timer_get();
-		assert(barrier_wait(barrier) == 0);
-
-		total = timer_diff(t1, t2)/((double) sys_get_core_freq());
-		msg.time = total;
-
-		/* Send statistics. */
-		assert(mailbox_write(outbox, &msg, sizeof(struct message)) == 0);
-	}
+		assert(memread(nodenum*bufsize, buffer, bufsize) == 0);
 }
 
 /**
  * @brief Write kernel.
- *
- * @param outbox Output mailbox for sending statistics.
  */
-static void kernel_write(int outbox)
+static void kernel_write(void)
 {
 	/* Benchmark. */
 	for (int k = 0; k <= niterations; k++)
-	{
-		double total;
-		uint64_t t1, t2;
-		struct message msg;
-
-		assert(barrier_wait(barrier) == 0);
-		t1 = sys_timer_get();
-			assert(memwrite(nodenum*bufsize, buffer, bufsize) == 0);
-		t2 = sys_timer_get();
-		assert(barrier_wait(barrier) == 0);
-
-		total = timer_diff(t1, t2)/((double) sys_get_core_freq());
-		msg.time = total;
-
-		/* Send statistics. */
-		assert(mailbox_write(outbox, &msg, sizeof(struct message)) == 0);
-	}
+		assert(memwrite(nodenum*bufsize, buffer, bufsize) == 0);
 }
 
 /**
@@ -158,7 +92,6 @@ static void kernel_write(int outbox)
  */
 static void benchmark(const char *kernel, int nclusters)
 {
-	int outbox;
 	int nodes[nclusters + 1];
 
 	/* Build nodes list. */
@@ -167,17 +100,15 @@ static void benchmark(const char *kernel, int nclusters)
 		nodes[i + 1] = i;
 
 	assert((barrier = barrier_create(nodes, nclusters + 1)) >= 0);
-	assert((outbox = mailbox_open("benchmark-driver")) >= 0);
 
 	if (!strcmp(kernel, "read"))
-		kernel_read(outbox);
+		kernel_read();
 	else if (!strcmp(kernel, "write"))
-		kernel_write(outbox);
+		kernel_write();
 
 	assert(barrier_wait(barrier) == 0);
 
 	/* House keeping. */
-	assert(mailbox_close(outbox) == 0);
 	assert(barrier_unlink(barrier) == 0);
 }
 
@@ -192,11 +123,8 @@ int main2(int argc, const char **argv)
 {
 	int nclusters;
 	const char *kernel;
-
-	CHECK_MAILBOX_MSG_SIZE(struct message);
 	
 	/* Initialization. */
-	timer_init();
 	nodenum = sys_get_node_num();
 
 	/* Retrieve kernel parameters. */

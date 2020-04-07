@@ -23,6 +23,6 @@
 #
 # Nanvix release.
 #
-NANVIX=nanvix-v1.0-beta.3.tar.bz2
+NANVIX=nanvix-v1.0-beta.4.tar.bz2
 
 tar -xjvf contrib/$NANVIX

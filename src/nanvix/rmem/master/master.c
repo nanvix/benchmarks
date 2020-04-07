@@ -49,11 +49,6 @@ static const char *kernelname = NULL; /**< Benchmark kernel.               */
  */
 static int pids[NANVIX_PROC_MAX];
 
-/**
- * @brief Buffer.
- */
-static char buffer[BUFFER_SIZE_MAX];
-
 /*============================================================================*
  * Utilities                                                                  *
  *============================================================================*/
@@ -123,72 +118,14 @@ static void join_remotes(void)
  *============================================================================*/
 
 /**
- * @brief Microbenchmark kernel.
- *
- * @param inbox Input box for receiving statistics.
- */
-static void kernel(int inbox)
-{
-	/* Initialization. */
-	memset(buffer, 1, bufsize);
-
-	/* Benchmark. */
-	for (int k = 0; k <= niterations; k++)
-	{
-		double mean;
-		double total[nclusters];
-
-		assert(barrier_wait(barrier) == 0);
-		assert(barrier_wait(barrier) == 0);
-
-		/* Gather statistics. */
-		for (int i = 0; i < nclusters; i++)
-		{
-			struct message msg;
-
-			assert(mailbox_read(inbox, &msg, sizeof(struct message)) == 0);
-			total[i] = msg.time;
-		}
-
-		/* Warmup. */
-		if (k == 0)
-			continue;
-
-		/* Compute mean time. */
-		mean = 0.0;
-		for (int i = 0; i < nclusters; i++)
-			mean += total[i];
-		mean /= nclusters;
-
-		/* Dump statistics. */
-		printf("nanvix;rmem;%s;%d;%d;%.2lf;%.2lf\n",
-			kernelname,
-			bufsize,
-			nclusters,
-			mean*MEGA,
-			bufsize/mean
-		);
-	}
-}
-
-/**
  * @brief RMem microbenchmark.
  */
 static void benchmark(void)
 {
-	int inbox;
-
 	/* Initialization. */
-	assert((inbox = mailbox_create("benchmark-driver")) >= 0);
 	spawn_remotes();
-
-	if (!strcmp(kernelname, "read"))
-		kernel(inbox);
-	else if (!strcmp(kernelname, "write"))
-		kernel(inbox);
 	
 	/* House keeping. */
-	assert(mailbox_unlink(inbox) == 0);
 	join_remotes();
 }
 
@@ -202,9 +139,6 @@ static void benchmark(void)
 int main2(int argc, const char **argv)
 {
 	assert(argc == 5);
-
-	/* Sanity check at compile time: Mailbox compliant */
-	CHECK_MAILBOX_MSG_SIZE(struct message);
 
 	/* Retrieve kernel parameters. */
 	nclusters = atoi(argv[1]);

@@ -23,10 +23,16 @@
 #ifndef _KERNEL_H_
 #define _KERNEL_H_
 
+	#include <stdint.h>
+
 	/**
-	 * @brief Mega (10^6).
+	 * @brief Mailbox message.
 	 */
-	#define MEGA (1000000)
+	struct message
+	{
+		uint32_t nodenum;
+		uint8_t unused[116];
+	};
 
 #endif /* _KERNEL_H_ */
 

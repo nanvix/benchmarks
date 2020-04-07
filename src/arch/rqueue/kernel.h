@@ -23,6 +23,8 @@
 #ifndef _KERNEL_H_
 #define _KERNEL_H_
 
+	#include <stdint.h>
+
 	/**
 	 * @brief Mega (10^6).
 	 */
@@ -41,17 +43,17 @@
 	/**
 	 * @brief Message size (in bytes).
 	 */
-	#define MSG_SIZE 64
+	#define MSG_SIZE 120
 
 	/**
 	 * @brief Rqueue connector to master.
 	 */
-	#define RQUEUE_MASTER "/mppa/rqueue/128:48/[0..15]:49/1.64"
+	#define RQUEUE_MASTER "/mppa/rqueue/128:48/[0..15]:49/1.120"
 
 	/**
 	 * @brief Rqueue connector to slaves.
 	 */
-	#define RQUEUE_SLAVE "/mppa/rqueue/%d:%d/128:%d/1.64"
+	#define RQUEUE_SLAVE "/mppa/rqueue/%d:%d/128:%d/1.120"
 
 	/**
 	 * @brief Sync connector to slaves.
@@ -62,6 +64,15 @@
 	 * @brief Sync connector to slaves.
 	 */
 	#define SYNC_SLAVES "/mppa/sync/[0..15]:39"
+
+	/**
+	 * @brief Mailbox message.
+	 */
+	struct message
+	{
+		uint32_t clusterid;
+		uint8_t unused[60];
+	};
 
 #endif /* _KERNEL_H_ */
 

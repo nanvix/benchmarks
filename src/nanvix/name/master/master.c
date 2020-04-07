@@ -21,113 +21,94 @@
  */
 
 #include <assert.h>
-#include <inttypes.h>
+#include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include <mppaipc.h>
-#include <mppa/osconfig.h>
-#include <HAL/hal/core/mp.h>
-#include <HAL/hal/core/diagnostic.h>
 
-#include "../kernel.h"
+#include <nanvix/syscalls.h>
+#include <nanvix/pm.h>
+#include <nanvix/limits.h>
 
 /**
  * @brief Global benchmark parameters.
  */
 /**@{*/
-static int niterations = 0; /**< Number of benchmark parameters. */
+static int nclusters = 0;         /**< Number of remotes processes.    */
+static int niterations = 0;       /**< Number of benchmark parameters. */
+static const char *kernel = NULL; /**< Name of the target kernel.      */
 /**@}*/
 
 /**
- * @brief Input rqueue.
+ * @brief ID of slave processes.
  */
-static int inbox;
-
-/**
- * @brief Global sync.
- */
-static int sync;
-
-/**
- * @brief Cluster ID.
- */
-static int clusterid;
+static int pids[NANVIX_PROC_MAX];
 
 /*============================================================================*
- * Ping-Pong Kernel                                                           *
+ * Utilities                                                                  *
  *============================================================================*/
 
 /**
- * @brief Ping-Pong kernel. 
+ * @brief Spawns remote processes.
  */
-static void kernel_pingpong(void)
+static void spawn_remotes(void)
 {
-	int outbox;
-	struct message msg;
+	char niterations_str[8];
+	const char *argv[] = {
+		"/name-slave",
+		niterations_str,
+		kernel,
+		NULL
+	};
 
-	msg.clusterid = clusterid;
+	/* Spawn remotes. */
+	sprintf(niterations_str, "%d", niterations);
+	for (int i = 0; i < nclusters; i++)
+		assert((pids[i] = mppa_spawn(i, NULL, argv[0], argv, NULL)) != -1);
+}
 
-	/* Open output mailbox. */
-	assert((outbox = mppa_open(RQUEUE_MASTER, O_WRONLY)) != -1);
-
-	/* Benchmark. */
-	for (int k = 0; k <= (niterations + 1); k++)
-	{
-		uint64_t mask;
-
-		/* Unblock master. */
-		mask = 1 << clusterid;
-		assert(mppa_write(sync, &mask, sizeof(uint64_t)) != -1);
-
-
-		/* Ping-pong. */
-		assert(mppa_write(outbox, &msg, MSG_SIZE) == MSG_SIZE);
-		assert(mppa_read(inbox, &msg, MSG_SIZE) == MSG_SIZE);
-	}
-
-	/* House keeping. */
-	assert(mppa_close(outbox) != -1);
+/**
+ * @brief Wait for remote processes.
+ */
+static void join_remotes(void)
+{
+	for (int i = 0; i < nclusters; i++)
+		assert(mppa_waitpid(pids[i], NULL, 0) != -1);
 }
 
 /*============================================================================*
- * MPPA-256 Rqueue Microbenchmark Driver                                      *
+ * Name Service Microbenchmark Driver                                         *
  *============================================================================*/
 
 /**
- * @brief Rqueue microbenchmark.
- *
- * @param kernel Name of the target kernel.
+ * @brief Name Service Microbenchmark.
  */
-static void benchmark(const char *kernel)
+static void benchmark(void)
 {
-	char pathname[128];
-
-	clusterid = __k1_get_cluster_id();
-
 	/* Initialization. */
-	sprintf(pathname, RQUEUE_SLAVE, clusterid, 58 + clusterid, 59 + clusterid);
-	assert((inbox = mppa_open(pathname, O_RDONLY)) != -1);
-	assert((sync = mppa_open(SYNC_MASTER, O_WRONLY)) != -1);
-
-	/* Run kernel. */
-	if (!strcmp(kernel, "pingpong"))
-		kernel_pingpong();
-
+	spawn_remotes();
+	
 	/* House keeping. */
-	assert(mppa_close(sync) != -1);
-	assert(mppa_close(inbox) != -1);
+	join_remotes();
 }
 
 /**
- * @brief Rqueue Microbenchmark Driver
+ * @brief Name Service Microbenchmark Driver
  */
-int main(int argc, const char **argv)
+int main2(int argc, const char **argv)
 {
-	/* Retrieve kernel parameters. */
-	assert(argc == 3);
-	niterations = atoi(argv[1]);
+	assert(argc == 4);
 
-	benchmark(argv[2]);
+	/* Retrieve kernel parameters. */
+	nclusters = atoi(argv[1]);
+	niterations = atoi(argv[2]);
+	kernel = argv[3];
+
+	/* Parameter checking. */
+	assert(niterations > 0);
+
+	benchmark();
 
 	return (EXIT_SUCCESS);
 }
