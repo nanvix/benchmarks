@@ -22,43 +22,27 @@
 # SOFTWARE.
 #
 
-# Builds Everything
-all: all-micro all-services
+# Builds everything.
+all: all-heartbeat
 
-# Cleans Build Objects
-clean: clean-micro clean-services
+# Cleans up build objects.
+clean: clean-heartbeat
 
-# Cleans Everything
-distclean: distclean-micro distclean-services
-
-#===============================================================================
-# Micro Benchmarks
-#===============================================================================
-
-# Builds Benchmarks.
-all-micro:
-	$(MAKE) -C micro all
-
-# Cleans build objects..
-clean-micro:
-	$(MAKE) -C micro clean
-
-# Cleans build.
-distclean-micro:
-	$(MAKE) -C micro distclean
+# Cleans up everything.
+distclean: distclean-heartbeat
 
 #===============================================================================
-# Benchmark of Services
+# Heart Beat
 #===============================================================================
 
-# Builds Benchmarks.
-all-services:
-	$(MAKE) -C services all
+# Builds benchmark.
+all-heartbeat:
+	$(MAKE) -C heartbeat all
 
-# Cleans build objects..
-clean-services:
-	$(MAKE) -C services clean
+# Cleans up build object.
+clean-heartbeat:
+	$(MAKE) -C heartbeat clean
 
-# Cleans build.
-distclean-services:
-	$(MAKE) -C services distclean
+# Cleans up everything.
+distclean-heartbeat:
+	$(MAKE) -C heartbeat distclean
