@@ -22,59 +22,82 @@
 # SOFTWARE.
 #
 
-# Builds everything.
-all: all-heartbeat all-barrier all-lookup
-
-# Cleans up build objects.
-clean: clean-heartbeat clean-barrier clean-lookup
-
-# Cleans up everything.
-distclean: distclean-heartbeat distclean-barrier distclean-lookup
-
 #===============================================================================
-# Heart Beat
+# Toolchain Configuration
 #===============================================================================
 
-# Builds benchmark.
-all-heartbeat:
-	$(MAKE) -C heartbeat all
+# Compiler Options
+ifneq ($(LIBLWIP),)
+CFLAGS += -I $(INCDIR)/posix
+endif
 
-# Cleans up build object.
-clean-heartbeat:
-	$(MAKE) -C heartbeat clean
-
-# Cleans up everything.
-distclean-heartbeat:
-	$(MAKE) -C heartbeat distclean
-
-#===============================================================================
-# Barrier
-#===============================================================================
-
-# Builds benchmark.
-all-barrier:
-	$(MAKE) -C barrier all
-
-# Cleans up build object.
-clean-barrier:
-	$(MAKE) -C barrier clean
-
-# Cleans up everything.
-distclean-barrier:
-	$(MAKE) -C barrier distclean
+# Libraries
+LIBS := -Wl,--whole-archive
+LIBS += $(LIBDIR)/$(LIBHAL)
+LIBS += $(LIBDIR)/$(LIBKERNEL)
+LIBS += $(LIBDIR)/$(LIBRUNTIME)
+LIBS += -Wl,--no-whole-archive
+LIBS += $(LIBDIR)/$(LIBC)
+LIBS += $(LIBDIR)/$(LIBNANVIX)
+ifneq ($(LIBLWIP),)
+LIBS += $(LIBDIR)/$(LIBLWIP)
+endif
+LIBS += $(LIBDIR)/$(BARELIB) $(THEIR_LIBS)
 
 #===============================================================================
-# Lookup
+# Binaries Sources and Objects
 #===============================================================================
 
-# Builds benchmark.
-all-lookup:
-	$(MAKE) -C lookup all
+# Binary
+EXEC = nanvix-lookup.$(OBJ_SUFFIX)
 
-# Cleans up build object.
-clean-lookup:
-	$(MAKE) -C lookup clean
+# C Source Files
+SRC = $(wildcard *.c) \
+      $(wildcard workload/*.c)
 
-# Cleans up everything.
-distclean-lookup:
-	$(MAKE) -C lookup distclean
+# Object Files
+OBJ = $(SRC:.c=.$(OBJ_SUFFIX).o)
+
+#===============================================================================
+
+ifeq ($(TARGET),unix64)
+LINKER_SCRIPT=
+else
+LINKER_SCRIPT = -L $(LINKERDIR)/ -T link.ld
+endif
+
+# Builds All Object Files
+all: $(OBJ)
+ifeq ($(VERBOSE), no)
+	@echo [CC] $(EXEC)
+	@$(CC) $(LDFLAGS) $(LINKER_SCRIPT) -o $(BINDIR)/$(EXEC) $(OBJ) $(LIBS)
+else
+	$(CC) $(LDFLAGS) $(LINKER_SCRIPT) -o $(BINDIR)/$(EXEC) $(OBJ) $(LIBS)
+endif
+
+# Cleans All Object Files
+clean:
+ifeq ($(VERBOSE), no)
+	@echo [CLEAN] $(OBJ)
+	@rm -rf $(OBJ)
+else
+	rm -rf $(OBJ)
+endif
+
+# Cleans Everything
+distclean: clean
+ifeq ($(VERBOSE), no)
+	@echo [CLEAN] $(EXEC)
+	@rm -rf $(BINDIR)/$(EXEC)
+else
+	rm -rf $(BINDIR)/$(EXEC)
+endif
+
+# Builds a C source file.
+%.$(OBJ_SUFFIX).o: %.c
+ifeq ($(VERBOSE), no)
+	@echo [CC] $@
+	@$(CC) $(CFLAGS) $< -c -o $@
+else
+	$(CC) $(CFLAGS) $< -c -o $@
+endif
