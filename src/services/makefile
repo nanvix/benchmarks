@@ -23,13 +23,13 @@
 #
 
 # Builds everything.
-all: all-heartbeat all-barrier all-lookup
+all: all-heartbeat all-barrier all-lookup all-pgfetch
 
 # Cleans up build objects.
-clean: clean-heartbeat clean-barrier clean-lookup
+clean: clean-heartbeat clean-barrier clean-lookup clean-pgfetch
 
 # Cleans up everything.
-distclean: distclean-heartbeat distclean-barrier distclean-lookup
+distclean: distclean-heartbeat distclean-barrier distclean-lookup distclean-pgfetch
 
 #===============================================================================
 # Heart Beat
@@ -78,3 +78,19 @@ clean-lookup:
 # Cleans up everything.
 distclean-lookup:
 	$(MAKE) -C lookup distclean
+
+#===============================================================================
+# Page Fetch
+#===============================================================================
+
+# Builds benchmark.
+all-pgfetch:
+	$(MAKE) -C pgfetch all
+
+# Cleans up build object.
+clean-pgfetch:
+	$(MAKE) -C pgfetch clean
+
+# Cleans up everything.
+distclean-pgfetch:
+	$(MAKE) -C pgfetch distclean
