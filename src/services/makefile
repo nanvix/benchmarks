@@ -23,13 +23,13 @@
 #
 
 # Builds everything.
-all: all-heartbeat
+all: all-heartbeat all-barrier
 
 # Cleans up build objects.
-clean: clean-heartbeat
+clean: clean-heartbeat clean-barrier
 
 # Cleans up everything.
-distclean: distclean-heartbeat
+distclean: distclean-heartbeat distclean-barrier
 
 #===============================================================================
 # Heart Beat
@@ -46,3 +46,19 @@ clean-heartbeat:
 # Cleans up everything.
 distclean-heartbeat:
 	$(MAKE) -C heartbeat distclean
+
+#===============================================================================
+# Barrier
+#===============================================================================
+
+# Builds benchmark.
+all-barrier:
+	$(MAKE) -C barrier all
+
+# Cleans up build object.
+clean-barrier:
+	$(MAKE) -C barrier clean
+
+# Cleans up everything.
+distclean-barrier:
+	$(MAKE) -C barrier distclean
