@@ -1,0 +1,5 @@
+Host quadro
+	User ppenna
+	HostName quadro.icei.pucminas.br
+	StrictHostKeyChecking no
+
