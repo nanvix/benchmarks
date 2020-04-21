@@ -22,43 +22,42 @@
  * SOFTWARE.
  */
 
+#define __NEED_MM_MANAGER
+
 #include <nanvix/runtime/runtime.h>
+#include <nanvix/runtime/rmem.h>
 #include <nanvix/runtime/stdikc.h>
 #include <nanvix/sys/noc.h>
 #include <nanvix/sys/perf.h>
 #include <nanvix/ulib.h>
-#include <posix/stdlib.h>
 
 /*============================================================================*
  * Benchmark                                                                  *
  *============================================================================*/
 
 /**
- * @brief Magic number.
+ * @brief Dummy buffer used for tests.
  */
-const unsigned MAGIC = 0xdeadbeef;
+static char buffer[RMEM_BLOCK_SIZE];
 
 /**
  * @brief Benchmarks page fetches.
  */
 static void benchmark_pgfetch(void)
 {
-	unsigned *ptr;
+	void *ptr;
 	uint64_t time_pgfetch;
+
+		uassert((ptr = nanvix_vmem_alloc(1)) != NULL);
 
 	perf_start(0, PERF_CYCLES);
 
-		uassert((ptr = nanvix_malloc(sizeof(unsigned))) != NULL);
-
-		*ptr = MAGIC;
+		uassert(nanvix_vmem_read(buffer, ptr, RMEM_BLOCK_SIZE) == RMEM_BLOCK_SIZE);
 
 	perf_stop(0);
 	time_pgfetch = perf_read(0);
 
-	/* Checksum. */
-	uassert(*ptr == MAGIC);
-
-	nanvix_free(ptr);
+	uassert(nanvix_vmem_free(ptr) == 0);
 
 #ifndef NDEBUG
 	uprintf("[benchmarks][pgfetch] %l",
