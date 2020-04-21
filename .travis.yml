@@ -47,35 +47,253 @@ jobs:
       name: "Unix 64-bit"
       script: docker run -v "$(pwd):/mnt" -p 4567:4567 nanvix/ubuntu:unix64        /bin/bash -l -c "cd /mnt && export RELEASE=true && make contrib && make all"
 
-    # Test Debug
-  - stage: "Test Debug"
-    name: Unix 64-bit
-    if: "(NOT type IN (pull_request))"
-    before_script:
-    - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-      -in $SSH_KEY -out travis_benchmarks_rsa -d
-    - eval "$(ssh-agent -s)"
-    - chmod 600 travis_benchmarks_rsa
-    - cp $SSH_CONFIG ~/.ssh/config
-    - ssh-add travis_benchmarks_rsa
-    script:
-    - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
-    - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --no-verbose --debug'
+#===============================================================================
+# Debug
+#===============================================================================
 
-    # Test Release
-  - stage: "Test Release"
-    name: Unix 64-bit
-    if: "(NOT type IN (pull_request))"
-    before_script:
-    - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-      -in $SSH_KEY -out travis_benchmarks_rsa -d
-    - eval "$(ssh-agent -s)"
-    - chmod 600 travis_benchmarks_rsa
-    - cp $SSH_CONFIG ~/.ssh/config
-    - ssh-add travis_benchmarks_rsa
-    script:
-    - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
-    - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --no-verbose --release'
+    # Hello Debug
+    - stage: "Hello Debug"
+      name: Unix 64-bit
+      if: "(NOT type IN (pull_request))"
+      before_script:
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
+        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - eval "$(ssh-agent -s)"
+      - chmod 600 travis_benchmarks_rsa
+      - cp $SSH_CONFIG ~/.ssh/config
+      - ssh-add travis_benchmarks_rsa
+      script:
+      - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-hello.img'
+
+    # Barrier Debug
+    - stage: "Barrier Debug"
+      name: Unix 64-bit
+      if: "(NOT type IN (pull_request))"
+      before_script:
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
+        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - eval "$(ssh-agent -s)"
+      - chmod 600 travis_benchmarks_rsa
+      - cp $SSH_CONFIG ~/.ssh/config
+      - ssh-add travis_benchmarks_rsa
+      script:
+      - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-barrier.img'
+
+    # Heartbeat Debug
+    - stage: "Heartbeat Debug"
+      name: Unix 64-bit
+      if: "(NOT type IN (pull_request))"
+      before_script:
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
+        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - eval "$(ssh-agent -s)"
+      - chmod 600 travis_benchmarks_rsa
+      - cp $SSH_CONFIG ~/.ssh/config
+      - ssh-add travis_benchmarks_rsa
+      script:
+      - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-heartbeat.img'
+
+    # Lookup Debug
+    - stage: "Lookup Debug"
+      name: Unix 64-bit
+      if: "(NOT type IN (pull_request))"
+      before_script:
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
+        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - eval "$(ssh-agent -s)"
+      - chmod 600 travis_benchmarks_rsa
+      - cp $SSH_CONFIG ~/.ssh/config
+      - ssh-add travis_benchmarks_rsa
+      script:
+      - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-lookup.img'
+
+    # Memory Allocation Debug
+    - stage: "Memory Allocation Debug"
+      name: Unix 64-bit
+      if: "(NOT type IN (pull_request))"
+      before_script:
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
+        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - eval "$(ssh-agent -s)"
+      - chmod 600 travis_benchmarks_rsa
+      - cp $SSH_CONFIG ~/.ssh/config
+      - ssh-add travis_benchmarks_rsa
+      script:
+      - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-memalloc.img'
+
+    # Memory Read Debug
+    - stage: "Memory Read Debug"
+      name: Unix 64-bit
+      if: "(NOT type IN (pull_request))"
+      before_script:
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
+        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - eval "$(ssh-agent -s)"
+      - chmod 600 travis_benchmarks_rsa
+      - cp $SSH_CONFIG ~/.ssh/config
+      - ssh-add travis_benchmarks_rsa
+      script:
+      - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-memread.img'
+
+    # Memory Write Debug
+    - stage: "Memory Write Debug"
+      name: Unix 64-bit
+      if: "(NOT type IN (pull_request))"
+      before_script:
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
+        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - eval "$(ssh-agent -s)"
+      - chmod 600 travis_benchmarks_rsa
+      - cp $SSH_CONFIG ~/.ssh/config
+      - ssh-add travis_benchmarks_rsa
+      script:
+      - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-memwrite.img'
+
+    # Page Fetch Debug
+    - stage: "Page Fetch Debug"
+      name: Unix 64-bit
+      if: "(NOT type IN (pull_request))"
+      before_script:
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
+        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - eval "$(ssh-agent -s)"
+      - chmod 600 travis_benchmarks_rsa
+      - cp $SSH_CONFIG ~/.ssh/config
+      - ssh-add travis_benchmarks_rsa
+      script:
+      - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-pgfetch.img'
+
+#===============================================================================
+# Release
+#===============================================================================
+
+    # Hello Release
+    - stage: "Hello Release"
+      name: Unix 64-bit
+      if: "(NOT type IN (pull_request))"
+      before_script:
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
+        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - eval "$(ssh-agent -s)"
+      - chmod 600 travis_benchmarks_rsa
+      - cp $SSH_CONFIG ~/.ssh/config
+      - ssh-add travis_benchmarks_rsa
+      script:
+      - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-hello.img'
+
+    # Barrier Release
+    - stage: "Barrier Release"
+      name: Unix 64-bit
+      if: "(NOT type IN (pull_request))"
+      before_script:
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
+        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - eval "$(ssh-agent -s)"
+      - chmod 600 travis_benchmarks_rsa
+      - cp $SSH_CONFIG ~/.ssh/config
+      - ssh-add travis_benchmarks_rsa
+      script:
+      - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-barrier.img'
+
+    # Heartbeat Release
+    - stage: "Heartbeat Release"
+      name: Unix 64-bit
+      if: "(NOT type IN (pull_request))"
+      before_script:
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
+        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - eval "$(ssh-agent -s)"
+      - chmod 600 travis_benchmarks_rsa
+      - cp $SSH_CONFIG ~/.ssh/config
+      - ssh-add travis_benchmarks_rsa
+      script:
+      - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-heartbeat.img'
+
+    # Lookup Release
+    - stage: "Lookup Release"
+      name: Unix 64-bit
+      if: "(NOT type IN (pull_request))"
+      before_script:
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
+        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - eval "$(ssh-agent -s)"
+      - chmod 600 travis_benchmarks_rsa
+      - cp $SSH_CONFIG ~/.ssh/config
+      - ssh-add travis_benchmarks_rsa
+      script:
+      - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-lookup.img'
+
+    # Memory Allocation Release
+    - stage: "Memory Allocation Release"
+      name: Unix 64-bit
+      if: "(NOT type IN (pull_request))"
+      before_script:
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
+        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - eval "$(ssh-agent -s)"
+      - chmod 600 travis_benchmarks_rsa
+      - cp $SSH_CONFIG ~/.ssh/config
+      - ssh-add travis_benchmarks_rsa
+      script:
+      - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-memalloc.img'
+
+    # Memory Read Release
+    - stage: "Memory Read Release"
+      name: Unix 64-bit
+      if: "(NOT type IN (pull_request))"
+      before_script:
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
+        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - eval "$(ssh-agent -s)"
+      - chmod 600 travis_benchmarks_rsa
+      - cp $SSH_CONFIG ~/.ssh/config
+      - ssh-add travis_benchmarks_rsa
+      script:
+      - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-memread.img'
+
+    # Memory Write Release
+    - stage: "Memory Write Release"
+      name: Unix 64-bit
+      if: "(NOT type IN (pull_request))"
+      before_script:
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
+        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - eval "$(ssh-agent -s)"
+      - chmod 600 travis_benchmarks_rsa
+      - cp $SSH_CONFIG ~/.ssh/config
+      - ssh-add travis_benchmarks_rsa
+      script:
+      - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-memwrite.img'
+
+    # Page Fetch Release
+    - stage: "Page Fetch Release"
+      name: Unix 64-bit
+      if: "(NOT type IN (pull_request))"
+      before_script:
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
+        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - eval "$(ssh-agent -s)"
+      - chmod 600 travis_benchmarks_rsa
+      - cp $SSH_CONFIG ~/.ssh/config
+      - ssh-add travis_benchmarks_rsa
+      script:
+      - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-pgfetch.img'
 
 notifications:
   slack: nanvix:31ePVjsrXynUajPUDqy6I0hp
