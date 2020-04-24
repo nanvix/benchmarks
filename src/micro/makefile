@@ -23,15 +23,14 @@
 #
 
 # Builds everything.
-all: all-hello all-pgfault all-memalloc all-memread all-memwrite all-memset
+all: all-hello all-memread all-memwrite all-mail all-cargo
 
 # Cleans up build objects.
-clean: clean-hello clean-pgfault clean-memalloc clean-memread clean-memwrite \
-	clean-memset
+clean: clean-hello clean-memread clean-memwrite clean-mail clean-cargo
 
 # Cleans up everything.
-distclean: distclean-hello distclean-pgfault distclean-memalloc \
-	distclean-memread distclean-memwrite distclean-memset
+distclean: distclean-hello distclean-memread distclean-memwrite distclean-mail \
+	distclean-cargo
 
 #===============================================================================
 # Hello Benchmark
@@ -48,38 +47,6 @@ clean-hello:
 # Cleans up everything.
 distclean-hello:
 	$(MAKE) -C hello distclean
-
-#===============================================================================
-# Page Fault Benchmark
-#===============================================================================
-
-# Builds benchmark.
-all-pgfault:
-	$(MAKE) -C pgfault all
-
-# Cleans up build objects.
-clean-pgfault:
-	$(MAKE) -C pgfault clean
-
-# Cleans up everything.
-distclean-pgfault:
-	$(MAKE) -C pgfault distclean
-
-#===============================================================================
-# Memory Allocation
-#===============================================================================
-
-# Builds benchmark.
-all-memalloc:
-	$(MAKE) -C memalloc all
-
-# Cleans up build object.
-clean-memalloc:
-	$(MAKE) -C memalloc clean
-
-# Cleans up everything.
-distclean-memalloc:
-	$(MAKE) -C memalloc distclean
 
 #===============================================================================
 # Memory Read
@@ -114,17 +81,33 @@ distclean-memwrite:
 	$(MAKE) -C memwrite distclean
 
 #===============================================================================
-# Memory Set
+# Mail
 #===============================================================================
 
 # Builds benchmark.
-all-memset:
-	$(MAKE) -C memset all
+all-mail:
+	$(MAKE) -C mail all
 
 # Cleans up build object.
-clean-memset:
-	$(MAKE) -C memset clean
+clean-mail:
+	$(MAKE) -C mail clean
 
 # Cleans up everything.
-distclean-memset:
-	$(MAKE) -C memset distclean
+distclean-mail:
+	$(MAKE) -C mail distclean
+
+#===============================================================================
+# Cargo
+#===============================================================================
+
+# Builds benchmark.
+all-cargo:
+	$(MAKE) -C cargo all
+
+# Cleans up build object.
+clean-cargo:
+	$(MAKE) -C cargo clean
+
+# Cleans up everything.
+distclean-cargo:
+	$(MAKE) -C cargo distclean
