@@ -22,59 +22,22 @@
 # SOFTWARE.
 #
 
-# Builds everything.
-all: all-pingpong all-broadcast all-gather
-
-# Cleans up build objects.
-clean: clean-pingpong clean-broadcast clean-gather
-
-# Cleans up everything.
-distclean: distclean-pingpong distclean-broadcast distclean-gather
+include $(BUILDDIR)/makefile.config
 
 #===============================================================================
-# Ping-Pong
+# Binaries Sources and Objects
 #===============================================================================
 
-# Builds benchmark.
-all-pingpong:
-	$(MAKE) -C pingpong all
+# Binary
+EXEC = nanvix-mail-broadcast.$(OBJ_SUFFIX)
 
-# Cleans up build object.
-clean-pingpong:
-	$(MAKE) -C pingpong clean
+# C Source Files
+SRC = $(wildcard *.c) \
+      $(wildcard workload/*.c)
 
-# Cleans up everything.
-distclean-pingpong:
-	$(MAKE) -C pingpong distclean
+# Object Files
+OBJ = $(SRC:.c=.$(OBJ_SUFFIX).o)
 
 #===============================================================================
-# Broadcast
-#===============================================================================
 
-# Builds benchmark.
-all-broadcast:
-	$(MAKE) -C broadcast all
-
-# Cleans up build object.
-clean-broadcast:
-	$(MAKE) -C broadcast clean
-
-# Cleans up everything.
-distclean-broadcast:
-	$(MAKE) -C broadcast distclean
-
-#===============================================================================
-# Gather
-#===============================================================================
-
-# Builds benchmark.
-all-gather:
-	$(MAKE) -C gather all
-
-# Cleans up build object.
-clean-gather:
-	$(MAKE) -C gather clean
-
-# Cleans up everything.
-distclean-gather:
-	$(MAKE) -C gather distclean
+include $(BUILDDIR)/makefile.rule
