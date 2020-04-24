@@ -24,15 +24,16 @@
 
 # Builds everything.
 all: all-hello all-pgfault all-memalloc all-memread all-memwrite all-memset \
-	all-mail
+	all-mail all-cargo
 
 # Cleans up build objects.
 clean: clean-hello clean-pgfault clean-memalloc clean-memread clean-memwrite \
-	clean-memset clean-mail
+	clean-memset clean-mail clean-cargo
 
 # Cleans up everything.
 distclean: distclean-hello distclean-pgfault distclean-memalloc \
-	distclean-memread distclean-memwrite distclean-memset distclean-mail
+	distclean-memread distclean-memwrite distclean-memset distclean-mail \
+	distclean-cargo
 
 #===============================================================================
 # Hello Benchmark
@@ -145,3 +146,19 @@ clean-mail:
 # Cleans up everything.
 distclean-mail:
 	$(MAKE) -C mail distclean
+
+#===============================================================================
+# Cargo
+#===============================================================================
+
+# Builds benchmark.
+all-cargo:
+	$(MAKE) -C cargo all
+
+# Cleans up build object.
+clean-cargo:
+	$(MAKE) -C cargo clean
+
+# Cleans up everything.
+distclean-cargo:
+	$(MAKE) -C cargo distclean
