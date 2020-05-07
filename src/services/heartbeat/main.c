@@ -23,8 +23,6 @@
  */
 
 #include <nanvix/runtime/runtime.h>
-#include <nanvix/runtime/stdikc.h>
-#include <nanvix/runtime/pm.h>
 #include <nanvix/sys/perf.h>
 #include <nanvix/ulib.h>
 

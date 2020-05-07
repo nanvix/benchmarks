@@ -22,11 +22,7 @@
  * SOFTWARE.
  */
 
-#define __NEED_MM_MANAGER
-
-#include <nanvix/runtime/rmem.h>
 #include <nanvix/runtime/runtime.h>
-#include <nanvix/runtime/stdikc.h>
 #include <nanvix/sys/perf.h>
 #include <nanvix/ulib.h>
 

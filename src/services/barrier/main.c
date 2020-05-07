@@ -24,10 +24,7 @@
 
 #include <nanvix/servers/message.h>
 #include <nanvix/runtime/runtime.h>
-#include <nanvix/runtime/stdikc.h>
 #include <nanvix/sys/perf.h>
-#include <nanvix/sys/noc.h>
-#include <nanvix/sys/mailbox.h>
 #include <nanvix/ulib.h>
 
 /*============================================================================*
@@ -170,7 +167,6 @@ void slow_barrier_wait(void)
 			stdinbox_get(), &msg, sizeof(struct message)
 		) == sizeof(struct message));
 	}
-
 }
 
 /*============================================================================*

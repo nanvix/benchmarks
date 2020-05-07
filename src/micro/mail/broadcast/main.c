@@ -23,9 +23,6 @@
  */
 
 #include <nanvix/runtime/runtime.h>
-#include <nanvix/runtime/stdikc.h>
-#include <nanvix/sys/mailbox.h>
-#include <nanvix/sys/noc.h>
 #include <nanvix/sys/perf.h>
 #include <nanvix/limits.h>
 #include <nanvix/ulib.h>
