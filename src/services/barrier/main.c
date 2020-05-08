@@ -58,7 +58,7 @@ struct message
 static struct
 {
 	int mailboxes[PROCS_NUM];
-} barrier = {
+} slow_barrier = {
 	.mailboxes = {
 		[0 ... (PROCS_NUM - 1)] = -1
 	}
@@ -93,7 +93,7 @@ static void build_node_list(int *nodes, int ncclusters)
 /**
  * @brief Initializes the spawn barrier.
  */
-void barrier_setup(void)
+void slow_barrier_setup(void)
 {
 	int procs[PROCS_NUM];
 
@@ -104,7 +104,7 @@ void barrier_setup(void)
 	{
 		for (int i = 1 ; i < PROCS_NUM; i++)
 		{
-			uassert((barrier.mailboxes[i] = kmailbox_open(
+			uassert((slow_barrier.mailboxes[i] = kmailbox_open(
 				procs[i], BARRIER_PORT)
 			) >= 0);
 		}
@@ -113,7 +113,7 @@ void barrier_setup(void)
 	/* Follower. */
 	else
 	{
-		uassert((barrier.mailboxes[0] = kmailbox_open(
+		uassert((slow_barrier.mailboxes[0] = kmailbox_open(
 			procs[0], BARRIER_PORT)
 		) >= 0);
 	}
@@ -122,24 +122,24 @@ void barrier_setup(void)
 /**
  * @brief Shutdowns the spawn barrier.
  */
-void barrier_cleanup(void)
+void slow_barrier_cleanup(void)
 {
 	/* Leader. */
 	if (kcluster_get_num() == PROCESSOR_CLUSTERNUM_LEADER)
 	{
 		for (int i = 1 ; i < PROCS_NUM; i++)
-			uassert(kmailbox_close(barrier.mailboxes[i]) == 0);
+			uassert(kmailbox_close(slow_barrier.mailboxes[i]) == 0);
 	}
 
 	/* Follower. */
 	else
-		uassert(kmailbox_close(barrier.mailboxes[0]) == 0);
+		uassert(kmailbox_close(slow_barrier.mailboxes[0]) == 0);
 }
 
 /**
  * @brief Waits on the startup barrier
  */
-void barrier_wait(void)
+void slow_barrier_wait(void)
 {
 	struct message msg;
 
@@ -155,7 +155,7 @@ void barrier_wait(void)
 		for (int i = 1 ; i < PROCS_NUM; i++)
 		{
 			uassert(kmailbox_write(
-				barrier.mailboxes[i], &msg, sizeof(struct message)
+				slow_barrier.mailboxes[i], &msg, sizeof(struct message)
 			) == sizeof(struct message));
 		}
 	}
@@ -164,7 +164,7 @@ void barrier_wait(void)
 	else
 	{
 		uassert(kmailbox_write(
-			barrier.mailboxes[0], &msg, sizeof(struct message)
+			slow_barrier.mailboxes[0], &msg, sizeof(struct message)
 		) == sizeof(struct message));
 		uassert(kmailbox_read(
 			stdinbox_get(), &msg, sizeof(struct message)
@@ -180,25 +180,25 @@ void barrier_wait(void)
 /**
  * @brief Benchmarks all-to-all synchronization.
  */
-static void benchmark_barrier(void)
+static void benchmark_slow_barrier(void)
 {
-	uint64_t time_barrier;
+	uint64_t time_slow_barrier;
 
-	barrier_setup();
+	slow_barrier_setup();
 
 	perf_start(0, PERF_CYCLES);
-	barrier_wait();
+	slow_barrier_wait();
 	perf_stop(0);
-	time_barrier = perf_read(0);
+	time_slow_barrier = perf_read(0);
 
-	barrier_cleanup();
+	slow_barrier_cleanup();
 
 #ifndef NDEBUG
-	uprintf("[benchmarks][barrier] %l",
+	uprintf("[benchmarks][slow_barrier] %l",
 #else
-	uprintf("[benchmarks][barrier] %l",
+	uprintf("[benchmarks][slow_barrier] %l",
 #endif
-		time_barrier
+		time_slow_barrier
 	);
 }
 
@@ -214,7 +214,7 @@ int __main3(int argc, const char *argv[])
 	((void) argc);
 	((void) argv);
 
-	benchmark_barrier();
+	benchmark_slow_barrier();
 
 	return (0);
 }
