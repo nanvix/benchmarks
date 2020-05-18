@@ -29,7 +29,7 @@ include $(BUILDDIR)/makefile.config
 #===============================================================================
 
 # Binary
-EXEC = nanvix-pgfetch.$(OBJ_SUFFIX)
+EXEC = nanvix-msync.$(OBJ_SUFFIX)
 
 # C Source Files
 SRC = $(wildcard *.c)

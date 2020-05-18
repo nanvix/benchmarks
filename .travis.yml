@@ -156,6 +156,21 @@ jobs:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-pgfetch.img'
 
+    # Memory Sync Debug
+    - stage: "Memory Sync Debug"
+      name: Unix 64-bit
+      if: "(NOT type IN (pull_request))"
+      before_script:
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
+        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - eval "$(ssh-agent -s)"
+      - chmod 600 travis_benchmarks_rsa
+      - cp $SSH_CONFIG ~/.ssh/config
+      - ssh-add travis_benchmarks_rsa
+      script:
+      - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-msync.img'
+
     # Mail Ping Pong Debug
     - stage: "Mail Ping Pong Debug"
       name: Unix 64-bit
@@ -354,6 +369,21 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-pgfetch.img'
+
+    # Memory Sync Release
+    - stage: "Memory Sync Release"
+      name: Unix 64-bit
+      if: "(NOT type IN (pull_request))"
+      before_script:
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
+        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - eval "$(ssh-agent -s)"
+      - chmod 600 travis_benchmarks_rsa
+      - cp $SSH_CONFIG ~/.ssh/config
+      - ssh-add travis_benchmarks_rsa
+      script:
+      - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-msync.img'
 
     # Mail Ping Pong Release
     - stage: "Mail Ping Pong Release"

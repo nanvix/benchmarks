@@ -23,8 +23,11 @@
  */
 
 #include <nanvix/runtime/runtime.h>
+#include <nanvix/runtime/barrier.h>
 #include <nanvix/sys/perf.h>
 #include <nanvix/ulib.h>
+#include <nanvix/limits.h>
+#include <posix/sys/stat.h>
 
 /*============================================================================*
  * Benchmark                                                                  *
@@ -36,31 +39,42 @@
 static char buffer[RMEM_BLOCK_SIZE];
 
 /**
- * @brief Benchmarks page fetches.
+ * @brief Benchmarks invalidation of shared memory regions.
  */
-static void benchmark_pgfetch(void)
+static void benchmark_msync(void)
 {
-	void *ptr;
-	uint64_t time_pgfetch;
+	int shmid;
+	const char *shm_name = "cool-region";
+	uint64_t time_msync;
 
-		uassert((ptr = nanvix_vmem_alloc(1)) != NULL);
+	/* Leader. */
+	if (kcluster_get_num() == PROCESSOR_CLUSTERNUM_LEADER)
+	{
+		uassert((shmid = __nanvix_shm_open(shm_name, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR)) >= 0);
 
-	perf_start(0, PERF_CYCLES);
+			uassert(__nanvix_shm_ftruncate(shmid, NANVIX_SHM_SIZE_MAX) == 0);
 
-		uassert(nanvix_vmem_read(buffer, ptr, RMEM_BLOCK_SIZE) == RMEM_BLOCK_SIZE);
+			umemset(buffer, 1, NANVIX_SHM_SIZE_MAX);
+			uassert(__nanvix_shm_write(shmid, buffer, NANVIX_SHM_SIZE_MAX, 0) == NANVIX_SHM_SIZE_MAX);
+			umemset(buffer, 0, NANVIX_SHM_SIZE_MAX);
+			uassert(__nanvix_shm_read(shmid, buffer, NANVIX_SHM_SIZE_MAX, 0) == NANVIX_SHM_SIZE_MAX);
 
-	perf_stop(0);
-	time_pgfetch = perf_read(0);
+			perf_start(0, PERF_CYCLES);
+			uassert(__nanvix_shm_inval(shmid) == 0);
+			perf_stop(0);
+			time_msync = perf_read(0);
 
-	uassert(nanvix_vmem_free(ptr) == 0);
+		uassert(__nanvix_shm_close(shmid) == 0);
+		uassert(__nanvix_shm_unlink(shm_name) == 0);
 
 #ifndef NDEBUG
-	uprintf("[benchmarks][pgfetch] %l",
+		uprintf("[benchmarks][msync] %l",
 #else
-	uprintf("[benchmarks][pgfetch] %l",
+		uprintf("[benchmarks][msync] %l",
 #endif
-		time_pgfetch
-	);
+			time_msync
+		);
+	}
 }
 
 /*============================================================================*
@@ -72,10 +86,24 @@ static void benchmark_pgfetch(void)
  */
 int __main3(int argc, const char *argv[])
 {
+	barrier_t barrier;
+	int nodes[NANVIX_PROC_MAX];
+
 	((void) argc);
 	((void) argv);
 
-	benchmark_pgfetch();
+	/* Build list of nodes. */
+	for (int i = 0; i < NANVIX_PROC_MAX; i++)
+		nodes[i] = PROCESSOR_CLUSTERNUM_LEADER + i;
+
+	barrier = barrier_create(nodes, NANVIX_PROC_MAX);
+	uassert(BARRIER_IS_VALID(barrier));
+	uassert(barrier_wait(barrier) == 0);
+
+		benchmark_msync();
+
+	uassert(barrier_wait(barrier) == 0);
+	uassert(barrier_destroy(barrier) == 0);
 
 	return (0);
 }
