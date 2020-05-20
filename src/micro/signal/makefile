@@ -23,107 +23,58 @@
 #
 
 # Builds everything.
-all: all-hello all-memread all-memwrite all-mail all-cargo all-signal
+all: all-barrier all-broadcast all-gather
 
 # Cleans up build objects.
-clean: clean-hello clean-memread clean-memwrite clean-mail clean-cargo clean-signal
+clean: clean-barrier clean-broadcast clean-gather
 
 # Cleans up everything.
-distclean: distclean-hello distclean-memread distclean-memwrite distclean-mail \
-	distclean-cargo distclean-signal
+distclean: distclean-barrier distclean-broadcast distclean-gather
 
 #===============================================================================
-# Hello Benchmark
+# Ping-Pong
 #===============================================================================
 
 # Builds benchmark.
-all-hello:
-	$(MAKE) -C hello all
-
-# Cleans up build objects.
-clean-hello:
-	$(MAKE) -C hello clean
-
-# Cleans up everything.
-distclean-hello:
-	$(MAKE) -C hello distclean
-
-#===============================================================================
-# Memory Read
-#===============================================================================
-
-# Builds benchmark.
-all-memread:
-	$(MAKE) -C memread all
+all-barrier:
+	$(MAKE) -C barrier all
 
 # Cleans up build object.
-clean-memread:
-	$(MAKE) -C memread clean
+clean-barrier:
+	$(MAKE) -C barrier clean
 
 # Cleans up everything.
-distclean-memread:
-	$(MAKE) -C memread distclean
+distclean-barrier:
+	$(MAKE) -C barrier distclean
 
 #===============================================================================
-# Memory Write
+# Broadcast
 #===============================================================================
 
 # Builds benchmark.
-all-memwrite:
-	$(MAKE) -C memwrite all
+all-broadcast:
+	$(MAKE) -C broadcast all
 
 # Cleans up build object.
-clean-memwrite:
-	$(MAKE) -C memwrite clean
+clean-broadcast:
+	$(MAKE) -C broadcast clean
 
 # Cleans up everything.
-distclean-memwrite:
-	$(MAKE) -C memwrite distclean
+distclean-broadcast:
+	$(MAKE) -C broadcast distclean
 
 #===============================================================================
-# Mail
+# Gather
 #===============================================================================
 
 # Builds benchmark.
-all-mail:
-	$(MAKE) -C mail all
+all-gather:
+	$(MAKE) -C gather all
 
 # Cleans up build object.
-clean-mail:
-	$(MAKE) -C mail clean
+clean-gather:
+	$(MAKE) -C gather clean
 
 # Cleans up everything.
-distclean-mail:
-	$(MAKE) -C mail distclean
-
-#===============================================================================
-# Cargo
-#===============================================================================
-
-# Builds benchmark.
-all-cargo:
-	$(MAKE) -C cargo all
-
-# Cleans up build object.
-clean-cargo:
-	$(MAKE) -C cargo clean
-
-# Cleans up everything.
-distclean-cargo:
-	$(MAKE) -C cargo distclean
-
-#===============================================================================
-# Signal
-#===============================================================================
-
-# Builds benchmark.
-all-signal:
-	$(MAKE) -C signal all
-
-# Cleans up build object.
-clean-signal:
-	$(MAKE) -C signal clean
-
-# Cleans up everything.
-distclean-signal:
-	$(MAKE) -C signal distclean
+distclean-gather:
+	$(MAKE) -C gather distclean
