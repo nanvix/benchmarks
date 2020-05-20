@@ -75,8 +75,8 @@ static void do_leader(void)
 			);
 		}
 
-		uassert(kmailbox_ioctl(inbox, MAILBOX_IOCTL_GET_LATENCY, &latency) == 0);
-		uassert(kmailbox_ioctl(inbox, MAILBOX_IOCTL_GET_VOLUME, &volume) == 0);
+		uassert(kmailbox_ioctl(inbox, KMAILBOX_IOCTL_GET_LATENCY, &latency) == 0);
+		uassert(kmailbox_ioctl(inbox, KMAILBOX_IOCTL_GET_VOLUME, &volume) == 0);
 
 		/* Dump statistics. */
 #ifndef NDEBUG
