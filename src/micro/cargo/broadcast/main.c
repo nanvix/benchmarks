@@ -68,7 +68,7 @@ static void do_leader(void)
 		uassert((
 			outportals[i - 1] = kportal_open(
 				knode_get_num(),
-				PROCESSOR_CLUSTERNUM_LEADER + i,
+				PROCESSOR_NODENUM_LEADER + i,
 				PORT_NUM)
 			) >= 0
 		);
@@ -107,7 +107,7 @@ static void do_worker(void)
 
 	for (int i = 1; i <= NITERATIONS; i++)
 	{
-		uassert(kportal_allow(inportal, PROCESSOR_CLUSTERNUM_LEADER, PORT_NUM) == 0);
+		uassert(kportal_allow(inportal, PROCESSOR_NODENUM_LEADER, PORT_NUM) == 0);
 		uassert(kportal_read(inportal, buf,  BUFFER_SIZE) == BUFFER_SIZE);
 		
 		uassert(kportal_ioctl(inportal, KPORTAL_IOCTL_GET_LATENCY, &latency) == 0);
@@ -134,7 +134,7 @@ static void benchmark_cargo_broadcast(void)
 {
 	void (*fn)(void);
 
-	fn = (kcluster_get_num() == PROCESSOR_CLUSTERNUM_LEADER) ?
+	fn = (knode_get_num() == PROCESSOR_NODENUM_LEADER) ?
 		do_leader : do_worker;
 
 	fn();

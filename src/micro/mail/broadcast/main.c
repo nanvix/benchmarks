@@ -59,7 +59,7 @@ static void do_leader(void)
 
 	/* Establish connections. */
 	for (int i = 1; i < NANVIX_PROC_MAX; i++)
-		uassert((outboxes[i - 1] = kmailbox_open(PROCESSOR_CLUSTERNUM_LEADER + i, PORT_NUM)) >= 0);
+		uassert((outboxes[i - 1] = kmailbox_open(PROCESSOR_NODENUM_LEADER + i, PORT_NUM)) >= 0);
 
 	/* Broadcast messages. */
 	for (int k = 1; k <= NITERATIONS; k++)
@@ -126,7 +126,7 @@ static void benchmark_mail_broadcast(void)
 {
 	void (*fn)(void);
 
-	fn = (kcluster_get_num() == PROCESSOR_CLUSTERNUM_LEADER) ?
+	fn = (knode_get_num() == PROCESSOR_NODENUM_LEADER) ?
 		do_leader : do_worker;
 
 	fn();
