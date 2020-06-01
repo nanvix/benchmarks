@@ -202,8 +202,6 @@ int __main3(int argc, const char *argv[])
 	((void) argc);
 	((void) argv);
 
-	kprintf("DO benchmark signal barrier");
-
 	benchmark_signal_barrier();
 
 	return (0);
