@@ -19,9 +19,11 @@ nanvix-cluster*
 tags
 
 # IDEs
+*.json
 *.swp
 *.swo
 *.vscode/
+.clangd/
 
 # KLib Headers
 include/nanvix/barelib.h
@@ -29,40 +31,14 @@ include/posix/decl.h
 include/posix/stdarg.h
 include/posix/stddef.h
 
-# HAL Headers
+# Headers
 include/arch/
+include/dev/
+include/fs/
 include/grub/
 include/machine/
-include/nanvix/hal/
-include/nanvix/cc.h
-include/nanvix/const.h
-include/nanvix/hal.h
-include/nanvix/hlib.h
-include/posix/sys/_intsup.h
-include/posix/sys/features.h
-include/posix/sys/types.h
-include/posix/decl.h
-include/posix/errno.h
-include/posix/stdarg.h
-include/posix/stdbool.h
-include/posix/stddef.h
-include/posix/stdint.h
-
-# Kernel Headers
-include/dev/net/
-include/dev/pci.h
-include/nanvix/kernel/
-
-# Nanvix Library
-include/nanvix/runtime/barrier.h
-include/nanvix/runtime/stdikc.h
-include/nanvix/sys/
-
-# C Library
-include/nanvix/ulib.h
-
-# Multikernel Headers.
 include/nanvix/
+include/posix/
 
 # Excludes
 !img/*.img
