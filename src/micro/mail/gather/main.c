@@ -43,7 +43,7 @@
 /**
  * @brief Port number used in the benchmark.
  */
-#define PORT_NUM 3
+#define PORT_NUM 10
 
 /**
  * @brief Dummy message.
