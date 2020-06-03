@@ -47,11 +47,11 @@
  *
  * @author João Vicente Souto
  */
-static void delay(uint64_t cycles)
+static void delay(int times, uint64_t cycles)
 {
 	uint64_t t0, t1;
 
-	for (int i = 0; i < PROCESSOR_CLUSTERS_NUM; ++i)
+	for (int i = 0; i < times; ++i)
 	{
 		kclock(&t0);
 
@@ -73,7 +73,7 @@ static void build_node_list(int * clusters, int nclusters)
 	uassert(clusters != NULL);
 
 	for (int i = 0; i < nclusters; ++i)
-		clusters[i] = PROCESSOR_CLUSTERNUM_LEADER + i;
+		clusters[i] = PROCESSOR_NODENUM_LEADER + i;
 }
 
 /**
@@ -94,6 +94,8 @@ static void do_leader(void)
 				SYNC_ONE_TO_ALL)
 		) >= 0
 	);
+
+	delay(5, CLUSTER_FREQ);
 
 	/* Broadcast data. */
 	for (int k = 1; k <= NITERATIONS; k++)
@@ -122,6 +124,8 @@ static void do_worker(void)
 				SYNC_ONE_TO_ALL)
 		) >= 0
 	);
+
+	delay(5, CLUSTER_FREQ);
 
 	uassert(ksync_ioctl(syncin, KSYNC_IOCTL_GET_LATENCY, &l0) == 0);
 
@@ -154,7 +158,7 @@ static void benchmark_signal_broadcast(void)
 {
 	void (*fn)(void);
 
-	fn = (kcluster_get_num() == PROCESSOR_CLUSTERNUM_LEADER) ?
+	fn = (knode_get_num() == PROCESSOR_NODENUM_LEADER) ?
 		do_leader : do_worker;
 
 	fn();
@@ -171,8 +175,6 @@ int __main3(int argc, const char *argv[])
 {
 	((void) argc);
 	((void) argv);
-
-	delay(CLUSTER_FREQ);
 
 	benchmark_signal_broadcast();
 

@@ -43,7 +43,7 @@
 /**
  * @brief Port number used in the benchmark.
  */
-#define PORT_NUM 3
+#define PORT_NUM 10
 
 /**
  * @brief Dummy message.
@@ -100,7 +100,7 @@ static void do_worker(void)
 	int outbox;
 
 	/* Establish connection. */
-	uassert((outbox = kmailbox_open(PROCESSOR_CLUSTERNUM_LEADER, PORT_NUM)) >= 0);
+	uassert((outbox = kmailbox_open(PROCESSOR_NODENUM_LEADER, PORT_NUM)) >= 0);
 
 	for (int i = 1; i <= NITERATIONS; i++)
 	{
@@ -124,7 +124,7 @@ static void benchmark_mail_gather(void)
 {
 	void (*fn)(void);
 
-	fn = (kcluster_get_num() == PROCESSOR_CLUSTERNUM_LEADER) ?
+	fn = (knode_get_num() == PROCESSOR_NODENUM_LEADER) ?
 		do_leader : do_worker;
 
 	fn();

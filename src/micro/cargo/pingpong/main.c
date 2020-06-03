@@ -65,11 +65,11 @@ static void do_leader(void)
 
 	/* Establish connection. */
 	uassert((inportal = kportal_create(knode_get_num(), PORT_NUM)) >= 0);
-	uassert((outportal = kportal_open(knode_get_num(), PROCESSOR_CLUSTERNUM_LEADER + 1, PORT_NUM)) >= 0);
+	uassert((outportal = kportal_open(knode_get_num(), PROCESSOR_NODENUM_LEADER + 1, PORT_NUM)) >= 0);
 
 	for (int i = 1; i <= NITERATIONS; i++)
 	{
-		uassert(kportal_allow(inportal, PROCESSOR_CLUSTERNUM_LEADER + 1, PORT_NUM) == 0);
+		uassert(kportal_allow(inportal, PROCESSOR_NODENUM_LEADER + 1, PORT_NUM) == 0);
 		uassert(kportal_read(inportal, buf, BUFFER_SIZE) == BUFFER_SIZE);
 		uassert(kportal_write(outportal, buf, BUFFER_SIZE) == BUFFER_SIZE);
 
@@ -100,12 +100,12 @@ static void do_worker(void)
 
 	/* Establish connection. */
 	uassert((inportal = kportal_create(knode_get_num(), PORT_NUM)) >= 0);
-	uassert((outportal = kportal_open(knode_get_num(), PROCESSOR_CLUSTERNUM_LEADER, PORT_NUM)) >= 0);
+	uassert((outportal = kportal_open(knode_get_num(), PROCESSOR_NODENUM_LEADER, PORT_NUM)) >= 0);
 
 	for (int i = 1; i <= NITERATIONS; i++)
 	{
 		uassert(kportal_write(outportal, buf, BUFFER_SIZE) == BUFFER_SIZE);
-		uassert(kportal_allow(inportal, PROCESSOR_CLUSTERNUM_LEADER, PORT_NUM) == 0);
+		uassert(kportal_allow(inportal, PROCESSOR_NODENUM_LEADER, PORT_NUM) == 0);
 		uassert(kportal_read(inportal, buf,  BUFFER_SIZE) == BUFFER_SIZE);
 	}
 
@@ -121,7 +121,7 @@ static void benchmark_cargo_pingpong(void)
 {
 	void (*fn)(void);
 
-	fn = (kcluster_get_num() == PROCESSOR_CLUSTERNUM_LEADER) ?
+	fn = (knode_get_num() == PROCESSOR_NODENUM_LEADER) ?
 		do_leader : do_worker;
 
 	fn();
