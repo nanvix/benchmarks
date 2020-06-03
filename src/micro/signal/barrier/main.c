@@ -41,88 +41,142 @@
  *============================================================================*/
 
 /**
- * @brief Port number used in the benchmark.
+ * @brief Forces a platform-independent delay.
+ *
+ * @param cycles Delay in cycles.
+ *
+ * @author João Vicente Souto
  */
-#define PORT_NUM 3
+static void delay(uint64_t cycles)
+{
+	uint64_t t0, t1;
+
+	for (int i = 0; i < PROCESSOR_CLUSTERS_NUM; ++i)
+	{
+		kclock(&t0);
+
+		do
+			kclock(&t1);
+		while ((t1 - t0) < cycles);
+	}
+}
+
+/*
+ * Build a list of the node IDs
+ *
+ * @param cluster Nodes list buffer
+ *
+ * @author João Vicente Souto
+ */
+static void build_node_list(int * clusters, int nclusters)
+{
+	uassert(clusters != NULL);
+
+	for (int i = 0; i < nclusters; ++i)
+		clusters[i] = PROCESSOR_CLUSTERNUM_LEADER + i;
+}
 
 /**
- * @brief Dummy message.
- */
-static char msg[KMAILBOX_MESSAGE_SIZE];
-
-/**
- * @bbrief Receives messages from worker.
+ * @bbrief Receives data from worker.
  */
 static void do_leader(void)
 {
-	int outboxes[NANVIX_PROC_MAX - 1];
+	int syncin;
+	int syncout;
+	int clusters[PROCESSOR_CCLUSTERS_NUM];
 
-	/* Establish connections. */
-	for (int i = 1; i < NANVIX_PROC_MAX; i++)
-		uassert((outboxes[i - 1] = kmailbox_open(PROCESSOR_CLUSTERNUM_LEADER + i, PORT_NUM)) >= 0);
+	build_node_list(clusters, PROCESSOR_CCLUSTERS_NUM);
 
-	/* Broadcast messages. */
+	/* Establish connection. */
+	uassert((
+		syncin = ksync_create(
+				clusters,
+				PROCESSOR_CCLUSTERS_NUM,
+				SYNC_ALL_TO_ONE)
+		) >= 0
+	);
+	uassert((
+		syncout = ksync_open(
+				clusters,
+				PROCESSOR_CCLUSTERS_NUM,
+				SYNC_ONE_TO_ALL)
+		) >= 0
+	);
+
+	/* Broadcast data. */
 	for (int k = 1; k <= NITERATIONS; k++)
 	{
-		for (int i = 1; i < NANVIX_PROC_MAX; i++)
-		{
-			uassert(
-				kmailbox_write(
-					outboxes[i - 1],
-					msg,
-					KMAILBOX_MESSAGE_SIZE
-				) == KMAILBOX_MESSAGE_SIZE
-			);
-		}
+		uassert(ksync_wait(syncin) == 0);
+		uassert(ksync_signal(syncout) == 0);
 	}
 
 	/* House keeping. */
-	for (int i = 1; i < NANVIX_PROC_MAX; i++)
-		uassert(kmailbox_close(outboxes[i - 1]) == 0);
+	uassert(ksync_close(syncout) == 0);
+	uassert(ksync_unlink(syncin) == 0);
 }
 
 /**
- * @brief Sends menssages to leader.
+ * @brief Sends data to leader.
  */
 static void do_worker(void)
 {
-	int inbox;
-	uint64_t latency, volume;
+	int syncin;
+	int syncout;
+	uint64_t lin0, lin1;
+	uint64_t lout0, lout1;
+	int clusters[PROCESSOR_CCLUSTERS_NUM];
+
+	build_node_list(clusters, PROCESSOR_CCLUSTERS_NUM);
 
 	/* Establish connection. */
-	uassert((inbox = kmailbox_create(knode_get_num(), PORT_NUM)) >= 0);
+	uassert((
+		syncin = ksync_create(
+				clusters,
+				PROCESSOR_CCLUSTERS_NUM,
+				SYNC_ONE_TO_ALL)
+		) >= 0
+	);
+	uassert((
+		syncout = ksync_open(
+				clusters,
+				PROCESSOR_CCLUSTERS_NUM,
+				SYNC_ALL_TO_ONE)
+		) >= 0
+	);
+
+	uassert(ksync_ioctl(syncin, KSYNC_IOCTL_GET_LATENCY, &lin0) == 0);
+	uassert(ksync_ioctl(syncout, KSYNC_IOCTL_GET_LATENCY, &lout0) == 0);
 
 	for (int i = 1; i <= NITERATIONS; i++)
 	{
-			uassert(
-				kmailbox_read(
-					inbox,
-					msg,
-					KMAILBOX_MESSAGE_SIZE
-				) == KMAILBOX_MESSAGE_SIZE
-			);
-		
-		uassert(kmailbox_ioctl(inbox, KMAILBOX_IOCTL_GET_LATENCY, &latency) == 0);
-		uassert(kmailbox_ioctl(inbox, KMAILBOX_IOCTL_GET_VOLUME, &volume) == 0);
+		uassert(ksync_signal(syncout) == 0);
+		uassert(ksync_wait(syncin) == 0);
+
+		uassert(ksync_ioctl(syncin, KSYNC_IOCTL_GET_LATENCY, &lin1) == 0);
+		uassert(ksync_ioctl(syncout, KSYNC_IOCTL_GET_LATENCY, &lout1) == 0);
 
 		/* Dump statistics. */
 #ifndef NDEBUG
-		uprintf("[benchmarks][mail][broadcast] it=%d latency=%l volume=%l",
+		uprintf("[benchmarks][signal][barrier] it=%d latency_in=%l latency_out=%l nsignals=%d, nwaits=%d",
 #else
-		uprintf("mailbox;broadcast;%d;%l;%l",
+		uprintf("signal;barrier;%d;%l;%d,%d;",
 #endif
-			i, latency, volume
+			i, (lin1 - lin0), (lout1 - lout0), i, i
 		);
+
+		lin0  = lin1;
+		lout0 = lout1;
 	}
 
 	/* House keeping. */
-	uassert(kmailbox_unlink(inbox) == 0);
+	uassert(ksync_close(syncout) == 0);
+	uassert(ksync_unlink(syncin) == 0);
 }
 
 /**
- * @brief Benchmarks broadcast communication with mailboxes.
+ * @brief Benchmarks barrier communication with syncs.
  */
-static void benchmark_mail_broadcast(void)
+static void benchmark_signal_barrier(void)
 {
 	void (*fn)(void);
 
@@ -144,7 +198,9 @@ int __main3(int argc, const char *argv[])
 	((void) argc);
 	((void) argv);
 
-	benchmark_mail_broadcast();
+	delay(CLUSTER_FREQ);
+
+	benchmark_signal_barrier();
 
 	return (0);
 }
