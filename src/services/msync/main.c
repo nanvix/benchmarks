@@ -94,7 +94,7 @@ int __main3(int argc, const char *argv[])
 
 	/* Build list of nodes. */
 	for (int i = 0; i < NANVIX_PROC_MAX; i++)
-		nodes[i] = PROCESSOR_CLUSTERNUM_LEADER + i;
+		nodes[i] = PROCESSOR_NODENUM_LEADER + i;
 
 	barrier = barrier_create(nodes, NANVIX_PROC_MAX);
 	uassert(BARRIER_IS_VALID(barrier));
