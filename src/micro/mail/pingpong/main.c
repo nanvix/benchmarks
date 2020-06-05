@@ -23,6 +23,7 @@
  */
 
 #include <nanvix/runtime/runtime.h>
+#include <nanvix/runtime/barrier.h>
 #include <nanvix/sys/perf.h>
 #include <nanvix/limits.h>
 #include <nanvix/ulib.h>
@@ -35,6 +36,9 @@
 #else
 #define NITERATIONS 1
 #endif
+
+static barrier_t barrier;
+static int nodes[NANVIX_PROC_MAX];
 
 /*============================================================================*
  * Benchmark Kernel                                                           *
@@ -62,6 +66,8 @@ static void do_leader(void)
 	uassert((inbox = kmailbox_create(knode_get_num(), PORT_NUM)) >= 0);
 	uassert((outbox = kmailbox_open(PROCESSOR_NODENUM_LEADER + 1, PORT_NUM)) >= 0);
 
+	uassert(barrier_wait(barrier) == 0);
+
 	for (int i = 1; i <= NITERATIONS; i++)
 	{
 		uassert(kmailbox_read(inbox, msg, KMAILBOX_MESSAGE_SIZE) == KMAILBOX_MESSAGE_SIZE);
@@ -80,6 +86,8 @@ static void do_leader(void)
 		);
 	}
 
+	uassert(barrier_wait(barrier) == 0);
+
 	/* House keeping. */
 	uassert(kmailbox_close(outbox) == 0);
 	uassert(kmailbox_unlink(inbox) == 0);
@@ -96,11 +104,15 @@ static void do_worker(void)
 	uassert((inbox = kmailbox_create(knode_get_num(), PORT_NUM)) >= 0);
 	uassert((outbox = kmailbox_open(PROCESSOR_NODENUM_LEADER, PORT_NUM)) >= 0);
 
+	uassert(barrier_wait(barrier) == 0);
+
 	for (int i = 1; i <= NITERATIONS; i++)
 	{
 		uassert(kmailbox_write(outbox, msg, KMAILBOX_MESSAGE_SIZE) == KMAILBOX_MESSAGE_SIZE);
 		uassert(kmailbox_read(inbox, msg,  KMAILBOX_MESSAGE_SIZE) == KMAILBOX_MESSAGE_SIZE);
 	}
+
+	uassert(barrier_wait(barrier) == 0);
 
 	/* House keeping. */
 	uassert(kmailbox_close(outbox) == 0);
@@ -117,7 +129,16 @@ static void benchmark_mail_pingpong(void)
 	fn = (knode_get_num() == PROCESSOR_NODENUM_LEADER) ?
 		do_leader : do_worker;
 
-	fn();
+	/* Build list of nodes. */
+	for (int i = 0; i < 2; i++)
+		nodes[i] = PROCESSOR_NODENUM_LEADER + i;
+
+	barrier = barrier_create(nodes, 2);
+	uassert(BARRIER_IS_VALID(barrier));
+
+		fn();
+
+	uassert(barrier_destroy(barrier) == 0);
 }
 
 /*============================================================================*
