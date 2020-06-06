@@ -37,19 +37,6 @@ env:
 
 jobs:
   include:
-    # Build Debug
-    - stage: "Build Debug"
-      name: "Unix 64-bit"
-      script: docker run -v "$(pwd):/mnt" -p 4567:4567 nanvix/ubuntu:unix64        /bin/bash -l -c "cd /mnt && make contrib && make all"
-
-    # Build Release
-    - stage: "Build Release"
-      name: "Unix 64-bit"
-      script: docker run -v "$(pwd):/mnt" -p 4567:4567 nanvix/ubuntu:unix64        /bin/bash -l -c "cd /mnt && export RELEASE=true && make contrib && make all"
-
-#===============================================================================
-# Debug
-#===============================================================================
 
     # Hello Debug
     - stage: "Hello Debug"
@@ -74,8 +61,38 @@ jobs:
         - cp $SSH_CONFIG ~/.ssh/config
         - ssh-add travis_benchmarks_rsa
       script:
-        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-hello.img'
+
+    # Hello Release
+    - stage: "Hello Release"
+      name: Unix 64-bit
+      if: "(NOT type IN (pull_request))"
+      before_script:
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - eval "$(ssh-agent -s)"
+      - chmod 600 travis_benchmarks_rsa
+      - cp $SSH_CONFIG ~/.ssh/config
+      - ssh-add travis_benchmarks_rsa
+      script:
+      - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-hello.img'
+    - stage: "Hello Release"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-hello.img'
+
+#===============================================================================
+# Debug
+#===============================================================================
 
     # Barrier Debug
     - stage: "Barrier Debug"
@@ -100,7 +117,7 @@ jobs:
         - cp $SSH_CONFIG ~/.ssh/config
         - ssh-add travis_benchmarks_rsa
       script:
-        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-barrier.img'
 
     # Heartbeat Debug
@@ -126,7 +143,7 @@ jobs:
         - cp $SSH_CONFIG ~/.ssh/config
         - ssh-add travis_benchmarks_rsa
       script:
-        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-heartbeat.img'
 
     # Lookup Debug
@@ -152,7 +169,7 @@ jobs:
         - cp $SSH_CONFIG ~/.ssh/config
         - ssh-add travis_benchmarks_rsa
       script:
-        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-lookup.img'
 
     # Memory Read Debug
@@ -178,7 +195,7 @@ jobs:
         - cp $SSH_CONFIG ~/.ssh/config
         - ssh-add travis_benchmarks_rsa
       script:
-        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-memread.img'
 
     # Memory Write Debug
@@ -204,7 +221,7 @@ jobs:
         - cp $SSH_CONFIG ~/.ssh/config
         - ssh-add travis_benchmarks_rsa
       script:
-        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-memwrite.img'
 
     # Page Fetch Debug
@@ -230,7 +247,7 @@ jobs:
         - cp $SSH_CONFIG ~/.ssh/config
         - ssh-add travis_benchmarks_rsa
       script:
-        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-pgfetch.img'
 
     # Memory Sync Debug
@@ -256,7 +273,7 @@ jobs:
         - cp $SSH_CONFIG ~/.ssh/config
         - ssh-add travis_benchmarks_rsa
       script:
-        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-msync.img'
 
     # Mail Ping Pong Debug
@@ -282,7 +299,7 @@ jobs:
         - cp $SSH_CONFIG ~/.ssh/config
         - ssh-add travis_benchmarks_rsa
       script:
-        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-mail-pingpong.img'
 
     # Mail Broadcast Debug
@@ -309,7 +326,7 @@ jobs:
         - cp $SSH_CONFIG ~/.ssh/config
         - ssh-add travis_benchmarks_rsa
       script:
-        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-mail-broadcast.img'
 
     # Mail Gather Debug
@@ -335,7 +352,7 @@ jobs:
         - cp $SSH_CONFIG ~/.ssh/config
         - ssh-add travis_benchmarks_rsa
       script:
-        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-mail-gather.img'
 
     # Cargo Ping Pong Debug
@@ -361,7 +378,7 @@ jobs:
         - cp $SSH_CONFIG ~/.ssh/config
         - ssh-add travis_benchmarks_rsa
       script:
-        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-cargo-pingpong.img'
 
     # Cargo Broadcast Debug
@@ -387,7 +404,7 @@ jobs:
         - cp $SSH_CONFIG ~/.ssh/config
         - ssh-add travis_benchmarks_rsa
       script:
-        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-cargo-broadcast.img'
 
     # Cargo Gather Debug
@@ -413,38 +430,12 @@ jobs:
         - cp $SSH_CONFIG ~/.ssh/config
         - ssh-add travis_benchmarks_rsa
       script:
-        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-cargo-gather.img'
 
 #===============================================================================
 # Release
 #===============================================================================
-
-    # Hello Release
-    - stage: "Hello Release"
-      name: Unix 64-bit
-      if: "(NOT type IN (pull_request))"
-      before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
-      - eval "$(ssh-agent -s)"
-      - chmod 600 travis_benchmarks_rsa
-      - cp $SSH_CONFIG ~/.ssh/config
-      - ssh-add travis_benchmarks_rsa
-      script:
-      - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
-      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-hello.img'
-    - stage: "Hello Release"
-      name: "MPPA-256"
-      if: (NOT type IN (pull_request))
-      before_script:
-        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
-        - eval "$(ssh-agent -s)"
-        - chmod 600 travis_benchmarks_rsa
-        - cp $SSH_CONFIG ~/.ssh/config
-        - ssh-add travis_benchmarks_rsa
-      script:
-        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
-        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-hello.img'
 
     # Barrier Release
     - stage: "Barrier Release"
@@ -469,7 +460,7 @@ jobs:
         - cp $SSH_CONFIG ~/.ssh/config
         - ssh-add travis_benchmarks_rsa
       script:
-        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-barrier.img'
 
     # Heartbeat Release
@@ -495,7 +486,7 @@ jobs:
         - cp $SSH_CONFIG ~/.ssh/config
         - ssh-add travis_benchmarks_rsa
       script:
-        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-heartbeat.img'
 
     # Lookup Release
@@ -521,7 +512,7 @@ jobs:
         - cp $SSH_CONFIG ~/.ssh/config
         - ssh-add travis_benchmarks_rsa
       script:
-        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-lookup.img'
 
     # Memory Read Release
@@ -547,7 +538,7 @@ jobs:
         - cp $SSH_CONFIG ~/.ssh/config
         - ssh-add travis_benchmarks_rsa
       script:
-        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-memread.img'
 
     # Memory Write Release
@@ -573,7 +564,7 @@ jobs:
         - cp $SSH_CONFIG ~/.ssh/config
         - ssh-add travis_benchmarks_rsa
       script:
-        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-memwrite.img'
 
     # Page Fetch Release
@@ -599,7 +590,7 @@ jobs:
         - cp $SSH_CONFIG ~/.ssh/config
         - ssh-add travis_benchmarks_rsa
       script:
-        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-pgfetch.img'
 
     # Memory Sync Release
@@ -625,7 +616,7 @@ jobs:
         - cp $SSH_CONFIG ~/.ssh/config
         - ssh-add travis_benchmarks_rsa
       script:
-        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-msync.img'
 
     # Mail Ping Pong Release
@@ -651,7 +642,7 @@ jobs:
         - cp $SSH_CONFIG ~/.ssh/config
         - ssh-add travis_benchmarks_rsa
       script:
-        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-mail-pingpong.img'
 
     # Mail Broadcast Release
@@ -677,7 +668,7 @@ jobs:
         - cp $SSH_CONFIG ~/.ssh/config
         - ssh-add travis_benchmarks_rsa
       script:
-        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-mail-broadcast.img'
 
     # Mail Gather Release
@@ -703,7 +694,7 @@ jobs:
         - cp $SSH_CONFIG ~/.ssh/config
         - ssh-add travis_benchmarks_rsa
       script:
-        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-mail-gather.img'
 
     # Cargo Ping Pong Release
@@ -729,7 +720,7 @@ jobs:
         - cp $SSH_CONFIG ~/.ssh/config
         - ssh-add travis_benchmarks_rsa
       script:
-        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-cargo-pingpong.img'
 
     # Cargo Broadcast Release
@@ -755,7 +746,7 @@ jobs:
         - cp $SSH_CONFIG ~/.ssh/config
         - ssh-add travis_benchmarks_rsa
       script:
-        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-cargo-broadcast.img'
 
     # Cargo Gather Release
@@ -781,7 +772,7 @@ jobs:
         - cp $SSH_CONFIG ~/.ssh/config
         - ssh-add travis_benchmarks_rsa
       script:
-        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-cargo-gather.img'
 
 notifications:
