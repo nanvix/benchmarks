@@ -56,8 +56,7 @@ jobs:
       name: Unix 64-bit
       if: "(NOT type IN (pull_request))"
       before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
       - eval "$(ssh-agent -s)"
       - chmod 600 travis_benchmarks_rsa
       - cp $SSH_CONFIG ~/.ssh/config
@@ -71,8 +70,7 @@ jobs:
       name: Unix 64-bit
       if: "(NOT type IN (pull_request))"
       before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
       - eval "$(ssh-agent -s)"
       - chmod 600 travis_benchmarks_rsa
       - cp $SSH_CONFIG ~/.ssh/config
@@ -86,8 +84,7 @@ jobs:
       name: Unix 64-bit
       if: "(NOT type IN (pull_request))"
       before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
       - eval "$(ssh-agent -s)"
       - chmod 600 travis_benchmarks_rsa
       - cp $SSH_CONFIG ~/.ssh/config
@@ -101,8 +98,7 @@ jobs:
       name: Unix 64-bit
       if: "(NOT type IN (pull_request))"
       before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
       - eval "$(ssh-agent -s)"
       - chmod 600 travis_benchmarks_rsa
       - cp $SSH_CONFIG ~/.ssh/config
@@ -116,8 +112,7 @@ jobs:
       name: Unix 64-bit
       if: "(NOT type IN (pull_request))"
       before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
       - eval "$(ssh-agent -s)"
       - chmod 600 travis_benchmarks_rsa
       - cp $SSH_CONFIG ~/.ssh/config
@@ -131,8 +126,7 @@ jobs:
       name: Unix 64-bit
       if: "(NOT type IN (pull_request))"
       before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
       - eval "$(ssh-agent -s)"
       - chmod 600 travis_benchmarks_rsa
       - cp $SSH_CONFIG ~/.ssh/config
@@ -146,8 +140,7 @@ jobs:
       name: Unix 64-bit
       if: "(NOT type IN (pull_request))"
       before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
       - eval "$(ssh-agent -s)"
       - chmod 600 travis_benchmarks_rsa
       - cp $SSH_CONFIG ~/.ssh/config
@@ -161,8 +154,7 @@ jobs:
       name: Unix 64-bit
       if: "(NOT type IN (pull_request))"
       before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
       - eval "$(ssh-agent -s)"
       - chmod 600 travis_benchmarks_rsa
       - cp $SSH_CONFIG ~/.ssh/config
@@ -176,8 +168,7 @@ jobs:
       name: Unix 64-bit
       if: "(NOT type IN (pull_request))"
       before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
       - eval "$(ssh-agent -s)"
       - chmod 600 travis_benchmarks_rsa
       - cp $SSH_CONFIG ~/.ssh/config
@@ -206,8 +197,7 @@ jobs:
       name: Unix 64-bit
       if: "(NOT type IN (pull_request))"
       before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
       - eval "$(ssh-agent -s)"
       - chmod 600 travis_benchmarks_rsa
       - cp $SSH_CONFIG ~/.ssh/config
@@ -221,8 +211,7 @@ jobs:
       name: Unix 64-bit
       if: "(NOT type IN (pull_request))"
       before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
       - eval "$(ssh-agent -s)"
       - chmod 600 travis_benchmarks_rsa
       - cp $SSH_CONFIG ~/.ssh/config
@@ -236,8 +225,7 @@ jobs:
       name: Unix 64-bit
       if: "(NOT type IN (pull_request))"
       before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
       - eval "$(ssh-agent -s)"
       - chmod 600 travis_benchmarks_rsa
       - cp $SSH_CONFIG ~/.ssh/config
@@ -251,8 +239,7 @@ jobs:
       name: Unix 64-bit
       if: "(NOT type IN (pull_request))"
       before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
       - eval "$(ssh-agent -s)"
       - chmod 600 travis_benchmarks_rsa
       - cp $SSH_CONFIG ~/.ssh/config
@@ -270,8 +257,7 @@ jobs:
       name: Unix 64-bit
       if: "(NOT type IN (pull_request))"
       before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
       - eval "$(ssh-agent -s)"
       - chmod 600 travis_benchmarks_rsa
       - cp $SSH_CONFIG ~/.ssh/config
@@ -285,8 +271,7 @@ jobs:
       name: Unix 64-bit
       if: "(NOT type IN (pull_request))"
       before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
       - eval "$(ssh-agent -s)"
       - chmod 600 travis_benchmarks_rsa
       - cp $SSH_CONFIG ~/.ssh/config
@@ -300,8 +285,7 @@ jobs:
       name: Unix 64-bit
       if: "(NOT type IN (pull_request))"
       before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
       - eval "$(ssh-agent -s)"
       - chmod 600 travis_benchmarks_rsa
       - cp $SSH_CONFIG ~/.ssh/config
@@ -315,8 +299,7 @@ jobs:
       name: Unix 64-bit
       if: "(NOT type IN (pull_request))"
       before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
       - eval "$(ssh-agent -s)"
       - chmod 600 travis_benchmarks_rsa
       - cp $SSH_CONFIG ~/.ssh/config
@@ -330,8 +313,7 @@ jobs:
       name: Unix 64-bit
       if: "(NOT type IN (pull_request))"
       before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
       - eval "$(ssh-agent -s)"
       - chmod 600 travis_benchmarks_rsa
       - cp $SSH_CONFIG ~/.ssh/config
@@ -345,8 +327,7 @@ jobs:
       name: Unix 64-bit
       if: "(NOT type IN (pull_request))"
       before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
       - eval "$(ssh-agent -s)"
       - chmod 600 travis_benchmarks_rsa
       - cp $SSH_CONFIG ~/.ssh/config
@@ -360,8 +341,7 @@ jobs:
       name: Unix 64-bit
       if: "(NOT type IN (pull_request))"
       before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
       - eval "$(ssh-agent -s)"
       - chmod 600 travis_benchmarks_rsa
       - cp $SSH_CONFIG ~/.ssh/config
@@ -375,8 +355,7 @@ jobs:
       name: Unix 64-bit
       if: "(NOT type IN (pull_request))"
       before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
       - eval "$(ssh-agent -s)"
       - chmod 600 travis_benchmarks_rsa
       - cp $SSH_CONFIG ~/.ssh/config
@@ -390,8 +369,7 @@ jobs:
       name: Unix 64-bit
       if: "(NOT type IN (pull_request))"
       before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
       - eval "$(ssh-agent -s)"
       - chmod 600 travis_benchmarks_rsa
       - cp $SSH_CONFIG ~/.ssh/config
@@ -405,8 +383,7 @@ jobs:
       name: Unix 64-bit
       if: "(NOT type IN (pull_request))"
       before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
       - eval "$(ssh-agent -s)"
       - chmod 600 travis_benchmarks_rsa
       - cp $SSH_CONFIG ~/.ssh/config
@@ -420,8 +397,7 @@ jobs:
       name: Unix 64-bit
       if: "(NOT type IN (pull_request))"
       before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
       - eval "$(ssh-agent -s)"
       - chmod 600 travis_benchmarks_rsa
       - cp $SSH_CONFIG ~/.ssh/config
@@ -435,8 +411,7 @@ jobs:
       name: Unix 64-bit
       if: "(NOT type IN (pull_request))"
       before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
       - eval "$(ssh-agent -s)"
       - chmod 600 travis_benchmarks_rsa
       - cp $SSH_CONFIG ~/.ssh/config
@@ -450,8 +425,7 @@ jobs:
       name: Unix 64-bit
       if: "(NOT type IN (pull_request))"
       before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
       - eval "$(ssh-agent -s)"
       - chmod 600 travis_benchmarks_rsa
       - cp $SSH_CONFIG ~/.ssh/config
@@ -465,8 +439,7 @@ jobs:
       name: Unix 64-bit
       if: "(NOT type IN (pull_request))"
       before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv
-        -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
       - eval "$(ssh-agent -s)"
       - chmod 600 travis_benchmarks_rsa
       - cp $SSH_CONFIG ~/.ssh/config
