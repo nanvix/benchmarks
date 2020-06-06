@@ -64,6 +64,18 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-hello.img'
+    - stage: "Hello Debug"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-hello.img'
 
     # Barrier Debug
     - stage: "Barrier Debug"
@@ -78,6 +90,18 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-barrier.img'
+    - stage: "Barrier Debug"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-barrier.img'
 
     # Heartbeat Debug
     - stage: "Heartbeat Debug"
@@ -92,6 +116,18 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-heartbeat.img'
+    - stage: "Heartbeat Debug"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-heartbeat.img'
 
     # Lookup Debug
     - stage: "Lookup Debug"
@@ -106,6 +142,18 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-lookup.img'
+    - stage: "Lookup Debug"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-lookup.img'
 
     # Memory Read Debug
     - stage: "Memory Read Debug"
@@ -120,6 +168,18 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-memread.img'
+    - stage: "Memory Read Debug"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-memread.img'
 
     # Memory Write Debug
     - stage: "Memory Write Debug"
@@ -134,6 +194,18 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-memwrite.img'
+    - stage: "Memory Write Debug"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-memwrite.img'
 
     # Page Fetch Debug
     - stage: "Page Fetch Debug"
@@ -148,6 +220,18 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-pgfetch.img'
+    - stage: "Page Fetch Debug"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-pgfetch.img'
 
     # Memory Sync Debug
     - stage: "Memory Sync Debug"
@@ -162,6 +246,18 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-msync.img'
+    - stage: "Memory Sync Debug"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-msync.img'
 
     # Mail Ping Pong Debug
     - stage: "Mail Ping Pong Debug"
@@ -176,6 +272,18 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-mail-pingpong.img'
+    - stage: "Mail Ping Pong Debug"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-mail-pingpong.img'
 
     # Mail Broadcast Debug
     - stage: "Mail Broadcast Debug"
@@ -191,6 +299,18 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-mail-broadcast.img'
+    - stage: "Mail Broadcast Debug"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-mail-broadcast.img'
 
     # Mail Gather Debug
     - stage: "Mail Gather Debug"
@@ -205,6 +325,18 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-mail-gather.img'
+    - stage: "Mail Gather Debug"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-mail-gather.img'
 
     # Cargo Ping Pong Debug
     - stage: "Cargo Ping Pong Debug"
@@ -219,6 +351,18 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-cargo-pingpong.img'
+    - stage: "Cargo Ping Pong Debug"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-cargo-pingpong.img'
 
     # Cargo Broadcast Debug
     - stage: "Cargo Broadcast Debug"
@@ -233,6 +377,18 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-cargo-broadcast.img'
+    - stage: "Cargo Broadcast Debug"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-cargo-broadcast.img'
 
     # Cargo Gather Debug
     - stage: "Cargo Gather Debug"
@@ -247,6 +403,18 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-cargo-gather.img'
+    - stage: "Cargo Gather Debug"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-cargo-gather.img'
 
 #===============================================================================
 # Release
@@ -265,6 +433,18 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-hello.img'
+    - stage: "Hello Release"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-hello.img'
 
     # Barrier Release
     - stage: "Barrier Release"
@@ -279,6 +459,18 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-barrier.img'
+    - stage: "Barrier Release"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-barrier.img'
 
     # Heartbeat Release
     - stage: "Heartbeat Release"
@@ -293,6 +485,18 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-heartbeat.img'
+    - stage: "Heartbeat Release"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-heartbeat.img'
 
     # Lookup Release
     - stage: "Lookup Release"
@@ -307,6 +511,18 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-lookup.img'
+    - stage: "Lookup Release"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-lookup.img'
 
     # Memory Read Release
     - stage: "Memory Read Release"
@@ -321,6 +537,18 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-memread.img'
+    - stage: "Memory Read Release"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-memread.img'
 
     # Memory Write Release
     - stage: "Memory Write Release"
@@ -335,6 +563,18 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-memwrite.img'
+    - stage: "Memory Write Release"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-memwrite.img'
 
     # Page Fetch Release
     - stage: "Page Fetch Release"
@@ -349,6 +589,18 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-pgfetch.img'
+    - stage: "Page Fetch Release"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-pgfetch.img'
 
     # Memory Sync Release
     - stage: "Memory Sync Release"
@@ -363,6 +615,18 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-msync.img'
+    - stage: "Memory Sync Release"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-msync.img'
 
     # Mail Ping Pong Release
     - stage: "Mail Ping Pong Release"
@@ -377,6 +641,18 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-mail-pingpong.img'
+    - stage: "Mail Ping Pong Release"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-mail-pingpong.img'
 
     # Mail Broadcast Release
     - stage: "Mail Broadcast Release"
@@ -391,6 +667,18 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-mail-broadcast.img'
+    - stage: "Mail Broadcast Release"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-mail-broadcast.img'
 
     # Mail Gather Release
     - stage: "Mail Gather Release"
@@ -405,6 +693,18 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-mail-gather.img'
+    - stage: "Mail Gather Release"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-mail-gather.img'
 
     # Cargo Ping Pong Release
     - stage: "Cargo Ping Pong Release"
@@ -419,6 +719,18 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-cargo-pingpong.img'
+    - stage: "Cargo Ping Pong Release"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-cargo-pingpong.img'
 
     # Cargo Broadcast Release
     - stage: "Cargo Broadcast Release"
@@ -433,6 +745,18 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-cargo-broadcast.img'
+    - stage: "Cargo Broadcast Release"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-cargo-broadcast.img'
 
     # Cargo Gather Release
     - stage: "Cargo Gather Release"
@@ -447,6 +771,18 @@ jobs:
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
       - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-cargo-gather.img'
+    - stage: "Cargo Gather Release"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-cargo-gather.img'
 
 notifications:
   slack: nanvix:31ePVjsrXynUajPUDqy6I0hp
