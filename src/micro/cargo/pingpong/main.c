@@ -43,7 +43,17 @@
 /**
  * @brief Size of buffers (in bytes)
  */
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE (128*1024)
+
+/**
+ * @brief Minimum Transfer Size (in bytes)
+ */
+#define MIN_SIZE 64
+
+/**
+ * @brief Maximum Transfer Size (in bytes)
+ */
+#define MAX_SIZE BUFFER_SIZE
 
 /**
  * @brief Port number used in the benchmark.
@@ -56,12 +66,12 @@
 static char buf[BUFFER_SIZE];
 
 /**
- * @bbrief Receives data from worker.
+ * @brief Receives data from worker.
  */
 static void do_leader(void)
 {
+	uint64_t latency = 0;
 	int inportal, outportal;
-	uint64_t latency, volume;
 
 	/* Establish connection. */
 	uassert((inportal = kportal_create(knode_get_num(), PORT_NUM)) >= 0);
@@ -69,21 +79,25 @@ static void do_leader(void)
 
 	for (int i = 1; i <= NITERATIONS; i++)
 	{
-		uassert(kportal_allow(inportal, PROCESSOR_NODENUM_LEADER + 1, PORT_NUM) == 0);
-		uassert(kportal_read(inportal, buf, BUFFER_SIZE) == BUFFER_SIZE);
-		uassert(kportal_write(outportal, buf, BUFFER_SIZE) == BUFFER_SIZE);
+		for (ssize_t n = MIN_SIZE; n <= MAX_SIZE; n = n*2)
+		{
+			uint64_t latency_old = latency;
 
-		uassert(kportal_ioctl(inportal, KPORTAL_IOCTL_GET_LATENCY, &latency) == 0);
-		uassert(kportal_ioctl(inportal, KPORTAL_IOCTL_GET_VOLUME, &volume) == 0);
+			uassert(kportal_allow(inportal, PROCESSOR_NODENUM_LEADER + 1, PORT_NUM) == 0);
+			uassert(kportal_read(inportal, buf, n) == n);
+			uassert(kportal_write(outportal, buf, n) == n);
 
-		/* Dump statistics. */
-#ifndef NDEBUG
-		uprintf("[benchmarks][cargo][pingpong] it=%d latency=%l volume=%l",
-#else
-		uprintf("cargo;pingpong;%d;%l;%l",
-#endif
-			i, latency, volume
-		);
+			uassert(kportal_ioctl(inportal, KPORTAL_IOCTL_GET_LATENCY, &latency) == 0);
+
+			/* Dump statistics. */
+			#ifndef NDEBUG
+			uprintf("[benchmarks][cargo-pingpong] it=%d latency=%l size=%d",
+			#else
+			uprintf("[benchmarks][cargo-pingpong] %d %l %d",
+			#endif
+				i, latency - latency_old, n
+			);
+		}
 	}
 
 	/* House keeping. */
@@ -104,10 +118,14 @@ static void do_worker(void)
 
 	for (int i = 1; i <= NITERATIONS; i++)
 	{
-		uassert(kportal_write(outportal, buf, BUFFER_SIZE) == BUFFER_SIZE);
-		uassert(kportal_allow(inportal, PROCESSOR_NODENUM_LEADER, PORT_NUM) == 0);
-		uassert(kportal_read(inportal, buf,  BUFFER_SIZE) == BUFFER_SIZE);
+		for (ssize_t n = MIN_SIZE; n <= MAX_SIZE; n = n*2)
+		{
+			uassert(kportal_write(outportal, buf, n) == n);
+			uassert(kportal_allow(inportal, PROCESSOR_NODENUM_LEADER, PORT_NUM) == 0);
+			uassert(kportal_read(inportal, buf,  n) == n);
+		}
 	}
+
 
 	/* House keeping. */
 	uassert(kportal_close(outportal) == 0);
