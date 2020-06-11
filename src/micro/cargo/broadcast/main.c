@@ -107,7 +107,7 @@ static void do_leader(void)
 static void do_worker(void)
 {
 	int inportal;
-	uint64_t latency, volume;
+	uint64_t latency;
 
 	/* Establish connection. */
 	uassert((inportal = kportal_create(knode_get_num(), PORT_NUM)) >= 0);
@@ -118,15 +118,14 @@ static void do_worker(void)
 		uassert(kportal_read(inportal, buf,  BUFFER_SIZE) == BUFFER_SIZE);
 		
 		uassert(kportal_ioctl(inportal, KPORTAL_IOCTL_GET_LATENCY, &latency) == 0);
-		uassert(kportal_ioctl(inportal, KPORTAL_IOCTL_GET_VOLUME, &volume) == 0);
 
 		/* Dump statistics. */
 #ifndef NDEBUG
-		uprintf("[benchmarks][cargo][broadcast] it=%d latency=%l volume=%l",
+		uprintf("[benchmarks][cargo-broadcast] it=%d latency=%l volume=%l",
 #else
-		uprintf("cargo;broadcast;%d;%l;%l",
+		uprintf("[benchmarks][cargo-broadcast] %d %l %l",
 #endif
-			i, latency, volume
+			i, latency, BUFFER_SIZE
 		);
 	}
 
