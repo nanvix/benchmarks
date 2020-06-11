@@ -70,7 +70,8 @@ static char buf[BUFFER_SIZE];
  */
 static void do_leader(void)
 {
-	uint64_t latency = 0;
+	uint64_t ping_latency = 0;
+	uint64_t pong_latency = 0;
 	int inportal, outportal;
 
 	/* Establish connection. */
@@ -81,21 +82,31 @@ static void do_leader(void)
 	{
 		for (ssize_t n = MIN_SIZE; n <= MAX_SIZE; n = n*2)
 		{
-			uint64_t latency_old = latency;
+			uint64_t total_latency;
+			uint64_t ping_latency_old = ping_latency;
+			uint64_t pong_latency_old = pong_latency;
 
+			perf_start(0, PERF_CYCLES);
 			uassert(kportal_allow(inportal, PROCESSOR_NODENUM_LEADER + 1, PORT_NUM) == 0);
 			uassert(kportal_read(inportal, buf, n) == n);
 			uassert(kportal_write(outportal, buf, n) == n);
+			perf_stop(0);
+			total_latency = perf_read(0);
 
-			uassert(kportal_ioctl(inportal, KPORTAL_IOCTL_GET_LATENCY, &latency) == 0);
+			uassert(kportal_ioctl(inportal, KPORTAL_IOCTL_GET_LATENCY, &ping_latency) == 0);
+			uassert(kportal_ioctl(outportal, KPORTAL_IOCTL_GET_LATENCY, &pong_latency) == 0);
 
 			/* Dump statistics. */
 			#ifndef NDEBUG
-			uprintf("[benchmarks][cargo-pingpong] it=%d latency=%l size=%d",
+			uprintf("[benchmarks][cargo-pingpong] it=%d read=%l write=%l total=%l size=%d",
 			#else
-			uprintf("[benchmarks][cargo-pingpong] %d %l %d",
+			uprintf("[benchmarks][cargo-pingpong] %d %l %l %l %d",
 			#endif
-				i, latency - latency_old, n
+				i,
+				(ping_latency - ping_latency_old),
+				(pong_latency - pong_latency_old),
+				total_latency,
+				n
 			);
 		}
 	}
