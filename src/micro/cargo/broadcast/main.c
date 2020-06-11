@@ -28,6 +28,13 @@
 #include <nanvix/ulib.h>
 
 /**
+ * @brief Number of processes.
+ */
+#ifndef NUM_PROCS
+#define NUM_PROCS NANVIX_PROC_MAX
+#endif
+
+/**
  * @brief Number of iterations for the benchmark.
  */
 #ifdef NDEBUG
@@ -60,10 +67,10 @@ static char buf[BUFFER_SIZE];
  */
 static void do_leader(void)
 {
-	int outportals[NANVIX_PROC_MAX - 1];
+	int outportals[NUM_PROCS - 1];
 
 	/* Establish connection. */
-	for (int i = 1; i < NANVIX_PROC_MAX; i++)
+	for (int i = 1; i < NUM_PROCS; i++)
 	{
 		uassert((
 			outportals[i - 1] = kportal_open(
@@ -77,7 +84,7 @@ static void do_leader(void)
 	/* Broadcast data. */
 	for (int k = 1; k <= NITERATIONS; k++)
 	{
-		for (int i = 1; i < NANVIX_PROC_MAX; i++)
+		for (int i = 1; i < NUM_PROCS; i++)
 		{
 			uassert(
 				kportal_write(
@@ -90,7 +97,7 @@ static void do_leader(void)
 	}
 
 	/* House keeping. */
-	for (int i = 1; i < NANVIX_PROC_MAX; i++)
+	for (int i = 1; i < NUM_PROCS; i++)
 		uassert(kportal_close(outportals[i - 1]) == 0);
 }
 
