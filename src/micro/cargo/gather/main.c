@@ -28,6 +28,13 @@
 #include <nanvix/ulib.h>
 
 /**
+ * @brief Number of processes.
+ */
+#ifndef NUM_PROCS
+#define NUM_PROCS NANVIX_PROC_MAX
+#endif
+
+/**
  * @brief Number of iterations for the benchmark.
  */
 #ifdef NDEBUG
@@ -69,7 +76,7 @@ static void do_leader(void)
 	/* Receive data. */
 	for (int k = 1; k <= NITERATIONS; k++)
 	{
-		for (int i = 1; i < NANVIX_PROC_MAX; i++)
+		for (int i = 1; i < NUM_PROCS; i++)
 		{
 			uassert(
 				kportal_allow(
