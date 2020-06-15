@@ -29,6 +29,13 @@
 #include <nanvix/ulib.h>
 
 /**
+ * @brief Number of processes.
+ */
+#ifndef NUM_PROCS
+#define NUM_PROCS NANVIX_PROC_MAX
+#endif
+
+/**
  * @brief Number of iterations for the benchmark.
  */
 #ifdef NDEBUG
@@ -38,7 +45,7 @@
 #endif
 
 static barrier_t barrier;
-static int nodes[NANVIX_PROC_MAX];
+static int nodes[NUM_PROCS];
 
 /*============================================================================*
  * Benchmark Kernel                                                           *
@@ -62,7 +69,7 @@ static void do_leader(void)
 	int outboxes[NANVIX_PROC_MAX - 1];
 
 	/* Establish connections. */
-	for (int i = 1; i < NANVIX_PROC_MAX; i++)
+	for (int i = 1; i < NUM_PROCS; i++)
 		uassert((outboxes[i - 1] = kmailbox_open(PROCESSOR_NODENUM_LEADER + i, PORT_NUM)) >= 0);
 
 	uassert(barrier_wait(barrier) == 0);
@@ -70,7 +77,7 @@ static void do_leader(void)
 	/* Broadcast messages. */
 	for (int k = 1; k <= NITERATIONS; k++)
 	{
-		for (int i = 1; i < NANVIX_PROC_MAX; i++)
+		for (int i = 1; i < NUM_PROCS; i++)
 		{
 			uassert(
 				kmailbox_write(
@@ -85,7 +92,7 @@ static void do_leader(void)
 	uassert(barrier_wait(barrier) == 0);
 
 	/* House keeping. */
-	for (int i = 1; i < NANVIX_PROC_MAX; i++)
+	for (int i = 1; i < NUM_PROCS; i++)
 		uassert(kmailbox_close(outboxes[i - 1]) == 0);
 }
 
@@ -142,10 +149,10 @@ static void benchmark_mail_broadcast(void)
 		do_leader : do_worker;
 
 	/* Build list of nodes. */
-	for (int i = 0; i < NANVIX_PROC_MAX; i++)
+	for (int i = 0; i < NUM_PROCS; i++)
 		nodes[i] = PROCESSOR_NODENUM_LEADER + i;
 
-	barrier = barrier_create(nodes, NANVIX_PROC_MAX);
+	barrier = barrier_create(nodes, NUM_PROCS);
 	uassert(BARRIER_IS_VALID(barrier));
 
 		fn();
