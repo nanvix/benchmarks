@@ -89,6 +89,7 @@ static void build_node_list(int * clusters, int nclusters)
 static void do_leader(void)
 {
 	int syncin;
+	uint64_t l0, l1;
 	int clusters[NUM_PROCS];
 
 	build_node_list(clusters, NUM_PROCS);
@@ -104,9 +105,27 @@ static void do_leader(void)
 
 	delay(5, CLUSTER_FREQ);
 
+	uassert(ksync_ioctl(syncin, KSYNC_IOCTL_GET_LATENCY, &l0) == 0);
+
 	/* Broadcast data. */
 	for (int k = 1; k <= NITERATIONS; k++)
+	{
 		uassert(ksync_wait(syncin) == 0);
+
+		uassert(ksync_ioctl(syncin, KSYNC_IOCTL_GET_LATENCY, &l1) == 0);
+
+		/* Dump statistics. */
+#ifndef NDEBUG
+		uprintf("[benchmarks][signal-gather] it=%d latency=%l",
+#else
+		uprintf("[signal-gather] %d %l",
+#endif
+			k, (l1 - l0)
+		);
+
+		l0 = l1;
+
+	}
 
 	/* House keeping. */
 	uassert(ksync_unlink(syncin) == 0);
@@ -118,7 +137,6 @@ static void do_leader(void)
 static void do_worker(void)
 {
 	int syncout;
-	uint64_t l0, l1;
 	int clusters[NUM_PROCS];
 
 	build_node_list(clusters, NUM_PROCS);
@@ -134,25 +152,8 @@ static void do_worker(void)
 
 	delay(5, CLUSTER_FREQ);
 
-	uassert(ksync_ioctl(syncout, KSYNC_IOCTL_GET_LATENCY, &l0) == 0);
-
 	for (int i = 1; i <= NITERATIONS; i++)
-	{
 		uassert(ksync_signal(syncout) == 0);
-
-		uassert(ksync_ioctl(syncout, KSYNC_IOCTL_GET_LATENCY, &l1) == 0);
-
-		/* Dump statistics. */
-#ifndef NDEBUG
-		uprintf("[benchmarks][signal][gather] it=%d latency=%l nsignals=%d",
-#else
-		uprintf("signal;gather;%d;%l;%d;",
-#endif
-			i, (l1 - l0), i
-		);
-
-		l0 = l1;
-	}
 
 	/* House keeping. */
 	uassert(ksync_close(syncout) == 0);

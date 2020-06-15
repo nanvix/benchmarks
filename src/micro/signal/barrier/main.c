@@ -161,11 +161,11 @@ static void do_worker(void)
 
 		/* Dump statistics. */
 #ifndef NDEBUG
-		uprintf("[benchmarks][signal-barrier] it=%d latency_in=%l latency_out=%l nsignals=%d, nwaits=%d",
+		uprintf("[benchmarks][signal-barrier] it=%d latency_in=%l latency_out=%l",
 #else
-		uprintf("[benchmarks][signal-barrier] %d %l %l,%d %d",
+		uprintf("[benchmarks][signal-barrier] %d %l %l",
 #endif
-			i, (lin1 - lin0), (lout1 - lout0), i, i
+			i, (lin1 - lin0), (lout1 - lout0)
 		);
 
 		lin0  = lin1;
