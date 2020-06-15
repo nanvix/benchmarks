@@ -67,7 +67,9 @@ static char msg[KMAILBOX_MESSAGE_SIZE];
 static void do_leader(void)
 {
 	int inbox;
-	uint64_t latency, volume;
+	uint64_t old_latency = 0;
+	uint64_t new_latency = 0;
+
 
 	/* Establish connection. */
 	uassert((inbox = kmailbox_create(knode_get_num(), PORT_NUM)) >= 0);
@@ -77,6 +79,8 @@ static void do_leader(void)
 	/* Broadcast messages. */
 	for (int k = 1; k <= NITERATIONS; k++)
 	{
+		old_latency = new_latency;
+
 		for (int i = 1; i < NUM_PROCS; i++)
 		{
 			uassert(
@@ -88,16 +92,15 @@ static void do_leader(void)
 			);
 		}
 
-		uassert(kmailbox_ioctl(inbox, KMAILBOX_IOCTL_GET_LATENCY, &latency) == 0);
-		uassert(kmailbox_ioctl(inbox, KMAILBOX_IOCTL_GET_VOLUME, &volume) == 0);
+		uassert(kmailbox_ioctl(inbox, KMAILBOX_IOCTL_GET_LATENCY, &new_latency) == 0);
 
 		/* Dump statistics. */
 #ifndef NDEBUG
-		uprintf("[benchmarks][mail][gather] it=%d latency=%l volume=%l",
+		uprintf("[benchmarks][mail-gather] it=%d latency=%l",
 #else
-		uprintf("mailbox;gather;%d;%l;%l",
+		uprintf("[benchmarks][mail-gather] %d %l",
 #endif
-			k, latency, volume
+			k, new_latency - old_latency
 		);
 	}
 

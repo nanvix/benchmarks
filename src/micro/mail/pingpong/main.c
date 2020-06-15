@@ -60,7 +60,8 @@ static char msg[KMAILBOX_MESSAGE_SIZE];
 static void do_leader(void)
 {
 	int inbox, outbox;
-	uint64_t latency, volume;
+	uint64_t ping_latency = 0;
+	uint64_t pong_latency = 0;
 
 	/* Establish connection. */
 	uassert((inbox = kmailbox_create(knode_get_num(), PORT_NUM)) >= 0);
@@ -70,19 +71,24 @@ static void do_leader(void)
 
 	for (int i = 1; i <= NITERATIONS; i++)
 	{
+		uint64_t ping_latency_old = ping_latency;
+		uint64_t pong_latency_old = pong_latency;
+
 		uassert(kmailbox_read(inbox, msg, KMAILBOX_MESSAGE_SIZE) == KMAILBOX_MESSAGE_SIZE);
 		uassert(kmailbox_write(outbox, msg, KMAILBOX_MESSAGE_SIZE) == KMAILBOX_MESSAGE_SIZE);
 
-		uassert(kmailbox_ioctl(inbox, KMAILBOX_IOCTL_GET_LATENCY, &latency) == 0);
-		uassert(kmailbox_ioctl(inbox, KMAILBOX_IOCTL_GET_VOLUME, &volume) == 0);
+		uassert(kmailbox_ioctl(inbox, KMAILBOX_IOCTL_GET_LATENCY, &ping_latency) == 0);
+		uassert(kmailbox_ioctl(outbox, KMAILBOX_IOCTL_GET_LATENCY, &pong_latency) == 0);
 
 		/* Dump statistics. */
 #ifndef NDEBUG
-		uprintf("[benchmarks][mail][pingpong] it=%d latency=%l volume=%l",
+		uprintf("[benchmarks][mail-pingpong] it=%d read=%l write=%l",
 #else
-		uprintf("mailbox;pingpong;%d;%l;%l",
+		uprintf("[benchmarks][mail-pingpong] %d %l %l",
 #endif
-			i, latency, volume
+			i,
+			(ping_latency - ping_latency_old),
+			(pong_latency - pong_latency_old)
 		);
 	}
 
