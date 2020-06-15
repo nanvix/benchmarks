@@ -67,6 +67,8 @@ static char buf[BUFFER_SIZE];
  */
 static void do_leader(void)
 {
+	uint64_t old_latency[NUM_PROCS - 1];
+	uint64_t new_latency[NUM_PROCS - 1];
 	int outportals[NUM_PROCS - 1];
 
 	/* Establish connection. */
@@ -79,11 +81,14 @@ static void do_leader(void)
 				PORT_NUM)
 			) >= 0
 		);
+		new_latency[i - 1] = 0;
 	}
 
 	/* Broadcast data. */
 	for (int k = 1; k <= NITERATIONS; k++)
 	{
+		uint64_t total_latency = 0;
+
 		for (int i = 1; i < NUM_PROCS; i++)
 		{
 			uassert(
@@ -94,6 +99,23 @@ static void do_leader(void)
 				) == BUFFER_SIZE
 			);
 		}
+
+		for (int i = 1; i < NUM_PROCS; i++)
+		{
+			old_latency[i - 1] = new_latency[i - 1];
+			uassert(kportal_ioctl(outportals[i - 1], KPORTAL_IOCTL_GET_LATENCY, &new_latency[i - 1]) == 0);
+
+			total_latency += new_latency[i - 1] - old_latency[i - 1];
+		}
+
+		/* Dump statistics. */
+#ifndef NDEBUG
+		uprintf("[benchmarks][cargo-broadcast] it=%d latency=%l volume=%d",
+#else
+		uprintf("[benchmarks][cargo-broadcast] %d %l %d",
+#endif
+			k, total_latency, BUFFER_SIZE
+		);
 	}
 
 	/* House keeping. */
@@ -107,7 +129,6 @@ static void do_leader(void)
 static void do_worker(void)
 {
 	int inportal;
-	uint64_t latency;
 
 	/* Establish connection. */
 	uassert((inportal = kportal_create(knode_get_num(), PORT_NUM)) >= 0);
@@ -116,17 +137,6 @@ static void do_worker(void)
 	{
 		uassert(kportal_allow(inportal, PROCESSOR_NODENUM_LEADER, PORT_NUM) == 0);
 		uassert(kportal_read(inportal, buf,  BUFFER_SIZE) == BUFFER_SIZE);
-		
-		uassert(kportal_ioctl(inportal, KPORTAL_IOCTL_GET_LATENCY, &latency) == 0);
-
-		/* Dump statistics. */
-#ifndef NDEBUG
-		uprintf("[benchmarks][cargo-broadcast] it=%d latency=%l volume=%l",
-#else
-		uprintf("[benchmarks][cargo-broadcast] %d %l %l",
-#endif
-			i, latency, BUFFER_SIZE
-		);
 	}
 
 	/* House keeping. */

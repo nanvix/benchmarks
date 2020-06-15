@@ -68,7 +68,8 @@ static char buf[BUFFER_SIZE];
 static void do_leader(void)
 {
 	int inportal;
-	uint64_t latency;
+	uint64_t old_latency = 0;
+	uint64_t new_latency = 0;
 
 	/* Establish connection. */
 	uassert((inportal = kportal_create(knode_get_num(), PORT_NUM)) >= 0);
@@ -76,6 +77,8 @@ static void do_leader(void)
 	/* Receive data. */
 	for (int k = 1; k <= NITERATIONS; k++)
 	{
+		old_latency = new_latency;
+
 		for (int i = 1; i < NUM_PROCS; i++)
 		{
 			uassert(
@@ -93,16 +96,16 @@ static void do_leader(void)
 				) == BUFFER_SIZE
 			);
 		}
-		
-		uassert(kportal_ioctl(inportal, KPORTAL_IOCTL_GET_LATENCY, &latency) == 0);
+
+		uassert(kportal_ioctl(inportal, KPORTAL_IOCTL_GET_LATENCY, &new_latency) == 0);
 
 		/* Dump statistics. */
 #ifndef NDEBUG
-		uprintf("[benchmarks][cargo-gather] it=%d latency=%l volume=%l",
+		uprintf("[benchmarks][cargo-gather] it=%d latency=%l volume=%d",
 #else
-		uprintf("[benchmarks][cargo-gather] %d l %l",
+		uprintf("[benchmarks][cargo-gather] %d %l %d",
 #endif
-			k, latency, BUFFER_SIZE
+			k, new_latency - old_latency, BUFFER_SIZE
 		);
 	}
 
