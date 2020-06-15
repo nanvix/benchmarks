@@ -28,6 +28,13 @@
 #include <nanvix/ulib.h>
 
 /**
+ * @brief Number of processes.
+ */
+#ifndef NUM_PROCS
+#define NUM_PROCS NANVIX_PROC_MAX
+#endif
+
+/**
  * @brief Number of iterations for the benchmark.
  */
 #ifdef NDEBUG
@@ -82,15 +89,15 @@ static void build_node_list(int * clusters, int nclusters)
 static void do_leader(void)
 {
 	int syncin;
-	int clusters[PROCESSOR_CCLUSTERS_NUM];
+	int clusters[NUM_PROCS];
 
-	build_node_list(clusters, PROCESSOR_CCLUSTERS_NUM);
+	build_node_list(clusters, NUM_PROCS);
 
 	/* Establish connection. */
 	uassert((
 		syncin = ksync_create(
 				clusters,
-				PROCESSOR_CCLUSTERS_NUM,
+				NUM_PROCS,
 				SYNC_ALL_TO_ONE)
 		) >= 0
 	);
@@ -112,15 +119,15 @@ static void do_worker(void)
 {
 	int syncout;
 	uint64_t l0, l1;
-	int clusters[PROCESSOR_CCLUSTERS_NUM];
+	int clusters[NUM_PROCS];
 
-	build_node_list(clusters, PROCESSOR_CCLUSTERS_NUM);
+	build_node_list(clusters, NUM_PROCS);
 
 	/* Establish connection. */
 	uassert((
 		syncout = ksync_open(
 				clusters,
-				PROCESSOR_CCLUSTERS_NUM,
+				NUM_PROCS,
 				SYNC_ALL_TO_ONE)
 		) >= 0
 	);
