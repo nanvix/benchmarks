@@ -22,180 +22,172 @@
  * SOFTWARE.
  */
 
-#include <nanvix/servers/message.h>
 #include <nanvix/runtime/runtime.h>
 #include <nanvix/sys/perf.h>
+#include <nanvix/limits.h>
 #include <nanvix/ulib.h>
 
+/**
+ * @brief Number of iterations for the benchmark.
+ */
+#ifdef NDEBUG
+#define NITERATIONS 30
+#else
+#define NITERATIONS 1
+#endif
+
 /*============================================================================*
- * Barrier                                                                    *
+ * Benchmark Kernel                                                           *
  *============================================================================*/
 
 /**
- * @brief Port number for barrier.
+ * @brief Forces a platform-independent delay.
+ *
+ * @param cycles Delay in cycles.
+ *
+ * @author João Vicente Souto
  */
-#define BARRIER_PORT 1
-
-/**
- * @brief Number of processes in the barier.
- */
-#define PROCS_NUM PROCESSOR_CCLUSTERS_NUM
-
-/**
- * @brief Name Server message.
- */
-struct message
+static void delay(int times, uint64_t cycles)
 {
-	message_header header;
-};
+	uint64_t t0, t1;
 
-/**
- * @brief Startup barrier
- */
-static struct
-{
-	int mailboxes[PROCS_NUM];
-} slow_barrier = {
-	.mailboxes = {
-		[0 ... (PROCS_NUM - 1)] = -1
+	for (int i = 0; i < times; ++i)
+	{
+		kclock(&t0);
+
+		do
+			kclock(&t1);
+		while ((t1 - t0) < cycles);
 	}
-};
+}
 
 /*
  * Build a list of the node IDs
  *
- * @param nodes
- * @param nioclusters
- * @param ncclusters
+ * @param cluster Nodes list buffer
  *
  * @author João Vicente Souto
  */
-static void build_node_list(int *nodes, int ncclusters)
+static void build_node_list(int * clusters, int nclusters)
 {
-	int base;
-	int step;
-	int index;
-	int max_clusters;
+	uassert(clusters != NULL);
 
-	index = 0;
-
-	/* Build node IDs of the Compute Clusters. */
-	base         = PROCESSOR_IOCLUSTERS_NUM * (PROCESSOR_NOC_IONODES_NUM / PROCESSOR_IOCLUSTERS_NUM);
-	max_clusters = PROCESSOR_CCLUSTERS_NUM;
-	step         = (PROCESSOR_NOC_CNODES_NUM / PROCESSOR_CCLUSTERS_NUM);
-	for (int i = 0; i < max_clusters && i < ncclusters; i++, index++)
-		nodes[index] = base + (i * step);
+	for (int i = 0; i < nclusters; ++i)
+		clusters[i] = PROCESSOR_NODENUM_LEADER + i;
 }
 
 /**
- * @brief Initializes the spawn barrier.
+ * @brief Receives data from worker.
  */
-void slow_barrier_setup(void)
+static void do_leader(void)
 {
-	int procs[PROCS_NUM];
+	int syncin;
+	int syncout;
+	uint64_t lin0, lin1;
+	uint64_t lout0, lout1;
+	int clusters[NANVIX_PROC_MAX];
 
-	build_node_list(procs, PROCS_NUM);
+	build_node_list(clusters, NANVIX_PROC_MAX);
 
-	/* Leader. */
-	if (kcluster_get_num() == PROCESSOR_CLUSTERNUM_LEADER)
-	{
-		for (int i = 1 ; i < PROCS_NUM; i++)
-		{
-			uassert((slow_barrier.mailboxes[i] = kmailbox_open(
-				procs[i], BARRIER_PORT)
-			) >= 0);
-		}
-	}
-
-	/* Follower. */
-	else
-	{
-		uassert((slow_barrier.mailboxes[0] = kmailbox_open(
-			procs[0], BARRIER_PORT)
-		) >= 0);
-	}
-}
-
-/**
- * @brief Shutdowns the spawn barrier.
- */
-void slow_barrier_cleanup(void)
-{
-	/* Leader. */
-	if (kcluster_get_num() == PROCESSOR_CLUSTERNUM_LEADER)
-	{
-		for (int i = 1 ; i < PROCS_NUM; i++)
-			uassert(kmailbox_close(slow_barrier.mailboxes[i]) == 0);
-	}
-
-	/* Follower. */
-	else
-		uassert(kmailbox_close(slow_barrier.mailboxes[0]) == 0);
-}
-
-/**
- * @brief Waits on the startup barrier
- */
-void slow_barrier_wait(void)
-{
-	struct message msg;
-
-	/* Leader */
-	if (kcluster_get_num() == PROCESSOR_CLUSTERNUM_LEADER)
-	{
-		for (int i = 1 ; i < PROCS_NUM; i++)
-		{
-			uassert(kmailbox_read(
-				stdinbox_get(), &msg, sizeof(struct message)
-			) == sizeof(struct message));
-		}
-		for (int i = 1 ; i < PROCS_NUM; i++)
-		{
-			uassert(kmailbox_write(
-				slow_barrier.mailboxes[i], &msg, sizeof(struct message)
-			) == sizeof(struct message));
-		}
-	}
-
-	/* Follower. */
-	else
-	{
-		uassert(kmailbox_write(
-			slow_barrier.mailboxes[0], &msg, sizeof(struct message)
-		) == sizeof(struct message));
-		uassert(kmailbox_read(
-			stdinbox_get(), &msg, sizeof(struct message)
-		) == sizeof(struct message));
-	}
-}
-
-/*============================================================================*
- * Benchmark                                                                  *
- *============================================================================*/
-
-/**
- * @brief Benchmarks all-to-all synchronization.
- */
-static void benchmark_slow_barrier(void)
-{
-	uint64_t time_slow_barrier;
-
-	slow_barrier_setup();
-
-	perf_start(0, PERF_CYCLES);
-	slow_barrier_wait();
-	perf_stop(0);
-	time_slow_barrier = perf_read(0);
-
-	slow_barrier_cleanup();
-
-#ifndef NDEBUG
-	uprintf("[benchmarks][slow_barrier] %l",
-#else
-	uprintf("[benchmarks][slow_barrier] %l",
-#endif
-		time_slow_barrier
+	/* Establish connection. */
+	uassert((
+		syncin = ksync_create(
+				clusters,
+				NANVIX_PROC_MAX,
+				SYNC_ALL_TO_ONE)
+		) >= 0
 	);
+	uassert((
+		syncout = ksync_open(
+				clusters,
+				NANVIX_PROC_MAX,
+				SYNC_ONE_TO_ALL)
+		) >= 0
+	);
+
+	delay(5, CLUSTER_FREQ);
+
+	uassert(ksync_ioctl(syncin, KSYNC_IOCTL_GET_LATENCY, &lin0) == 0);
+	uassert(ksync_ioctl(syncout, KSYNC_IOCTL_GET_LATENCY, &lout0) == 0);
+
+	/* Broadcast data. */
+	for (int k = 1; k <= NITERATIONS; k++)
+	{
+		uassert(ksync_wait(syncin) == 0);
+		uassert(ksync_signal(syncout) == 0);
+
+		uassert(ksync_ioctl(syncin, KSYNC_IOCTL_GET_LATENCY, &lin1) == 0);
+		uassert(ksync_ioctl(syncout, KSYNC_IOCTL_GET_LATENCY, &lout1) == 0);
+
+		/* Dump statistics. */
+#ifndef NDEBUG
+		uprintf("[benchmarks][barrier] it=%d latency_in=%l latency_out=%l",
+#else
+		uprintf("[benchmarks][barrier] %d %l %l",
+#endif
+			k, (lin1 - lin0), (lout1 - lout0)
+		);
+
+		lin0  = lin1;
+		lout0 = lout1;
+	}
+
+	/* House keeping. */
+	uassert(ksync_close(syncout) == 0);
+	uassert(ksync_unlink(syncin) == 0);
+}
+
+/**
+ * @brief Sends data to leader.
+ */
+static void do_worker(void)
+{
+	int syncin;
+	int syncout;
+	int clusters[NANVIX_PROC_MAX];
+
+	build_node_list(clusters, NANVIX_PROC_MAX);
+
+	/* Establish connection. */
+	uassert((
+		syncin = ksync_create(
+				clusters,
+				NANVIX_PROC_MAX,
+				SYNC_ONE_TO_ALL)
+		) >= 0
+	);
+	uassert((
+		syncout = ksync_open(
+				clusters,
+				NANVIX_PROC_MAX,
+				SYNC_ALL_TO_ONE)
+		) >= 0
+	);
+
+	delay(5, CLUSTER_FREQ);
+
+	for (int i = 1; i <= NITERATIONS; i++)
+	{
+		uassert(ksync_signal(syncout) == 0);
+		uassert(ksync_wait(syncin) == 0);
+	}
+
+	/* House keeping. */
+	uassert(ksync_close(syncout) == 0);
+	uassert(ksync_unlink(syncin) == 0);
+}
+
+/**
+ * @brief Benchmarks barrier communication with syncs.
+ */
+static void benchmark_signal_barrier(void)
+{
+	void (*fn)(void);
+
+	fn = (knode_get_num() == PROCESSOR_NODENUM_LEADER) ?
+		do_leader : do_worker;
+
+	fn();
 }
 
 /*============================================================================*
@@ -210,8 +202,7 @@ int __main3(int argc, const char *argv[])
 	((void) argc);
 	((void) argv);
 
-	benchmark_slow_barrier();
+	benchmark_signal_barrier();
 
 	return (0);
 }
-

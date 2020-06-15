@@ -23,29 +23,13 @@
 #
 
 # Builds everything.
-all: all-barrier all-broadcast all-gather
+all: all-broadcast all-gather
 
 # Cleans up build objects.
-clean: clean-barrier clean-broadcast clean-gather
+clean: clean-broadcast clean-gather
 
 # Cleans up everything.
-distclean: distclean-barrier distclean-broadcast distclean-gather
-
-#===============================================================================
-# Ping-Pong
-#===============================================================================
-
-# Builds benchmark.
-all-barrier:
-	$(MAKE) -C barrier all
-
-# Cleans up build object.
-clean-barrier:
-	$(MAKE) -C barrier clean
-
-# Cleans up everything.
-distclean-barrier:
-	$(MAKE) -C barrier distclean
+distclean: distclean-broadcast distclean-gather
 
 #===============================================================================
 # Broadcast
