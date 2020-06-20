@@ -38,7 +38,7 @@
  * @brief Number of iterations for the benchmark.
  */
 #ifdef NDEBUG
-#define NITERATIONS 30
+#define NITERATIONS 60
 #else
 #define NITERATIONS 1
 #endif
