@@ -21,11 +21,11 @@ following benchmarks are featured.
 
 **OS Service Benchmarks**
 
-- barrier
-- deploy
-- heartbeat
-- lookup
-- pgfetch
+- `barrier`
+- `heartbeat`
+- `lookup`
+- `pgfetch`
+- `pginval`
 
 License & Maintainers
 ---------------------
