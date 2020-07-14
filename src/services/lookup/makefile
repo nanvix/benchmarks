@@ -32,12 +32,11 @@ include $(BUILDDIR)/makefile.config
 EXEC = nanvix-lookup.$(OBJ_SUFFIX)
 
 # C Source Files
-SRC = $(wildcard *.c) \
-      $(wildcard workload/*.c)
+SRC = $(wildcard *.c)
 
 # Object Files
 OBJ = $(SRC:.c=.$(OBJ_SUFFIX).o)
 
 #===============================================================================
 
-include $(BUILDDIR)/makefile.rule
+include $(BUILDDIR)/makefile.executable

@@ -38,7 +38,7 @@ static void benchmark_heartbeat(void)
 	uint64_t time_heartbeat;
 
 	perf_start(0, PERF_CYCLES);
-	name_heartbeat();
+	nanvix_name_heartbeat();
 	perf_stop(0);
 	time_heartbeat = perf_read(0);
 

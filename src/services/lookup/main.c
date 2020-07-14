@@ -44,7 +44,7 @@ static void benchmark_lookup(void)
 	pname = nanvix_getpname();
 
 	perf_start(0, PERF_CYCLES);
-	uassert(name_lookup(pname) == nodenum);
+	uassert(nanvix_name_lookup(pname) == nodenum);
 	perf_stop(0);
 	time_lookup = perf_read(0);
 
