@@ -22,59 +22,27 @@
 # SOFTWARE.
 #
 
-# Builds Everything
-all: all-micro all-services all-sysv
+# Builds everything.
+all: all-server
 
-# Cleans Build Objects
-clean: clean-micro clean-services clean-sysv
+# Cleans up build objects.
+clean: clean-server
 
-# Cleans Everything
-distclean: distclean-micro distclean-services distclean-sysv
-
-#===============================================================================
-# Micro Benchmarks
-#===============================================================================
-
-# Builds benchmarks.
-all-micro:
-	$(MAKE) -C micro all
-
-# Cleans build objects.
-clean-micro:
-	$(MAKE) -C micro clean
-
-# Cleans build.
-distclean-micro:
-	$(MAKE) -C micro distclean
+# Cleans up everything.
+distclean: distclean-server
 
 #===============================================================================
-# Benchmark of Services
+# Server
 #===============================================================================
 
-# Builds benchmarks.
-all-services:
-	$(MAKE) -C services all
+# Builds benchmark.
+all-server:
+	$(MAKE) -C server all
 
-# Cleans build objects.
-clean-services:
-	$(MAKE) -C services clean
+# Cleans up build object.
+clean-server:
+	$(MAKE) -C server clean
 
-# Cleans build.
-distclean-services:
-	$(MAKE) -C services distclean
-
-#===============================================================================
-# System V Abstractions
-#===============================================================================
-
-# Builds benchmarks.
-all-sysv:
-	$(MAKE) -C sysv all
-
-# Cleans build objects.
-clean-sysv:
-	$(MAKE) -C sysv clean
-
-# Cleans build.
-distclean-sysv:
-	$(MAKE) -C sysv distclean
+# Cleans up everything.
+distclean-server:
+	$(MAKE) -C server distclean
