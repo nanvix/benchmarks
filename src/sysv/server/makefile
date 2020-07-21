@@ -22,59 +22,21 @@
 # SOFTWARE.
 #
 
-# Builds Everything
-all: all-micro all-services all-sysv
-
-# Cleans Build Objects
-clean: clean-micro clean-services clean-sysv
-
-# Cleans Everything
-distclean: distclean-micro distclean-services distclean-sysv
+include $(BUILDDIR)/makefile.config
 
 #===============================================================================
-# Micro Benchmarks
+# Binaries Sources and Objects
 #===============================================================================
 
-# Builds benchmarks.
-all-micro:
-	$(MAKE) -C micro all
+# Binary
+EXEC = nanvix-sysv-server.$(OBJ_SUFFIX)
 
-# Cleans build objects.
-clean-micro:
-	$(MAKE) -C micro clean
+# C Source Files
+SRC = $(wildcard *.c)
 
-# Cleans build.
-distclean-micro:
-	$(MAKE) -C micro distclean
+# Object Files
+OBJ = $(SRC:.c=.$(OBJ_SUFFIX).o)
 
 #===============================================================================
-# Benchmark of Services
-#===============================================================================
 
-# Builds benchmarks.
-all-services:
-	$(MAKE) -C services all
-
-# Cleans build objects.
-clean-services:
-	$(MAKE) -C services clean
-
-# Cleans build.
-distclean-services:
-	$(MAKE) -C services distclean
-
-#===============================================================================
-# System V Abstractions
-#===============================================================================
-
-# Builds benchmarks.
-all-sysv:
-	$(MAKE) -C sysv all
-
-# Cleans build objects.
-clean-sysv:
-	$(MAKE) -C sysv clean
-
-# Cleans build.
-distclean-sysv:
-	$(MAKE) -C sysv distclean
+include $(BUILDDIR)/makefile.executable
