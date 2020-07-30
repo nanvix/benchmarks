@@ -22,71 +22,58 @@
 # SOFTWARE.
 #
 
+#===============================================================================
+# C Source Files
+#===============================================================================
+
+export SRC = $(wildcard $(CURDIR)/common/*.c)
+
+#===============================================================================
+
 # Builds Everything
-all: all-microbenchmarks all-pseudoapps all-utilities all-capbench
+all: all-km all-fn all-gf
 
 # Cleans Build Objects
-clean: clean-microbenchmarks clean-pseudoapps clean-utilities clean-capbench
+clean: clean-km clean-fn clean-gf
 
 # Cleans Everything
-distclean: distclean-microbenchmarks distclean-pseudoapps distclean-utilities distclean-capbench
+distclean: distclean-km distclean-fn distclean-gf
 
 #===============================================================================
-# Micro Benchmarks
+# KM Benchmark
 #===============================================================================
 
-all-microbenchmarks:
-	$(MAKE) -C microbenchmarks all
+all-km:
+	$(MAKE) -C km all
 
-clean-microbenchmarks:
-	$(MAKE) -C microbenchmarks clean
+clean-km:
+	$(MAKE) -C km clean
 
-distclean-microbenchmarks:
-	$(MAKE) -C microbenchmarks distclean
-
-#===============================================================================
-# Pseudo Applications
-#===============================================================================
-
-all-pseudoapps:
-	$(MAKE) -C pseudoapps all
-
-# Cleans build objects.
-clean-pseudoapps:
-	$(MAKE) -C pseudoapps clean
-
-# Cleans build.
-distclean-pseudoapps:
-	$(MAKE) -C pseudoapps distclean
+distclean-km:
+	$(MAKE) -C km distclean
 
 #===============================================================================
-# System V Abstractions
+# FN Benchmark
 #===============================================================================
 
-# Builds benchmarks.
-all-utilities:
-	$(MAKE) -C utilities all
+all-fn:
+	$(MAKE) -C fn all
 
-# Cleans build objects.
-clean-utilities:
-	$(MAKE) -C utilities clean
+clean-fn:
+	$(MAKE) -C fn clean
 
-# Cleans build.
-distclean-utilities:
-	$(MAKE) -C utilities distclean
+distclean-fn:
+	$(MAKE) -C fn distclean
 
 #===============================================================================
-# CAP Benchmarks
+# GF Benchmark
 #===============================================================================
 
-# Builds benchmarks.
-all-capbench:
-	$(MAKE) -C capbench all
+all-gf:
+	$(MAKE) -C gf all
 
-# Cleans build objects.
-clean-capbench:
-	$(MAKE) -C capbench clean
+clean-gf:
+	$(MAKE) -C gf clean
 
-# Cleans build.
-distclean-capbench:
-	$(MAKE) -C capbench distclean
+distclean-gf:
+	$(MAKE) -C gf distclean
