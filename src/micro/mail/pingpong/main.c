@@ -29,11 +29,6 @@
 #include <nanvix/ulib.h>
 
 /**
- * @brief Number of clusters.
- */
-#define NUM_PROCS 2
-
-/**
  * @brief Number of iterations for the benchmark.
  */
 #ifdef NDEBUG
@@ -43,7 +38,7 @@
 #endif
 
 static barrier_t barrier;
-static int nodes[NUM_PROCS];
+static int nodes[2];
 
 /*============================================================================*
  * Benchmark Kernel                                                           *
@@ -141,10 +136,10 @@ static void benchmark_mail_pingpong(void)
 		do_leader : do_worker;
 
 	/* Build list of nodes. */
-	for (int i = 0; i < NUM_PROCS; i++)
+	for (int i = 0; i < 2; i++)
 		nodes[i] = PROCESSOR_NODENUM_LEADER + i;
 
-	barrier = barrier_create(nodes, NUM_PROCS);
+	barrier = barrier_create(nodes, 2);
 	uassert(BARRIER_IS_VALID(barrier));
 
 		fn();
