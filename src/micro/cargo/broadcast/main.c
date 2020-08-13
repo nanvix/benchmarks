@@ -28,6 +28,13 @@
 #include <nanvix/ulib.h>
 
 /**
+ * @brief Number of processes.
+ */
+#ifndef NUM_PROCS
+#define NUM_PROCS NANVIX_PROC_MAX
+#endif
+
+/**
  * @brief Number of iterations for the benchmark.
  */
 #ifdef NDEBUG
@@ -43,7 +50,7 @@
 /**
  * @brief Size of buffers (in bytes)
  */
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE (4 * KB)
 
 /**
  * @brief Port number used in the benchmark.
@@ -56,14 +63,16 @@
 static char buf[BUFFER_SIZE];
 
 /**
- * @bbrief Receives data from worker.
+ * @brief Sends data to worker.
  */
 static void do_leader(void)
 {
-	int outportals[NANVIX_PROC_MAX - 1];
+	int outportals[NUM_PROCS - 1];
+	uint64_t old_latency[NUM_PROCS - 1];
+	uint64_t new_latency[NUM_PROCS - 1];
 
 	/* Establish connection. */
-	for (int i = 1; i < NANVIX_PROC_MAX; i++)
+	for (int i = 1; i < NUM_PROCS; i++)
 	{
 		uassert((
 			outportals[i - 1] = kportal_open(
@@ -72,12 +81,15 @@ static void do_leader(void)
 				PORT_NUM)
 			) >= 0
 		);
+		new_latency[i - 1] = 0;
 	}
 
 	/* Broadcast data. */
 	for (int k = 1; k <= NITERATIONS; k++)
 	{
-		for (int i = 1; i < NANVIX_PROC_MAX; i++)
+		uint64_t total_latency = 0;
+
+		for (int i = 1; i < NUM_PROCS; i++)
 		{
 			uassert(
 				kportal_write(
@@ -87,20 +99,36 @@ static void do_leader(void)
 				) == BUFFER_SIZE
 			);
 		}
+
+		for (int i = 1; i < NUM_PROCS; i++)
+		{
+			old_latency[i - 1] = new_latency[i - 1];
+			uassert(kportal_ioctl(outportals[i - 1], KPORTAL_IOCTL_GET_LATENCY, &new_latency[i - 1]) == 0);
+
+			total_latency += (new_latency[i - 1] - old_latency[i - 1]);
+		}
+
+		/* Dump statistics. */
+#ifndef NDEBUG
+		uprintf("[benchmarks][cargo-broadcast] it=%d latency=%l volume=%d",
+#else
+		uprintf("[benchmarks][cargo-broadcast] %d %l %d",
+#endif
+			k, total_latency, (int) BUFFER_SIZE
+		);
 	}
 
 	/* House keeping. */
-	for (int i = 1; i < NANVIX_PROC_MAX; i++)
+	for (int i = 1; i < NUM_PROCS; i++)
 		uassert(kportal_close(outportals[i - 1]) == 0);
 }
 
 /**
- * @brief Sends data to leader.
+ * @brief Receives data from leader.
  */
 static void do_worker(void)
 {
 	int inportal;
-	uint64_t latency, volume;
 
 	/* Establish connection. */
 	uassert((inportal = kportal_create(knode_get_num(), PORT_NUM)) >= 0);
@@ -109,18 +137,6 @@ static void do_worker(void)
 	{
 		uassert(kportal_allow(inportal, PROCESSOR_NODENUM_LEADER, PORT_NUM) == 0);
 		uassert(kportal_read(inportal, buf,  BUFFER_SIZE) == BUFFER_SIZE);
-		
-		uassert(kportal_ioctl(inportal, KPORTAL_IOCTL_GET_LATENCY, &latency) == 0);
-		uassert(kportal_ioctl(inportal, KPORTAL_IOCTL_GET_VOLUME, &volume) == 0);
-
-		/* Dump statistics. */
-#ifndef NDEBUG
-		uprintf("[benchmarks][cargo][broadcast] it=%d latency=%l volume=%l",
-#else
-		uprintf("cargo;broadcast;%d;%l;%l",
-#endif
-			i, latency, volume
-		);
 	}
 
 	/* House keeping. */
@@ -156,3 +172,4 @@ int __main3(int argc, const char *argv[])
 
 	return (0);
 }
+
