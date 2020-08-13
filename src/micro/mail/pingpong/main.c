@@ -29,6 +29,11 @@
 #include <nanvix/ulib.h>
 
 /**
+ * @brief Number of clusters.
+ */
+#define NUM_PROCS 2
+
+/**
  * @brief Number of iterations for the benchmark.
  */
 #ifdef NDEBUG
@@ -38,7 +43,7 @@
 #endif
 
 static barrier_t barrier;
-static int nodes[NANVIX_PROC_MAX];
+static int nodes[NUM_PROCS];
 
 /*============================================================================*
  * Benchmark Kernel                                                           *
@@ -55,12 +60,13 @@ static int nodes[NANVIX_PROC_MAX];
 static char msg[KMAILBOX_MESSAGE_SIZE];
 
 /**
- * @bbrief Receives messages from worker.
+ * @brief Receives messages from worker.
  */
 static void do_leader(void)
 {
 	int inbox, outbox;
-	uint64_t latency, volume;
+	uint64_t ping_latency = 0;
+	uint64_t pong_latency = 0;
 
 	/* Establish connection. */
 	uassert((inbox = kmailbox_create(knode_get_num(), PORT_NUM)) >= 0);
@@ -70,19 +76,24 @@ static void do_leader(void)
 
 	for (int i = 1; i <= NITERATIONS; i++)
 	{
+		uint64_t ping_latency_old = ping_latency;
+		uint64_t pong_latency_old = pong_latency;
+
 		uassert(kmailbox_read(inbox, msg, KMAILBOX_MESSAGE_SIZE) == KMAILBOX_MESSAGE_SIZE);
 		uassert(kmailbox_write(outbox, msg, KMAILBOX_MESSAGE_SIZE) == KMAILBOX_MESSAGE_SIZE);
 
-		uassert(kmailbox_ioctl(inbox, KMAILBOX_IOCTL_GET_LATENCY, &latency) == 0);
-		uassert(kmailbox_ioctl(inbox, KMAILBOX_IOCTL_GET_VOLUME, &volume) == 0);
+		uassert(kmailbox_ioctl(inbox, KMAILBOX_IOCTL_GET_LATENCY, &ping_latency) == 0);
+		uassert(kmailbox_ioctl(outbox, KMAILBOX_IOCTL_GET_LATENCY, &pong_latency) == 0);
 
 		/* Dump statistics. */
 #ifndef NDEBUG
-		uprintf("[benchmarks][mail][pingpong] it=%d latency=%l volume=%l",
+		uprintf("[benchmarks][mail-pingpong] it=%d read=%l write=%l",
 #else
-		uprintf("mailbox;pingpong;%d;%l;%l",
+		uprintf("[benchmarks][mail-pingpong] %d %l %l",
 #endif
-			i, latency, volume
+			i,
+			(ping_latency - ping_latency_old),
+			(pong_latency - pong_latency_old)
 		);
 	}
 
@@ -130,10 +141,10 @@ static void benchmark_mail_pingpong(void)
 		do_leader : do_worker;
 
 	/* Build list of nodes. */
-	for (int i = 0; i < 2; i++)
+	for (int i = 0; i < NUM_PROCS; i++)
 		nodes[i] = PROCESSOR_NODENUM_LEADER + i;
 
-	barrier = barrier_create(nodes, 2);
+	barrier = barrier_create(nodes, NUM_PROCS);
 	uassert(BARRIER_IS_VALID(barrier));
 
 		fn();
@@ -157,3 +168,4 @@ int __main3(int argc, const char *argv[])
 
 	return (0);
 }
+
