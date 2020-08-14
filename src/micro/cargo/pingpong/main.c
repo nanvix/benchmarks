@@ -43,7 +43,17 @@
 /**
  * @brief Size of buffers (in bytes)
  */
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE (128 * KB)
+
+/**
+ * @brief Minimum Transfer Size (in bytes)
+ */
+#define MIN_SIZE 64
+
+/**
+ * @brief Maximum Transfer Size (in bytes)
+ */
+#define MAX_SIZE BUFFER_SIZE
 
 /**
  * @brief Port number used in the benchmark.
@@ -56,12 +66,13 @@
 static char buf[BUFFER_SIZE];
 
 /**
- * @bbrief Receives data from worker.
+ * @brief Leader side.
  */
 static void do_leader(void)
 {
 	int inportal, outportal;
-	uint64_t latency, volume;
+	uint64_t ping_latency = 0ULL;
+	uint64_t pong_latency = 0ULL;
 
 	/* Establish connection. */
 	uassert((inportal = kportal_create(knode_get_num(), PORT_NUM)) >= 0);
@@ -69,21 +80,35 @@ static void do_leader(void)
 
 	for (int i = 1; i <= NITERATIONS; i++)
 	{
-		uassert(kportal_allow(inportal, PROCESSOR_NODENUM_LEADER + 1, PORT_NUM) == 0);
-		uassert(kportal_read(inportal, buf, BUFFER_SIZE) == BUFFER_SIZE);
-		uassert(kportal_write(outportal, buf, BUFFER_SIZE) == BUFFER_SIZE);
+		for (ssize_t n = MIN_SIZE; n <= MAX_SIZE; n = (n * 2))
+		{
+			uint64_t total_latency;
+			uint64_t ping_latency_old = ping_latency;
+			uint64_t pong_latency_old = pong_latency;
 
-		uassert(kportal_ioctl(inportal, KPORTAL_IOCTL_GET_LATENCY, &latency) == 0);
-		uassert(kportal_ioctl(inportal, KPORTAL_IOCTL_GET_VOLUME, &volume) == 0);
+			perf_start(0, PERF_CYCLES);
+				uassert(kportal_allow(inportal, PROCESSOR_NODENUM_LEADER + 1, PORT_NUM) == 0);
+				uassert(kportal_read(inportal, buf, n) == n);
+				uassert(kportal_write(outportal, buf, n) == n);
+			perf_stop(0);
+			total_latency = perf_read(0);
 
-		/* Dump statistics. */
+			uassert(kportal_ioctl(inportal, KPORTAL_IOCTL_GET_LATENCY, &ping_latency) == 0);
+			uassert(kportal_ioctl(outportal, KPORTAL_IOCTL_GET_LATENCY, &pong_latency) == 0);
+
+			/* Dump statistics. */
 #ifndef NDEBUG
-		uprintf("[benchmarks][cargo][pingpong] it=%d latency=%l volume=%l",
+			uprintf("[benchmarks][cargo-pingpong] it=%d read=%l write=%l total=%l size=%d",
 #else
-		uprintf("cargo;pingpong;%d;%l;%l",
+			uprintf("[benchmarks][cargo-pingpong] %d %l %l %l %d",
 #endif
-			i, latency, volume
-		);
+				i,
+				(ping_latency - ping_latency_old),
+				(pong_latency - pong_latency_old),
+				total_latency,
+				n
+			);
+		}
 	}
 
 	/* House keeping. */
@@ -92,7 +117,7 @@ static void do_leader(void)
 }
 
 /**
- * @brief Sends data to leader.
+ * @brief Worker side.
  */
 static void do_worker(void)
 {
@@ -104,9 +129,12 @@ static void do_worker(void)
 
 	for (int i = 1; i <= NITERATIONS; i++)
 	{
-		uassert(kportal_write(outportal, buf, BUFFER_SIZE) == BUFFER_SIZE);
-		uassert(kportal_allow(inportal, PROCESSOR_NODENUM_LEADER, PORT_NUM) == 0);
-		uassert(kportal_read(inportal, buf,  BUFFER_SIZE) == BUFFER_SIZE);
+		for (ssize_t n = MIN_SIZE; n <= MAX_SIZE; n = (n * 2))
+		{
+			uassert(kportal_write(outportal, buf, n) == n);
+			uassert(kportal_allow(inportal, PROCESSOR_NODENUM_LEADER, PORT_NUM) == 0);
+			uassert(kportal_read(inportal, buf,  n) == n);
+		}
 	}
 
 	/* House keeping. */
@@ -143,3 +171,4 @@ int __main3(int argc, const char *argv[])
 
 	return (0);
 }
+

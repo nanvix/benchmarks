@@ -29,6 +29,13 @@
 #include <nanvix/ulib.h>
 
 /**
+ * @brief Number of processes.
+ */
+#ifndef NUM_PROCS
+#define NUM_PROCS NANVIX_PROC_MAX
+#endif
+
+/**
  * @brief Number of iterations for the benchmark.
  */
 #ifdef NDEBUG
@@ -38,7 +45,7 @@
 #endif
 
 static barrier_t barrier;
-static int nodes[NANVIX_PROC_MAX];
+static int nodes[NUM_PROCS];
 
 /*============================================================================*
  * Benchmark Kernel                                                           *
@@ -55,22 +62,29 @@ static int nodes[NANVIX_PROC_MAX];
 static char msg[KMAILBOX_MESSAGE_SIZE];
 
 /**
- * @bbrief Receives messages from worker.
+ * @brief Sends messages to worker.
  */
 static void do_leader(void)
 {
-	int outboxes[NANVIX_PROC_MAX - 1];
+	int outboxes[NUM_PROCS - 1];
+	uint64_t old_latency[NUM_PROCS - 1];
+	uint64_t new_latency[NUM_PROCS - 1];
 
 	/* Establish connections. */
-	for (int i = 1; i < NANVIX_PROC_MAX; i++)
+	for (int i = 1; i < NUM_PROCS; i++)
+	{
 		uassert((outboxes[i - 1] = kmailbox_open(PROCESSOR_NODENUM_LEADER + i, PORT_NUM)) >= 0);
+		new_latency[i - 1] = 0;
+	}
 
 	uassert(barrier_wait(barrier) == 0);
 
 	/* Broadcast messages. */
 	for (int k = 1; k <= NITERATIONS; k++)
 	{
-		for (int i = 1; i < NANVIX_PROC_MAX; i++)
+		uint64_t total_latency = 0;
+
+		for (int i = 1; i < NUM_PROCS; i++)
 		{
 			uassert(
 				kmailbox_write(
@@ -80,12 +94,29 @@ static void do_leader(void)
 				) == KMAILBOX_MESSAGE_SIZE
 			);
 		}
+
+		for (int i = 1; i < NUM_PROCS; i++)
+		{
+			old_latency[i - 1] = new_latency[i - 1];
+			uassert(kmailbox_ioctl(outboxes[i - 1], KMAILBOX_IOCTL_GET_LATENCY, &new_latency[i - 1]) == 0);
+
+			total_latency += new_latency[i - 1] - old_latency[i - 1];
+		}
+
+		/* Dump statistics. */
+#ifndef NDEBUG
+		uprintf("[benchmarks][mail-broadcast] it=%d latency=%l",
+#else
+		uprintf("[benchmarks][mail-broadcast] %d %l",
+#endif
+			k, total_latency
+		);
 	}
 
 	uassert(barrier_wait(barrier) == 0);
 
 	/* House keeping. */
-	for (int i = 1; i < NANVIX_PROC_MAX; i++)
+	for (int i = 1; i < NUM_PROCS; i++)
 		uassert(kmailbox_close(outboxes[i - 1]) == 0);
 }
 
@@ -95,7 +126,6 @@ static void do_leader(void)
 static void do_worker(void)
 {
 	int inbox;
-	uint64_t latency, volume;
 
 	/* Establish connection. */
 	uassert((inbox = kmailbox_create(knode_get_num(), PORT_NUM)) >= 0);
@@ -104,24 +134,12 @@ static void do_worker(void)
 
 	for (int i = 1; i <= NITERATIONS; i++)
 	{
-			uassert(
-				kmailbox_read(
-					inbox,
-					msg,
-					KMAILBOX_MESSAGE_SIZE
-				) == KMAILBOX_MESSAGE_SIZE
-			);
-		
-		uassert(kmailbox_ioctl(inbox, KMAILBOX_IOCTL_GET_LATENCY, &latency) == 0);
-		uassert(kmailbox_ioctl(inbox, KMAILBOX_IOCTL_GET_VOLUME, &volume) == 0);
-
-		/* Dump statistics. */
-#ifndef NDEBUG
-		uprintf("[benchmarks][mail][broadcast] it=%d latency=%l volume=%l",
-#else
-		uprintf("mailbox;broadcast;%d;%l;%l",
-#endif
-			i, latency, volume
+		uassert(
+			kmailbox_read(
+				inbox,
+				msg,
+				KMAILBOX_MESSAGE_SIZE
+			) == KMAILBOX_MESSAGE_SIZE
 		);
 	}
 
@@ -142,10 +160,10 @@ static void benchmark_mail_broadcast(void)
 		do_leader : do_worker;
 
 	/* Build list of nodes. */
-	for (int i = 0; i < NANVIX_PROC_MAX; i++)
+	for (int i = 0; i < NUM_PROCS; i++)
 		nodes[i] = PROCESSOR_NODENUM_LEADER + i;
 
-	barrier = barrier_create(nodes, NANVIX_PROC_MAX);
+	barrier = barrier_create(nodes, NUM_PROCS);
 	uassert(BARRIER_IS_VALID(barrier));
 
 		fn();
@@ -169,3 +187,4 @@ int __main3(int argc, const char *argv[])
 
 	return (0);
 }
+

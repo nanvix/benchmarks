@@ -28,6 +28,13 @@
 #include <nanvix/ulib.h>
 
 /**
+ * @brief Number of processes.
+ */
+#ifndef NUM_PROCS
+#define NUM_PROCS NANVIX_PROC_MAX
+#endif
+
+/**
  * @brief Number of iterations for the benchmark.
  */
 #ifdef NDEBUG
@@ -43,7 +50,7 @@
 /**
  * @brief Size of buffers (in bytes)
  */
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE (4 * KB)
 
 /**
  * @brief Port number used in the benchmark.
@@ -56,12 +63,13 @@
 static char buf[BUFFER_SIZE];
 
 /**
- * @bbrief Receives data from worker.
+ * @brief Receives data from worker.
  */
 static void do_leader(void)
 {
 	int inportal;
-	uint64_t latency, volume;
+	uint64_t old_latency = 0ULL;
+	uint64_t new_latency = 0ULL;
 
 	/* Establish connection. */
 	uassert((inportal = kportal_create(knode_get_num(), PORT_NUM)) >= 0);
@@ -69,7 +77,9 @@ static void do_leader(void)
 	/* Receive data. */
 	for (int k = 1; k <= NITERATIONS; k++)
 	{
-		for (int i = 1; i < NANVIX_PROC_MAX; i++)
+		old_latency = new_latency;
+
+		for (int i = 1; i < NUM_PROCS; i++)
 		{
 			uassert(
 				kportal_allow(
@@ -86,17 +96,16 @@ static void do_leader(void)
 				) == BUFFER_SIZE
 			);
 		}
-		
-		uassert(kportal_ioctl(inportal, KPORTAL_IOCTL_GET_LATENCY, &latency) == 0);
-		uassert(kportal_ioctl(inportal, KPORTAL_IOCTL_GET_VOLUME, &volume) == 0);
+
+		uassert(kportal_ioctl(inportal, KPORTAL_IOCTL_GET_LATENCY, &new_latency) == 0);
 
 		/* Dump statistics. */
 #ifndef NDEBUG
-		uprintf("[benchmarks][cargo][gather] it=%d latency=%l volume=%l",
+		uprintf("[benchmarks][cargo-gather] it=%d latency=%l volume=%d",
 #else
-		uprintf("cargo;gather;%d;%l;%l",
+		uprintf("[benchmarks][cargo-gather] %d %l %d",
 #endif
-			k, latency, volume
+			k, (new_latency - old_latency), (int) BUFFER_SIZE
 		);
 	}
 
@@ -150,3 +159,4 @@ int __main3(int argc, const char *argv[])
 
 	return (0);
 }
+

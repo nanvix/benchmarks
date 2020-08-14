@@ -28,6 +28,13 @@
 #include <nanvix/ulib.h>
 
 /**
+ * @brief Number of processes.
+ */
+#ifndef NUM_PROCS
+#define NUM_PROCS NANVIX_PROC_MAX
+#endif
+
+/**
  * @brief Number of iterations for the benchmark.
  */
 #ifdef NDEBUG
@@ -77,72 +84,30 @@ static void build_node_list(int * clusters, int nclusters)
 }
 
 /**
- * @bbrief Receives data from worker.
+ * @brief Leader side.
  */
 static void do_leader(void)
 {
-	int syncin;
-	int syncout;
-	int clusters[PROCESSOR_CCLUSTERS_NUM];
-
-	build_node_list(clusters, PROCESSOR_CCLUSTERS_NUM);
-
-	/* Establish connection. */
-	uassert((
-		syncin = ksync_create(
-				clusters,
-				PROCESSOR_CCLUSTERS_NUM,
-				SYNC_ALL_TO_ONE)
-		) >= 0
-	);
-	uassert((
-		syncout = ksync_open(
-				clusters,
-				PROCESSOR_CCLUSTERS_NUM,
-				SYNC_ONE_TO_ALL)
-		) >= 0
-	);
-
-	delay(5, CLUSTER_FREQ);
-
-	/* Broadcast data. */
-	for (int k = 1; k <= NITERATIONS; k++)
-	{
-		uassert(ksync_wait(syncin) == 0);
-		uassert(ksync_signal(syncout) == 0);
-	}
-
-	/* House keeping. */
-	uassert(ksync_close(syncout) == 0);
-	uassert(ksync_unlink(syncin) == 0);
-}
-
-/**
- * @brief Sends data to leader.
- */
-static void do_worker(void)
-{
-	int syncin;
-	int syncout;
+	int syncin, syncout;
 	uint64_t lin0, lin1;
 	uint64_t lout0, lout1;
-	int clusters[PROCESSOR_CCLUSTERS_NUM];
+	int clusters[NUM_PROCS];
 
-	build_node_list(clusters, PROCESSOR_CCLUSTERS_NUM);
+	build_node_list(clusters, NUM_PROCS);
 
 	/* Establish connection. */
 	uassert((
 		syncin = ksync_create(
-				clusters,
-				PROCESSOR_CCLUSTERS_NUM,
-				SYNC_ONE_TO_ALL)
+			clusters,
+			NUM_PROCS,
+			SYNC_ALL_TO_ONE)
 		) >= 0
 	);
 	uassert((
 		syncout = ksync_open(
-				clusters,
-				PROCESSOR_CCLUSTERS_NUM,
-				SYNC_ALL_TO_ONE)
+			clusters,
+			NUM_PROCS,
+			SYNC_ONE_TO_ALL)
 		) >= 0
 	);
 
@@ -151,25 +116,65 @@ static void do_worker(void)
 	uassert(ksync_ioctl(syncin, KSYNC_IOCTL_GET_LATENCY, &lin0) == 0);
 	uassert(ksync_ioctl(syncout, KSYNC_IOCTL_GET_LATENCY, &lout0) == 0);
 
-	for (int i = 1; i <= NITERATIONS; i++)
+	/* Broadcast data. */
+	for (int k = 1; k <= NITERATIONS; k++)
 	{
-		uassert(ksync_signal(syncout) == 0);
 		uassert(ksync_wait(syncin) == 0);
+		uassert(ksync_signal(syncout) == 0);
 
 		uassert(ksync_ioctl(syncin, KSYNC_IOCTL_GET_LATENCY, &lin1) == 0);
 		uassert(ksync_ioctl(syncout, KSYNC_IOCTL_GET_LATENCY, &lout1) == 0);
 
 		/* Dump statistics. */
 #ifndef NDEBUG
-		uprintf("[benchmarks][signal][barrier] it=%d latency_in=%l latency_out=%l nsignals=%d, nwaits=%d",
+		uprintf("[benchmarks][signal-barrier] it=%d latency_in=%l latency_out=%l",
 #else
-		uprintf("signal;barrier;%d;%l;%d,%d;",
+		uprintf("[signal-barrier] %d %l %l",
 #endif
-			i, (lin1 - lin0), (lout1 - lout0), i, i
+			k, (lin1 - lin0), (lout1 - lout0)
 		);
 
 		lin0  = lin1;
 		lout0 = lout1;
+	}
+
+	/* House keeping. */
+	uassert(ksync_close(syncout) == 0);
+	uassert(ksync_unlink(syncin) == 0);
+}
+
+/**
+ * @brief Worker side.
+ */
+static void do_worker(void)
+{
+	int syncin, syncout;
+	int clusters[NUM_PROCS];
+
+	build_node_list(clusters, NUM_PROCS);
+
+	/* Establish connection. */
+	uassert((
+		syncin = ksync_create(
+			clusters,
+			NUM_PROCS,
+			SYNC_ONE_TO_ALL)
+		) >= 0
+	);
+	uassert((
+		syncout = ksync_open(
+			clusters,
+			NUM_PROCS,
+			SYNC_ALL_TO_ONE)
+		) >= 0
+	);
+
+	delay(5, CLUSTER_FREQ);
+
+	for (int i = 1; i <= NITERATIONS; i++)
+	{
+		uassert(ksync_signal(syncout) == 0);
+		uassert(ksync_wait(syncin) == 0);
 	}
 
 	/* House keeping. */
@@ -206,3 +211,4 @@ int __main3(int argc, const char *argv[])
 
 	return (0);
 }
+
