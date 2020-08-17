@@ -27,6 +27,7 @@ all:                 \
 	all-barrier      \
 	all-cargo        \
 	all-fork-join    \
+	all-fwrite       \
 	all-heartbeat    \
 	all-kcall-local  \
 	all-kcall-remote \
@@ -45,6 +46,7 @@ clean:                 \
 	clean-barrier      \
 	clean-cargo        \
 	clean-fork-join    \
+	clean-fwrite       \
 	clean-heartbeat    \
 	clean-kcall-local  \
 	clean-kcall-remote \
@@ -63,6 +65,7 @@ distclean:                 \
 	distclean-barrier      \
 	distclean-cargo        \
 	distclean-fork-join    \
+	distclean-fwrite       \
 	distclean-heartbeat    \
 	distclean-kcall-local  \
 	distclean-kcall-remote \
@@ -114,6 +117,19 @@ clean-fork-join:
 
 distclean-fork-join:
 	$(MAKE) -C fork-join distclean
+
+#===============================================================================
+# File Write
+#===============================================================================
+
+all-fwrite:
+	$(MAKE) -C fwrite all
+
+clean-fwrite:
+	$(MAKE) -C fwrite clean
+
+distclean-fwrite:
+	$(MAKE) -C fwrite distclean
 
 #===============================================================================
 # Heart Beat
