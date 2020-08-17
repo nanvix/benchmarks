@@ -1217,9 +1217,6 @@ jobs:
         - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-sysv-server.img'
 
-notifications:
-  slack: nanvix:31ePVjsrXynUajPUDqy6I0hp
-
     # Stream Release
     - stage: "Stream Release"
       name: Unix 64-bit
@@ -1245,3 +1242,6 @@ notifications:
       script:
         - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-stream.img'
+
+notifications:
+  slack: nanvix:31ePVjsrXynUajPUDqy6I0hp
