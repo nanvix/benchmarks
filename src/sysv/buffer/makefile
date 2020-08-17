@@ -22,43 +22,21 @@
 # SOFTWARE.
 #
 
-# Builds everything.
-all: all-server all-buffer
-
-# Cleans up build objects.
-clean: clean-server clean-buffer
-
-# Cleans up everything.
-distclean: distclean-server distclean-buffer
+include $(BUILDDIR)/makefile.config
 
 #===============================================================================
-# Server
+# Binaries Sources and Objects
 #===============================================================================
 
-# Builds benchmark.
-all-server:
-	$(MAKE) -C server all
+# Binary
+EXEC = nanvix-sysv-buffer.$(OBJ_SUFFIX)
 
-# Cleans up build object.
-clean-server:
-	$(MAKE) -C server clean
+# C Source Files
+SRC = $(wildcard *.c)
 
-# Cleans up everything.
-distclean-server:
-	$(MAKE) -C server distclean
+# Object Files
+OBJ = $(SRC:.c=.$(OBJ_SUFFIX).o)
 
 #===============================================================================
-# Buffer
-#===============================================================================
 
-# Builds benchmark.
-all-buffer:
-	$(MAKE) -C buffer all
-
-# Cleans up build object.
-clean-buffer:
-	$(MAKE) -C buffer clean
-
-# Cleans up everything.
-distclean-buffer:
-	$(MAKE) -C buffer distclean
+include $(BUILDDIR)/makefile.executable
