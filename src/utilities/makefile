@@ -22,55 +22,24 @@
 # SOFTWARE.
 #
 
-# Builds Everything
-all: all-microbenchmarks all-pseudoapps all-utilities
+# Builds everything.
+all: all-hello
 
-# Cleans Build Objects
-clean: clean-microbenchmarks clean-pseudoapps clean-utilities
+# Cleans up build objects.
+clean: clean-hello
 
-# Cleans Everything
-distclean: distclean-microbenchmarks distclean-pseudoapps distclean-utilities
-
-#===============================================================================
-# Micro Benchmarks
-#===============================================================================
-
-all-microbenchmarks:
-	$(MAKE) -C microbenchmarks all
-
-clean-microbenchmarks:
-	$(MAKE) -C microbenchmarks clean
-
-distclean-microbenchmarks:
-	$(MAKE) -C microbenchmarks distclean
+# Cleans up everything.
+distclean: distclean-hello
 
 #===============================================================================
-# Pseudo Applications
+# Hello World
 #===============================================================================
 
-all-pseudoapps:
-	$(MAKE) -C pseudoapps all
+all-hello:
+	$(MAKE) -C hello all
 
-# Cleans build objects.
-clean-pseudoapps:
-	$(MAKE) -C pseudoapps clean
+clean-hello:
+	$(MAKE) -C hello clean
 
-# Cleans build.
-distclean-pseudoapps:
-	$(MAKE) -C pseudoapps distclean
-
-#===============================================================================
-# System V Abstractions
-#===============================================================================
-
-# Builds benchmarks.
-all-utilities:
-	$(MAKE) -C utilities all
-
-# Cleans build objects.
-clean-utilities:
-	$(MAKE) -C utilities clean
-
-# Cleans build.
-distclean-utilities:
-	$(MAKE) -C utilities distclean
+distclean-hello:
+	$(MAKE) -C hello distclean

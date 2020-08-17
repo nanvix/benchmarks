@@ -1,5 +1,5 @@
-Benchmarks for the Nanvix Microkernel
-=====================================
+Benchmarks Suite for Nanvix
+============================
 [![Build
 Status](https://travis-ci.com/nanvix/benchmarks.svg?branch=unstable)](https://travis-ci.com/nanvix/benchmarks)
 [![Join us on
@@ -14,18 +14,26 @@ following benchmarks are featured.
 
 **Micro-Benchmarks**
 
+- `barrier`
 - `cargo`
+- `fork-join`
+- `heartbeat`
+- `kcall-local`
+- `kcall-remote`
+- `lookup`
 - `mail`
 - `memread`
 - `memwrite`
-
-**OS Service Benchmarks**
-
-- `barrier`
-- `heartbeat`
-- `lookup`
+- `noise`
 - `pgfetch`
 - `pginval`
+- `signal`
+- `stream`
+
+**Pseudo Applications**
+
+- `buffer`
+- `server`
 
 License & Maintainers
 ---------------------

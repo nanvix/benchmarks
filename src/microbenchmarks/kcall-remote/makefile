@@ -29,7 +29,7 @@ include $(BUILDDIR)/makefile.config
 #===============================================================================
 
 # Binary
-EXEC = nanvix-msync.$(OBJ_SUFFIX)
+EXEC = nanvix-kcall-remote.$(OBJ_SUFFIX)
 
 # C Source Files
 SRC = $(wildcard *.c)

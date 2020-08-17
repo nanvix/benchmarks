@@ -22,55 +22,21 @@
 # SOFTWARE.
 #
 
-# Builds Everything
-all: all-microbenchmarks all-pseudoapps all-utilities
-
-# Cleans Build Objects
-clean: clean-microbenchmarks clean-pseudoapps clean-utilities
-
-# Cleans Everything
-distclean: distclean-microbenchmarks distclean-pseudoapps distclean-utilities
+include $(BUILDDIR)/makefile.config
 
 #===============================================================================
-# Micro Benchmarks
+# Binaries Sources and Objects
 #===============================================================================
 
-all-microbenchmarks:
-	$(MAKE) -C microbenchmarks all
+# Binary
+EXEC = nanvix-fork-join.$(OBJ_SUFFIX)
 
-clean-microbenchmarks:
-	$(MAKE) -C microbenchmarks clean
+# C Source Files
+SRC = $(wildcard *.c)
 
-distclean-microbenchmarks:
-	$(MAKE) -C microbenchmarks distclean
-
-#===============================================================================
-# Pseudo Applications
-#===============================================================================
-
-all-pseudoapps:
-	$(MAKE) -C pseudoapps all
-
-# Cleans build objects.
-clean-pseudoapps:
-	$(MAKE) -C pseudoapps clean
-
-# Cleans build.
-distclean-pseudoapps:
-	$(MAKE) -C pseudoapps distclean
+# Object Files
+OBJ = $(SRC:.c=.$(OBJ_SUFFIX).o)
 
 #===============================================================================
-# System V Abstractions
-#===============================================================================
 
-# Builds benchmarks.
-all-utilities:
-	$(MAKE) -C utilities all
-
-# Cleans build objects.
-clean-utilities:
-	$(MAKE) -C utilities clean
-
-# Cleans build.
-distclean-utilities:
-	$(MAKE) -C utilities distclean
+include $(BUILDDIR)/makefile.executable
