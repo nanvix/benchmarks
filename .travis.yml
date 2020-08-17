@@ -459,6 +459,32 @@ jobs:
         - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-mail-gather.img'
 
+    # Mail Variable Size Debug
+    - stage: "Mail Variable Size Debug"
+      name: Unix 64-bit
+      if: "(NOT type IN (pull_request))"
+      before_script:
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - eval "$(ssh-agent -s)"
+      - chmod 600 travis_benchmarks_rsa
+      - cp $SSH_CONFIG ~/.ssh/config
+      - ssh-add travis_benchmarks_rsa
+      script:
+      - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-mail-variable-size.img'
+    - stage: "Mail Variable Size Debug"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-mail-variable-size.img'
+
     # Cargo Ping Pong Debug
     - stage: "Cargo Ping Pong Debug"
       name: Unix 64-bit
@@ -1034,6 +1060,32 @@ jobs:
       script:
         - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-mail-gather.img'
+
+    # Mail Variable Size Release
+    - stage: "Mail Variable Size Release"
+      name: Unix 64-bit
+      if: "(NOT type IN (pull_request))"
+      before_script:
+      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+      - eval "$(ssh-agent -s)"
+      - chmod 600 travis_benchmarks_rsa
+      - cp $SSH_CONFIG ~/.ssh/config
+      - ssh-add travis_benchmarks_rsa
+      script:
+      - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
+      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-mail-variable-size.img'
+    - stage: "Mail Variable Size Release"
+      name: "MPPA-256"
+      if: (NOT type IN (pull_request))
+      before_script:
+        - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 travis_benchmarks_rsa
+        - cp $SSH_CONFIG ~/.ssh/config
+        - ssh-add travis_benchmarks_rsa
+      script:
+        - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-mail-variable-size.img'
 
     # Cargo Ping Pong Release
     - stage: "Cargo Ping Pong Release"

@@ -23,13 +23,13 @@
 #
 
 # Builds everything.
-all: all-pingpong all-broadcast all-gather
+all: all-pingpong all-broadcast all-gather all-variable-size
 
 # Cleans up build objects.
-clean: clean-pingpong clean-broadcast clean-gather
+clean: clean-pingpong clean-broadcast clean-gather clean-variable-size
 
 # Cleans up everything.
-distclean: distclean-pingpong distclean-broadcast distclean-gather
+distclean: distclean-pingpong distclean-broadcast distclean-gather distclean-variable-size
 
 #===============================================================================
 # Ping-Pong
@@ -78,3 +78,19 @@ clean-gather:
 # Cleans up everything.
 distclean-gather:
 	$(MAKE) -C gather distclean
+
+#===============================================================================
+# Variable size
+#===============================================================================
+
+# Builds benchmark.
+all-variable-size:
+	$(MAKE) -C variable-size all
+
+# Cleans up build object.
+clean-variable-size:
+	$(MAKE) -C variable-size clean
+
+# Cleans up everything.
+distclean-variable-size:
+	$(MAKE) -C variable-size distclean
