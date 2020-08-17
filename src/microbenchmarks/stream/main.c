@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright(c) 2018 Pedro Henrique Penna <pedrohenriquepenna@gmail.com>
+ * Copyright(c) 2011-2020 The Maintainers of Nanvix
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,11 +23,35 @@
  */
 
 #include <nanvix/sys/noc.h>
+#include <nanvix/sys/perf.h>
 #include <nanvix/sys/thread.h>
+#include <nanvix/kernel/kernel.h>
 #include <nanvix/ulib.h>
-#include <posix/sys/types.h>
+
 #include <posix/stdint.h>
-#include "kbench.h"
+
+/**
+ * @brief Number of benchmark iterations.
+ */
+#ifdef NDEBUG
+	#define NITERATIONS 30
+#else
+	#define NITERATIONS 1
+#endif
+
+/**
+ * @brief Casts something to a uint32_t.
+ */
+#define UINT32(x) ((uint32_t)((x) & 0xffffffff))
+
+/**
+ * @brief Iterations to skip on warmup.
+ */
+#ifdef NDEBUG
+	#define SKIP 10
+#else
+	#define SKIP 0
+#endif
 
 /**
  * @name Benchmark Parameters
@@ -165,6 +189,44 @@ struct tdata
 static word_t obj1[OBJSIZE_MAX/WORD_SIZE] ALIGN(CACHE_LINE_SIZE);
 static word_t obj2[OBJSIZE_MAX/WORD_SIZE] ALIGN(CACHE_LINE_SIZE);
 /**@}*/
+
+/**
+ * @brief Fills words in memory.
+ *
+ * @param ptr Pointer to target memory area.
+ * @param c   Character to use.
+ * @param n   Number of bytes to be set.
+ */
+static inline void memfill(word_t *ptr, word_t c, size_t n)
+{
+	word_t *p;
+
+	p = ptr;
+
+	/* Set words. */
+	for (size_t i = 0; i < n; i++)
+		*p++ = c;
+}
+
+/**
+ * @brief Copy words in memory.
+ *
+ * @param dest Target memory area.
+ * @param src  Source memory area.
+ * @param n    Number of bytes to be copied.
+ */
+static inline void memcopy(word_t *dest, const word_t *src, size_t n)
+{
+	word_t *d;       /* Write pointer. */
+	const word_t* s; /* Read pointer.  */
+
+	s = src;
+	d = dest;
+
+	/* Copy words. */
+	for (size_t i = 0; i < n; i++)
+		*d++ = *s++;
+}
 
 /**
  * @brief Move Bytes in Memory

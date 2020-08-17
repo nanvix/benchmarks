@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright(c) 2018 Pedro Henrique Penna <pedrohenriquepenna@gmail.com>
+ * Copyright(c) 2011-2020 The Maintainers of Nanvix
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,9 +24,34 @@
 
 #include <nanvix/sys/noc.h>
 #include <nanvix/sys/perf.h>
+#include <nanvix/sys/thread.h>
+#include <nanvix/kernel/kernel.h>
 #include <nanvix/ulib.h>
+
 #include <posix/stdint.h>
-#include "kbench.h"
+
+/**
+ * @brief Number of benchmark iterations.
+ */
+#ifdef NDEBUG
+	#define NITERATIONS 30
+#else
+	#define NITERATIONS 1
+#endif
+
+/**
+ * @brief Casts something to a uint32_t.
+ */
+#define UINT32(x) ((uint32_t)((x) & 0xffffffff))
+
+/**
+ * @brief Iterations to skip on warmup.
+ */
+#ifdef NDEBUG
+	#define SKIP 10
+#else
+	#define SKIP 0
+#endif
 
 /**
  * @brief Horizontal line.
