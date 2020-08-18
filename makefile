@@ -76,6 +76,7 @@ export LIBKERNEL  := libkernel-$(TARGET).a
 export LIBNANVIX  := libnanvix-$(TARGET).a
 export LIBC       := libc-$(TARGET).a
 export LIBRUNTIME := libruntime-$(TARGET).a
+export LIBMPI     := libmpi-$(TARGET).a
 
 #===============================================================================
 # Target-Specific Make Rules
