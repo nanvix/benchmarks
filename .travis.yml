@@ -642,7 +642,7 @@ jobs:
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-signal-barrier.img'
 
     # System V Debug
-    - stage: "Sysv Server Debug"
+    - stage: "System V Server Debug"
       name: Unix 64-bit
       if: "(NOT type IN (pull_request))"
       before_script:
@@ -695,18 +695,6 @@ jobs:
 
     # Friendly Numbers Debug
     - stage: "Friendly Numbers Debug"
-      name: Unix 64-bit
-      if: "(NOT type IN (pull_request))"
-      before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
-      - eval "$(ssh-agent -s)"
-      - chmod 600 travis_benchmarks_rsa
-      - cp $SSH_CONFIG ~/.ssh/config
-      - ssh-add travis_benchmarks_rsa
-      script:
-      - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
-      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-capbench-fn.img'
-    - stage: "Friendly Numbers Debug"
       name: "MPPA-256"
       if: (NOT type IN (pull_request))
       before_script:
@@ -721,18 +709,6 @@ jobs:
 
     # Gaussian Filter Debug
     - stage: "Gaussian Filter Debug"
-      name: Unix 64-bit
-      if: "(NOT type IN (pull_request))"
-      before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
-      - eval "$(ssh-agent -s)"
-      - chmod 600 travis_benchmarks_rsa
-      - cp $SSH_CONFIG ~/.ssh/config
-      - ssh-add travis_benchmarks_rsa
-      script:
-      - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
-      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-capbench-gf.img'
-    - stage: "Gaussian Filter Debug"
       name: "MPPA-256"
       if: (NOT type IN (pull_request))
       before_script:
@@ -746,18 +722,6 @@ jobs:
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-capbench-gf.img'
 
     # K-Means Debug
-    - stage: "K-Means Debug"
-      name: Unix 64-bit
-      if: "(NOT type IN (pull_request))"
-      before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
-      - eval "$(ssh-agent -s)"
-      - chmod 600 travis_benchmarks_rsa
-      - cp $SSH_CONFIG ~/.ssh/config
-      - ssh-add travis_benchmarks_rsa
-      script:
-      - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
-      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-capbench-km.img'
     - stage: "K-Means Debug"
       name: "MPPA-256"
       if: (NOT type IN (pull_request))
@@ -1375,18 +1339,6 @@ jobs:
 
     # Friendly Numbers Release
     - stage: "Friendly Numbers Release"
-      name: Unix 64-bit
-      if: "(NOT type IN (pull_request))"
-      before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
-      - eval "$(ssh-agent -s)"
-      - chmod 600 travis_benchmarks_rsa
-      - cp $SSH_CONFIG ~/.ssh/config
-      - ssh-add travis_benchmarks_rsa
-      script:
-      - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
-      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-capbench-fn.img'
-    - stage: "Friendly Numbers Release"
       name: "MPPA-256"
       if: (NOT type IN (pull_request))
       before_script:
@@ -1401,18 +1353,6 @@ jobs:
 
     # Gaussian Filter Release
     - stage: "Gaussian Filter Release"
-      name: Unix 64-bit
-      if: "(NOT type IN (pull_request))"
-      before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
-      - eval "$(ssh-agent -s)"
-      - chmod 600 travis_benchmarks_rsa
-      - cp $SSH_CONFIG ~/.ssh/config
-      - ssh-add travis_benchmarks_rsa
-      script:
-      - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
-      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-capbench-gf.img'
-    - stage: "Gaussian Filter Release"
       name: "MPPA-256"
       if: (NOT type IN (pull_request))
       before_script:
@@ -1426,18 +1366,6 @@ jobs:
         - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-capbench-gf.img'
 
     # K-Means Release
-    - stage: "K-Means Release"
-      name: Unix 64-bit
-      if: "(NOT type IN (pull_request))"
-      before_script:
-      - openssl aes-256-cbc -K $encrypted_ff9a8e9d6b0c_key -iv $encrypted_ff9a8e9d6b0c_iv -in $SSH_KEY -out travis_benchmarks_rsa -d
-      - eval "$(ssh-agent -s)"
-      - chmod 600 travis_benchmarks_rsa
-      - cp $SSH_CONFIG ~/.ssh/config
-      - ssh-add travis_benchmarks_rsa
-      script:
-      - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
-      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-capbench-km.img'
     - stage: "K-Means Release"
       name: "MPPA-256"
       if: (NOT type IN (pull_request))
