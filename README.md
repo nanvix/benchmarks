@@ -30,10 +30,20 @@ following benchmarks are featured.
 - `signal`
 - `stream`
 
+**CAP Benchmarks**
+
+- `fn`
+- `gf`
+- `km`
+
 **Pseudo Applications**
 
 - `buffer`
 - `server`
+
+**Utilities**
+
+- `hello`
 
 License & Maintainers
 ---------------------
