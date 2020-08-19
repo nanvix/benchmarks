@@ -29,7 +29,7 @@ include $(BUILDDIR)/makefile.config
 #===============================================================================
 
 # Binary
-EXEC = nanvix-sysv-buffer.$(OBJ_SUFFIX)
+EXEC = nanvix-buffer.$(OBJ_SUFFIX)
 
 # C Source Files
 SRC = $(wildcard *.c)
