@@ -268,7 +268,7 @@ static void kernel_memmove(int nthreads, size_t objsize)
 	NTHREADS = nthreads;
 	OBJSIZE = objsize;
 
-	nbytes = (OBJSIZE/WORD_SIZE)/nthreads;
+	nbytes = __div(OBJSIZE/WORD_SIZE, nthreads);
 
 	/* Spawn threads. */
 	for (int i = 0; i < nthreads; i++)
