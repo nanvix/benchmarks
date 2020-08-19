@@ -136,10 +136,7 @@ static int sync(void)
 			vector_add(CENTROID(i), PCENTROID(j, i));
 			population[i] += *PPOPULATION(j, i);
 		}
-		if (population[i] < ZERO)
-			population[i] = 1.0;
-
-		vector_mult(CENTROID(i), 1.0/population[i]);
+		vector_mult(CENTROID(i), 1.0f/population[i]);
 	}
 
 	if ((++_iterations) < 131)
