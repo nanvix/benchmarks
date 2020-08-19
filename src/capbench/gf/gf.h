@@ -109,6 +109,12 @@
 		int remainder;
 	};
 
+	#ifdef __mppa256__
+	#define __fdiv(a, b) __builtin_k1_fsdiv(a, b)
+	#else
+	#define __fdiv(a, b) ((a)/(b))
+	#endif
+
 	extern struct division divide(int a, int b);
 	extern float power(float base, float ex);
 

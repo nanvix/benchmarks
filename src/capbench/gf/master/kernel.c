@@ -167,7 +167,7 @@ static void generate_mask(void)
 	for (int i = 0 ; i < PROBLEM_MASKSIZE; i++)
 	{
 		for (int j = 0; j < PROBLEM_MASKSIZE; j++)
-			MASK(i, j) /= total_aux;
+			MASK(i, j) = __fdiv(MASK(i, j), total_aux);
 	}
 }
 

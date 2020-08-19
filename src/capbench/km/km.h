@@ -87,6 +87,12 @@
 	extern float *vector_assign(float *v1, const float *v2);
 	extern int vector_equal(const float *v1, const float *v2);
 
+	#ifdef __mppa256__
+	#define __fdiv(a, b) __builtin_k1_fsdiv(a, b)
+	#else
+	#define __fdiv(a, b) ((a)/(b))
+	#endif
+
 /*============================================================================*
  * Kernel                                                                     *
  *============================================================================*/
