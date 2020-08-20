@@ -76,6 +76,11 @@
  * Vector                                                                     *
  *============================================================================*/
 
+	/**
+	 * @brief Used for floating-point zero comparison.
+	 */
+	#define ZERO 0.0000001
+
 	extern float vector_distance(float *a, float *b);
 	extern float *vector_add(float *v1, const float *v2);
 	extern float *vector_mult(float *v, float scalar);

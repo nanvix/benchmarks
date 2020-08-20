@@ -38,11 +38,7 @@
 /**
  * @brief Number of iterations for the benchmark.
  */
-#ifdef NDEBUG
-#define NITERATIONS 60
-#else
 #define NITERATIONS 1
-#endif
 
 static barrier_t barrier;
 static int nodes[NUM_PROCS];
