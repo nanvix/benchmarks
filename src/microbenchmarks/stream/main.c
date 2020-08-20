@@ -33,11 +33,7 @@
 /**
  * @brief Number of benchmark iterations.
  */
-#ifdef NDEBUG
-	#define NITERATIONS 30
-#else
-	#define NITERATIONS 1
-#endif
+#define NITERATIONS 1
 
 /**
  * @brief Casts something to a uint32_t.
@@ -47,11 +43,7 @@
 /**
  * @brief Iterations to skip on warmup.
  */
-#ifdef NDEBUG
-	#define SKIP 10
-#else
-	#define SKIP 0
-#endif
+#define SKIP 10
 
 /**
  * @name Benchmark Parameters
