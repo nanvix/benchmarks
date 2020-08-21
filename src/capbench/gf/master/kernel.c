@@ -152,13 +152,13 @@ static void generate_mask(void)
 	float total_aux;
 
 	total_aux = 0;
-	first = 1.0/(2.0*PI*SD*SD);
+	first = __fdiv(1.0, (2.0*PI*SD*SD));
 
 	for (int i = -HALF; i <= HALF; i++)
 	{
 		for (int j = -HALF; j <= HALF; j++)
 		{
-			sec = -((i*i + j*j)*(1.0/(2.0*SD*SD)));
+			sec = -((i*i + j*j))*__fdiv(1.0, (2.0*SD*SD));
 			MASK(i + HALF, j + HALF) = first*sec;
 			total_aux += MASK(i + HALF, j + HALF);
 		}
@@ -167,7 +167,7 @@ static void generate_mask(void)
 	for (int i = 0 ; i < PROBLEM_MASKSIZE; i++)
 	{
 		for (int j = 0; j < PROBLEM_MASKSIZE; j++)
-			MASK(i, j) /= total_aux;
+			MASK(i, j) = __fdiv(MASK(i, j), total_aux);
 	}
 }
 

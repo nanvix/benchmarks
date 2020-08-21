@@ -198,7 +198,7 @@ jobs:
       - ssh-add travis_benchmarks_rsa
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
-      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-sysv-buffer.img'
+      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-buffer.img'
     - stage: "Buffer Debug"
       name: "MPPA-256"
       if: (NOT type IN (pull_request))
@@ -210,7 +210,7 @@ jobs:
         - ssh-add travis_benchmarks_rsa
       script:
         - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
-        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-sysv-buffer.img'
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-buffer.img'
 
     # Buffer Release
     - stage: "Buffer Release"
@@ -224,7 +224,7 @@ jobs:
       - ssh-add travis_benchmarks_rsa
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
-      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-sysv-buffer.img'
+      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-buffer.img'
     - stage: "Buffer Release"
       name: "MPPA-256"
       if: (NOT type IN (pull_request))
@@ -236,7 +236,7 @@ jobs:
         - ssh-add travis_benchmarks_rsa
       script:
         - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
-        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-sysv-buffer.img'
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-buffer.img'
 
     # Server Debug
     - stage: "Server Debug"
@@ -250,7 +250,7 @@ jobs:
       - ssh-add travis_benchmarks_rsa
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
-      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-sysv-server.img'
+      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-server.img'
     - stage: "Server Debug"
       name: "MPPA-256"
       if: (NOT type IN (pull_request))
@@ -262,7 +262,7 @@ jobs:
         - ssh-add travis_benchmarks_rsa
       script:
         - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
-        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-sysv-server.img'
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-server.img'
 
     # Server Release
     - stage: "Server Release"
@@ -276,7 +276,7 @@ jobs:
       - ssh-add travis_benchmarks_rsa
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
-      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-sysv-server.img'
+      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-server.img'
     - stage: "Server Release"
       name: "MPPA-256"
       if: (NOT type IN (pull_request))
@@ -288,7 +288,7 @@ jobs:
         - ssh-add travis_benchmarks_rsa
       script:
         - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
-        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-sysv-server.img'
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-server.img'
 
 #===============================================================================
 # Micro-Benchmarks
