@@ -40,6 +40,7 @@ following benchmarks are featured.
 
 - `buffer`
 - `server`
+- `simpledb`
 
 **Utilities**
 

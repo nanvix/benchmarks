@@ -22,59 +22,21 @@
 # SOFTWARE.
 #
 
-# Builds everything.
-all:             \
-	all-buffer   \
-	all-simpledb \
-	all-server
-
-# Cleans up build objects.
-clean:             \
-	clean-buffer   \
-	clean-simpledb \
-	clean-server
-
-# Cleans up everything.
-distclean:             \
-	distclean-buffer   \
-	distclean-simpledb \
-	distclean-server
+include $(BUILDDIR)/makefile.config
 
 #===============================================================================
-# Buffer
+# Binaries Sources and Objects
 #===============================================================================
 
-all-buffer:
-	$(MAKE) -C buffer all
+# Binary
+EXEC = nanvix-simpledb.$(OBJ_SUFFIX)
 
-clean-buffer:
-	$(MAKE) -C buffer clean
+# C Source Files
+SRC = $(wildcard *.c)
 
-distclean-buffer:
-	$(MAKE) -C buffer distclean
-
-#===============================================================================
-# SimpleDB
-#===============================================================================
-
-all-simpledb:
-	$(MAKE) -C simpledb all
-
-clean-simpledb:
-	$(MAKE) -C simpledb clean
-
-distclean-simpledb:
-	$(MAKE) -C simpledb distclean
+# Object Files
+OBJ = $(SRC:.c=.$(OBJ_SUFFIX).o)
 
 #===============================================================================
-# Server
-#===============================================================================
 
-all-server:
-	$(MAKE) -C server all
-
-clean-server:
-	$(MAKE) -C server clean
-
-distclean-server:
-	$(MAKE) -C server distclean
+include $(BUILDDIR)/makefile.executable
