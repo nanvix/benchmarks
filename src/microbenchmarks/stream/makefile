@@ -30,9 +30,6 @@ include $(BUILDDIR)/makefile.config
 
 # Binary
 EXEC = nanvix-stream.$(OBJ_SUFFIX)
-:wa
-
-:q
 
 # C Source Files
 SRC = $(wildcard *.c)

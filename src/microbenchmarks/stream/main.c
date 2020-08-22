@@ -22,10 +22,12 @@
  * SOFTWARE.
  */
 
+#include <nanvix/kernel/kernel.h>
+#include <nanvix/runtime/runtime.h>
 #include <nanvix/sys/noc.h>
 #include <nanvix/sys/perf.h>
 #include <nanvix/sys/thread.h>
-#include <nanvix/kernel/kernel.h>
+#include <nanvix/ulib.h>
 #include <nanvix/ulib.h>
 
 #include <posix/stdint.h>
@@ -33,7 +35,9 @@
 /**
  * @brief Number of benchmark iterations.
  */
-#define NITERATIONS 1
+#ifndef __NITERATIONS
+#define __NITERATIONS 1
+#endif
 
 /**
  * @brief Casts something to a uint32_t.
@@ -43,33 +47,23 @@
 /**
  * @brief Iterations to skip on warmup.
  */
-#define SKIP 10
+#ifndef __SKIP
+#define __SKIP 10
+#endif
 
 /**
- * @name Benchmark Parameters
+ * @brief Number of Working Threads
  */
-/**@{*/
-#define NTHREADS_MIN                2  /**< Minimum Number of Working Threads      */
-#define NTHREADS_MAX  (THREAD_MAX - 1) /**< Maximum Number of Working Threads      */
-#define NTHREADS_STEP               4  /**< Increment on Number of Working Threads */
-#define OBJSIZE_MIN           (1*1024) /**< Minimum Object Size                    */
-#define OBJSIZE_MAX           (8*1024) /**< Maximum Object Size                    */
-#define OBJSIZE_STEP          (1*1024) /**< Object Size                            */
-/**@}*/
+#ifndef __NTHREADS
+#define __NTHREADS  (THREAD_MAX - 2)
+#endif
 
 /**
- * @brief Horizontal line.
+ * @brief Object Size
  */
-static const char *HLINE =
-	"------------------------------------------------------------------------";
-
-/**
- * @name Benchmark Kernel Parameters
- */
-/**@{*/
-static int NTHREADS;   /**< Number of Working Threads */
-static size_t OBJSIZE; /**< Object Size               */
-/**@}*/
+#ifndef __OBJSIZE
+#define __OBJSIZE (8*1024)
+#endif
 
 /*============================================================================*
  * Profiling                                                                  *
@@ -128,7 +122,7 @@ static void benchmark_dump_stats(int it, const char *name, size_t objsize, uint6
 {
 	uprintf(
 #if defined(__mppa256__)
-		"[benchmarks][%s] %d %d %d %d %d %d %d %d %d %d",
+		"[benchmarks][%s] %d %d %d %l %l %l %l %l %l %l",
 #elif defined(__optimsoc__)
 		"[benchmarks][%s] %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
 #else
@@ -136,16 +130,16 @@ static void benchmark_dump_stats(int it, const char *name, size_t objsize, uint6
 #endif
 		name,
 		it,
-		NTHREADS,
+		__NTHREADS,
 		objsize,
 #if defined(__mppa256__)
-		UINT32(stats[0]),
-		UINT32(stats[1]),
-		UINT32(stats[2]),
-		UINT32(stats[3]),
-		UINT32(stats[4]),
-		UINT32(stats[5]),
-		UINT32(stats[6])
+		stats[0],
+		stats[1],
+		stats[2],
+		stats[3],
+		stats[4],
+		stats[5],
+		stats[6]
 #elif defined(__optimsoc__)
 		UINT32(stats[0]),
 		UINT32(stats[1]),
@@ -172,14 +166,14 @@ struct tdata
 	int tnum;  /**< Thread Number */
 	size_t start; /**< Start Byte    */
 	size_t end;   /**< End Byte      */
-} tdata[NTHREADS_MAX] ALIGN(CACHE_LINE_SIZE);
+} tdata[__NTHREADS] ALIGN(CACHE_LINE_SIZE);
 
 /**
  * @brief Buffers.
  */
 /**@{*/
-static word_t obj1[OBJSIZE_MAX/WORD_SIZE] ALIGN(CACHE_LINE_SIZE);
-static word_t obj2[OBJSIZE_MAX/WORD_SIZE] ALIGN(CACHE_LINE_SIZE);
+static word_t obj1[__OBJSIZE/WORD_SIZE] ALIGN(CACHE_LINE_SIZE);
+static word_t obj2[__OBJSIZE/WORD_SIZE] ALIGN(CACHE_LINE_SIZE);
 /**@}*/
 
 /**
@@ -234,7 +228,7 @@ static void *task(void *arg)
 	memfill(&obj1[start], (word_t) - 1, end - start);
 	memfill(&obj2[start], 0, end - start);
 
-	for (int i = 0; i < NITERATIONS + SKIP; i++)
+	for (int i = 0; i < __NITERATIONS + __SKIP; i++)
 	{
 		for (int j = 0; j < BENCHMARK_PERF_EVENTS; j++)
 		{
@@ -246,8 +240,8 @@ static void *task(void *arg)
 			stats[j] = perf_read(0);
 		}
 
-		if (i >= SKIP)
-			benchmark_dump_stats(i - SKIP, BENCHMARK_NAME, OBJSIZE, stats);
+		if (i >= __SKIP)
+			benchmark_dump_stats(i - __SKIP, BENCHMARK_NAME, __OBJSIZE, stats);
 	}
 
 	return (NULL);
@@ -255,34 +249,27 @@ static void *task(void *arg)
 
 /**
  * @brief Memory Move Benchmark Kernel
- *
- * @param nthreads Number of working threads.
- * @param objsize  Object size.
  */
-static void kernel_memmove(int nthreads, size_t objsize)
+static void kernel_memmove(void)
 {
 	size_t nbytes;
-	kthread_t tid[NTHREADS_MAX];
+	kthread_t tid[__NTHREADS];
 
-	/* Save kernel parameters. */
-	NTHREADS = nthreads;
-	OBJSIZE = objsize;
-
-	nbytes = __div(OBJSIZE/WORD_SIZE, nthreads);
+	nbytes = (__OBJSIZE/WORD_SIZE)/__NTHREADS;
 
 	/* Spawn threads. */
-	for (int i = 0; i < nthreads; i++)
+	for (int i = 0; i < __NTHREADS; i++)
 	{
 		/* Initialize thread data structure. */
 		tdata[i].start = nbytes*i;
-		tdata[i].end = (i == (nthreads - 1)) ? (OBJSIZE/WORD_SIZE) : (i + 1)*nbytes;
+		tdata[i].end = (i == (__NTHREADS - 1)) ? (__OBJSIZE/WORD_SIZE) : (i + 1)*nbytes;
 		tdata[i].tnum = i;
 
 		kthread_create(&tid[i], task, &tdata[i]);
 	}
 
 	/* Wait for threads. */
-	for (int i = 0; i < nthreads; i++)
+	for (int i = 0; i < __NTHREADS; i++)
 		kthread_join(tid[i], NULL);
 }
 
@@ -296,31 +283,12 @@ static void kernel_memmove(int nthreads, size_t objsize)
  * @param argc Argument counter.
  * @param argv Argument variables.
  */
-int __main2(int argc, const char *argv[])
+int __main3(int argc, const char *argv[])
 {
 	((void) argc);
 	((void) argv);
 
-	if (knode_get_num() != PROCESSOR_NODENUM_MASTER)
-		return (0);
-
-	uprintf(HLINE);
-
-#ifndef NDEBUG
-
-	kernel_memmove(1, OBJSIZE_MAX);
-
-#else
-
-	for (int nthreads = NTHREADS_MIN; nthreads <= NTHREADS_MAX; nthreads += NTHREADS_STEP)
-	{
-		for (size_t objsize = OBJSIZE_MIN; objsize <= OBJSIZE_MAX; objsize += OBJSIZE_STEP)
-			kernel_memmove(nthreads, objsize);
-	}
-
-#endif
-
-	uprintf(HLINE);
+	kernel_memmove();
 
 	return (0);
 }
