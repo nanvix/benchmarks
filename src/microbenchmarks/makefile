@@ -34,9 +34,8 @@ all:                 \
 	all-pgfetch      \
 	all-pginval      \
 	all-mail         \
-	all-memread      \
-	all-memwrite     \
 	all-noise        \
+	all-rstream      \
 	all-signal       \
 	all-stream
 
@@ -52,9 +51,8 @@ clean:                 \
 	clean-pgfetch      \
 	clean-pginval      \
 	clean-mail         \
-	clean-memread      \
-	clean-memwrite     \
 	clean-noise        \
+	clean-rstream      \
 	clean-signal       \
 	clean-stream
 
@@ -70,9 +68,8 @@ distclean:                 \
 	distclean-pgfetch      \
 	distclean-pginval      \
 	distclean-mail         \
-	distclean-memread      \
-	distclean-memwrite     \
 	distclean-noise        \
+	distclean-rstream      \
 	distclean-signal       \
 	distclean-stream
 
@@ -184,27 +181,14 @@ distclean-mail:
 # Memory Read
 #===============================================================================
 
-all-memread:
-	$(MAKE) -C memread all
+all-rstream:
+	$(MAKE) -C rstream all
 
-clean-memread:
-	$(MAKE) -C memread clean
+clean-rstream:
+	$(MAKE) -C rstream clean
 
-distclean-memread:
-	$(MAKE) -C memread distclean
-
-#===============================================================================
-# Memory Write
-#===============================================================================
-
-all-memwrite:
-	$(MAKE) -C memwrite all
-
-clean-memwrite:
-	$(MAKE) -C memwrite clean
-
-distclean-memwrite:
-	$(MAKE) -C memwrite distclean
+distclean-rstream:
+	$(MAKE) -C rstream distclean
 
 #===============================================================================
 # Noise

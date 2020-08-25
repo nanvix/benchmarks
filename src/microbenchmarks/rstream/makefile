@@ -29,7 +29,7 @@ include $(BUILDDIR)/makefile.config
 #===============================================================================
 
 # Binary
-EXEC = nanvix-memread.$(OBJ_SUFFIX)
+EXEC = nanvix-rstream.$(OBJ_SUFFIX)
 
 # C Source Files
 SRC = $(wildcard *.c)

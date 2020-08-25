@@ -22,6 +22,8 @@
  * SOFTWARE.
  */
 
+#define __NEED_MM_RMEM_STUB
+
 #include <nanvix/runtime/runtime.h>
 #include <nanvix/runtime/barrier.h>
 #include <nanvix/sys/perf.h>
@@ -44,8 +46,8 @@
 /**
  * @brief Write Size
  */
-#ifndef __WRITESIZE
-#define __WRITESIZE 4096
+#ifndef __NUM_BLOCKS
+#define __NUM_BLOCKS 8
 #endif
 
 /**
@@ -60,17 +62,12 @@
  *============================================================================*/
 
 /**
- * @brief Number of Pages
- */
-#define NUM_PAGES (TRUNCATE(__WRITESIZE/__NPROCS, RMEM_BLOCK_SIZE)/RMEM_BLOCK_SIZE)
-
-/**
  * @brief Working Buffer
  */
 static char buffer[RMEM_BLOCK_SIZE];
 
 /**
- * @group Timing Statistics
+ * @griup Timing Statistics
  */
 /**@{*/
 static uint64_t time_kernel;
@@ -79,15 +76,15 @@ static uint64_t time_kernel;
 /**
  * @brief Data Blocks
  */
-static void *blks[NUM_PAGES];
+static rpage_t blks[__NUM_BLOCKS];
 
 /**
  * @brief Benchmark setup.
  */
 static void benchmark_setup(void)
 {
-	for (int i = 0; i < NUM_PAGES; i++)
-		uassert((blks[i] = nanvix_vmem_alloc(1)) != NULL);
+	for (unsigned long i = 0; i < __NUM_BLOCKS; i++)
+		uassert((blks[i] = nanvix_rmem_alloc()) != RMEM_NULL);
 }
 
 /**
@@ -95,9 +92,8 @@ static void benchmark_setup(void)
  */
 static void benchmark_cleanup(void)
 {
-	/* Release memory .*/
-	for (int i = NUM_PAGES - 1; i >= 0; i--)
-		uassert(nanvix_vmem_free(blks[i]) == 0);
+	for (unsigned long i = 0; i < __NUM_BLOCKS; i++)
+		uassert(nanvix_rmem_free(blks[i]) == 0);
 }
 
 /**
@@ -106,12 +102,12 @@ static void benchmark_cleanup(void)
 static void benchmark_dump_stats(void)
 {
 #ifndef NDEBUG
-	uprintf("[benchmarks][memwrite] nprocs %d, write size %d, write, %l",
+	uprintf("[benchmarks][memread] nprocs %d, read size %d, read, %l",
 #else
-	uprintf("[benchmarks][memwrite] %d %d %l",
+	uprintf("[benchmarks][memread] %d %d %l",
 #endif
 		__NPROCS,
-		__WRITESIZE,
+		__NUM_BLOCKS*RMEM_BLOCK_SIZE,
 		time_kernel
 	);
 }
@@ -122,8 +118,15 @@ static void benchmark_dump_stats(void)
 static void benchmark_kernel(void)
 {
 	perf_start(0, PERF_CYCLES);
-		for (int i = 0; i < NUM_PAGES; i++)
-			uassert(nanvix_vmem_write(blks[i], buffer, RMEM_BLOCK_SIZE) == RMEM_BLOCK_SIZE);
+
+	/* Read and write. */
+	for (unsigned long i = 0; i < __NUM_BLOCKS; i++)
+	{
+		uassert(nanvix_rmem_read(blks[i], buffer) == RMEM_BLOCK_SIZE);
+		uassert(nanvix_rmem_write(blks[i], buffer) == RMEM_BLOCK_SIZE);
+	}
+
+	/* Free all blocks. */
 	perf_stop(0);
 	time_kernel = perf_read(0);
 }
@@ -133,7 +136,7 @@ static void benchmark_kernel(void)
  *============================================================================*/
 
 /**
- * @brief Benchmarks writes on remote memory.
+ * @brief Benchmarks reads from remote memory.
  */
 int __main3(int argc, const char *argv[])
 {
