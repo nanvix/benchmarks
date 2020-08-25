@@ -45,7 +45,7 @@ static void benchmark_hello(void)
 #ifndef NDEBUG
 	uprintf("[benchmarks][hello] hello takes %l",
 #else
-	uprintf("[benchmarks][hello] %ll",
+	uprintf("[benchmarks][hello] %l",
 #endif
 		time_hello
 	);

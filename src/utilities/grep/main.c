@@ -86,8 +86,6 @@ static void benchmark_setup(void)
 {
 	uassert((text = nanvix_malloc(__TEXT_LENGTH + 1)) != NULL);
 
-	perf_start(0, PERF_CYCLES);
-
 	/* Initialize text. */
 	for (int i = 0; i < __TEXT_LENGTH; i++)
 		text[i] = urand()%__PATTERN_LENGTH + 32;
@@ -149,8 +147,6 @@ int __main3(int argc, const char *argv[])
 	((void) argv);
 
 	benchmark_setup();
-
-	uprintf("%d %d", __NITERATIONS, __SKIP);
 
 	for (int i = 0; i < __NITERATIONS + __SKIP; i++)
 	{
