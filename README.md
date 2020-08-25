@@ -44,6 +44,7 @@ following benchmarks are featured.
 
 **Utilities**
 
+- `grep`
 - `hello`
 
 License & Maintainers
