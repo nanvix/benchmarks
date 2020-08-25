@@ -23,9 +23,10 @@
  */
 
 #include <nanvix/runtime/runtime.h>
-#include <posix/stdlib.h>
 #include <nanvix/sys/perf.h>
 #include <nanvix/ulib.h>
+
+#include <posix/stdlib.h>
 
 /**
  * @brief Number of Benchmark Iterations
@@ -46,20 +47,13 @@
  *============================================================================*/
 
 /* Import definitions. */
-extern const char *grep(const char *text, const char *pattern);
+extern int diff(const char *s, const char *t);
 
 /**
- * @brief Length of text.
+ * @brief Length of text1.
  */
 #ifndef __TEXT_LENGTH
-#define __TEXT_LENGTH 4096
-#endif
-
-/**
- * @brief Length of pattern.
- */
-#ifndef __PATTERN_LENGTH
-#define __PATTERN_LENGTH 95
+#define __TEXT_LENGTH 32
 #endif
 
 /**
@@ -70,31 +64,32 @@ static uint64_t time_kernel;
 /**@}*/
 
 /**
- * @brief Text.
+ * @brief Text 1.
  */
-static char *text = NULL;
+static char *text1 = NULL;
 
 /**
- * @brief Pattern.
+ * @brief Text 2.
  */
-static char pattern[__PATTERN_LENGTH + 1];
+static char *text2 = NULL;
 
 /**
  * @brief Initializes the benchmark.
  */
 static void benchmark_setup(void)
 {
-	uassert((text = nanvix_malloc(__TEXT_LENGTH + 1)) != NULL);
+	uassert((text1 = nanvix_malloc(__TEXT_LENGTH + 1)) != NULL);
+	uassert((text2 = nanvix_malloc(__TEXT_LENGTH + 1)) != NULL);
 
-	/* Initialize text. */
+	/* Initialize text1. */
 	for (int i = 0; i < __TEXT_LENGTH; i++)
-		text[i] = urand()%__PATTERN_LENGTH + 32;
-	text[__TEXT_LENGTH] = '\0';
+		text1[i] = urand()%95 + 32;
+	text1[__TEXT_LENGTH] = '\0';
 
-	/* Initialize pattern. */
-	for (int i = 0; i < __PATTERN_LENGTH; i++)
-		pattern[i] = urand()%__PATTERN_LENGTH + 32;
-	pattern[__PATTERN_LENGTH] = '\0';
+	/* Initialize text2. */
+	for (int i = 0; i < __TEXT_LENGTH; i++)
+		text2[i] = urand()%95 + 32;
+	text2[__TEXT_LENGTH] = '\0';
 }
 
 /**
@@ -102,7 +97,8 @@ static void benchmark_setup(void)
  */
 static void benchmark_cleanup(void)
 {
-	nanvix_free(text);
+	nanvix_free(text1);
+	nanvix_free(text2);
 }
 
 /**
@@ -112,7 +108,7 @@ static void benchmark_kernel(void)
 {
 	perf_start(0, PERF_CYCLES);
 
-		grep(text, pattern);
+		diff(text1, text2);
 
 	perf_stop(0);
 	time_kernel = perf_read(0);
@@ -124,12 +120,11 @@ static void benchmark_kernel(void)
 static void benchmark_dump_stats(void)
 {
 #ifndef NDEBUG
-	uprintf("[benchmarks][grep] text %d, pattern %d, time %l",
+	uprintf("[benchmarks][diff] text %d, time %l",
 #else
-	uprintf("[benchmarks][grep] %d %d %l",
+	uprintf("[benchmarks][diff] %d %l",
 #endif
 		__TEXT_LENGTH,
-		__PATTERN_LENGTH,
 		time_kernel
 	);
 }

@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright(c) 2018 Pedro Henrique Penna <pedrohenriquepenna@gmail.com>
+ * Copyright(c) 2011-2020 The Maintainers of Nanvix
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,48 +22,49 @@
  * SOFTWARE.
  */
 
-#include <nanvix/runtime/runtime.h>
-#include <nanvix/sys/perf.h>
 #include <nanvix/ulib.h>
 
-/*============================================================================*
- * Benchmark                                                                  *
- *============================================================================*/
+#include <posix/stdlib.h>
+
+#define min3(a,b,c) \
+	((a) < (b) && (a) < (c)) ? (a) : ((b) < (a) && (b) < (c)) ? (b) : (c)
+
+#define D(i, j) d[(i)*(lt + 1) + (j)]
 
 /**
- * @brief Hello world micro-benchmark.
+ * @brief Computes the differences between two strings.
  */
-static void benchmark_hello(void)
+int diff(const char *s, const char *t)
 {
-	uint64_t time_hello;
+	int dist;
+	int ls = ustrlen(s);
+	int lt = ustrlen(t);
+	int *d = nanvix_malloc((ls + 1)*(lt + 1)*sizeof(int));
+	uassert(d != NULL);
 
-	/* Allocate memory .*/
-	perf_start(0, PERF_CYCLES);
-	perf_stop(0);
-	time_hello = perf_read(0);
+	for (int i = 0; i < ls + 1; i++)
+	{
+		for (int j = 0; j < lt + 1; j++)
+			D(i, j) = -1;
+	}
 
-#ifndef NDEBUG
-	uprintf("[benchmarks][hello] hello takes %l",
-#else
-	uprintf("[benchmarks][hello] %l",
-#endif
-		time_hello
-	);
-}
+	for (int i = 1; i <= ls; i++)
+	{
+		for (int j = 1; j <= lt; j++)
+		{
+			int cost = (s[i - 1] == t[j - 1]) ? 0 : 1;
 
-/*============================================================================*
- * Benchmark Driver                                                           *
- *============================================================================*/
+			int del = D(i - 1, j) + 1;
+			int ins = D(i, j - 1) + 1;
+			int subst = D(i - 1, j - 1) + cost;
 
-/**
- * @brief Launches a benchmark.
- */
-int __main3(int argc, const char *argv[])
-{
-	((void) argc);
-	((void) argv);
+			D(i,j) = min3(del, ins, subst);
+		}
+	}
 
-	benchmark_hello();
+	dist = D(ls,lt) + 1;
 
-	return (0);
+	nanvix_free(d);
+
+	return dist;
 }
