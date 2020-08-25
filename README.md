@@ -44,6 +44,7 @@ following benchmarks are featured.
 
 **Utilities**
 
+- `diff`
 - `grep`
 - `hello`
 

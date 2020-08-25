@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# Copyright(c) 2011-2020 The Maintainers of Nanvix
+# Copyright(c) 2018 Pedro Henrique Penna <pedrohenriquepenna@gmail.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -22,71 +22,21 @@
 # SOFTWARE.
 #
 
-# Builds everything.
-all:          \
-	all-diff  \
-	all-grep  \
-	all-hello
-
-# Cleans up build objects.
-clean:          \
-	clean-diff  \
-	clean-grep  \
-	clean-hello
-
-# Cleans up everything.
-distclean:          \
-	distclean-diff  \
-	distclean-grep  \
-	distclean-hello \
+include $(BUILDDIR)/makefile.config
 
 #===============================================================================
-# Diff
+# Binaries Sources and Objects
 #===============================================================================
 
-all-diff:
-ifneq ($(TARGET), unix64)
-	$(MAKE) -C diff all
-endif
+# Binary
+EXEC = nanvix-diff.$(OBJ_SUFFIX)
 
-clean-diff:
-ifneq ($(TARGET), unix64)
-	$(MAKE) -C diff clean
-endif
+# C Source Files
+SRC = $(wildcard *.c)
 
-distclean-diff:
-ifneq ($(TARGET), unix64)
-	$(MAKE) -C diff distclean
-endif
+# Object Files
+OBJ = $(SRC:.c=.$(OBJ_SUFFIX).o)
 
 #===============================================================================
-# Grep
-#===============================================================================
 
-all-grep:
-ifneq ($(TARGET), unix64)
-	$(MAKE) -C grep all
-endif
-
-clean-grep:
-ifneq ($(TARGET), unix64)
-	$(MAKE) -C grep clean
-endif
-
-distclean-grep:
-ifneq ($(TARGET), unix64)
-	$(MAKE) -C grep distclean
-endif
-
-#===============================================================================
-# Hello World
-#===============================================================================
-
-all-hello:
-	$(MAKE) -C hello all
-
-clean-hello:
-	$(MAKE) -C hello clean
-
-distclean-hello:
-	$(MAKE) -C hello distclean
+include $(BUILDDIR)/makefile.executable
