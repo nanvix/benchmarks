@@ -48,7 +48,7 @@
  * @brief Iterations to skip on warmup.
  */
 #ifndef __SKIP
-#define __SKIP 10
+#define __SKIP 1
 #endif
 
 /**
@@ -62,97 +62,8 @@
  * @brief Object Size
  */
 #ifndef __OBJSIZE
-#define __OBJSIZE (8*1024)
+#define __OBJSIZE 4096
 #endif
-
-/*============================================================================*
- * Profiling                                                                  *
- *============================================================================*/
-
-/**
- * @brief Name of the benchmark.
- */
-#define BENCHMARK_NAME "stream"
-
-/**
- * @brief Number of events to profile.
- */
-#if defined(__mppa256__)
-	#define BENCHMARK_PERF_EVENTS 7
-#elif defined(__optimsoc__)
-	#define BENCHMARK_PERF_EVENTS 7
-#else
-	#define BENCHMARK_PERF_EVENTS 1
-#endif
-
-/**
- * Performance events.
- */
-static int perf_events[BENCHMARK_PERF_EVENTS] = {
-#if defined(__mppa256__)
-	PERF_DTLB_STALLS,
-	PERF_ITLB_STALLS,
-	PERF_REG_STALLS,
-	PERF_BRANCH_STALLS,
-	PERF_DCACHE_STALLS,
-	PERF_ICACHE_STALLS,
-	PERF_CYCLES
-#elif defined(__optimsoc__)
-	MOR1KX_PERF_LSU_HITS,
-	MOR1KX_PERF_BRANCH_STALLS,
-	MOR1KX_PERF_ICACHE_HITS,
-	MOR1KX_PERF_REG_STALLS,
-	MOR1KX_PERF_ICACHE_MISSES,
-	MOR1KX_PERF_IFETCH_STALLS,
-	MOR1KX_PERF_LSU_STALLS,
-#else
-	0
-#endif
-};
-
-/**
- * @brief Dump execution statistics.
- *
- * @param it      Benchmark iteration.
- * @oaram name    Benchmark name.
- * @param objsize Object size.
- * @param stats   Execution statistics.
- */
-static void benchmark_dump_stats(int it, const char *name, size_t objsize, uint64_t *stats)
-{
-	uprintf(
-#if defined(__mppa256__)
-		"[benchmarks][%s] %d %d %d %l %l %l %l %l %l %l",
-#elif defined(__optimsoc__)
-		"[benchmarks][%s] %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
-#else
-		"[benchmarks][%s] %d %d %d %d",
-#endif
-		name,
-		it,
-		__NTHREADS,
-		objsize,
-#if defined(__mppa256__)
-		stats[0],
-		stats[1],
-		stats[2],
-		stats[3],
-		stats[4],
-		stats[5],
-		stats[6]
-#elif defined(__optimsoc__)
-		UINT32(stats[0]),
-		UINT32(stats[1]),
-		UINT32(stats[2]),
-		UINT32(stats[3]),
-		UINT32(stats[4]),
-		UINT32(stats[5]),
-		UINT32(stats[6])
-#else
-		UINT32(stats[0])
-#endif
-	);
-}
 
 /*============================================================================*
  * Benchmark                                                                  *
@@ -163,55 +74,28 @@ static void benchmark_dump_stats(int it, const char *name, size_t objsize, uint6
  */
 struct tdata
 {
-	int tnum;  /**< Thread Number */
-	size_t start; /**< Start Byte    */
-	size_t end;   /**< End Byte      */
+	size_t start; /**< Start Byte */
 } tdata[__NTHREADS] ALIGN(CACHE_LINE_SIZE);
 
 /**
  * @brief Buffers.
  */
 /**@{*/
-static word_t obj1[__OBJSIZE/WORD_SIZE] ALIGN(CACHE_LINE_SIZE);
-static word_t obj2[__OBJSIZE/WORD_SIZE] ALIGN(CACHE_LINE_SIZE);
+static char obj1[__NTHREADS*__OBJSIZE] ALIGN(CACHE_LINE_SIZE);
+static char obj2[__NTHREADS*__OBJSIZE] ALIGN(CACHE_LINE_SIZE);
 /**@}*/
 
 /**
- * @brief Fills words in memory.
- *
- * @param ptr Pointer to target memory area.
- * @param c   Character to use.
- * @param n   Number of bytes to be set.
+ * @brief Dump execution statistics.
  */
-static inline void memfill(word_t *ptr, word_t c, size_t n)
+static void benchmark_dump_stats(uint64_t time_kernel)
 {
-	word_t *p;
-
-	p = ptr;
-
-	/* Set words. */
-	for (size_t i = 0; i < n; i++)
-		*p++ = c;
-}
-
-/**
- * @brief Copy words in memory.
- *
- * @param dest Target memory area.
- * @param src  Source memory area.
- * @param n    Number of bytes to be copied.
- */
-static inline void memcopy(word_t *dest, const word_t *src, size_t n)
-{
-	word_t *d;       /* Write pointer. */
-	const word_t* s; /* Read pointer.  */
-
-	s = src;
-	d = dest;
-
-	/* Copy words. */
-	for (size_t i = 0; i < n; i++)
-		*d++ = *s++;
+	uprintf(
+		"[benchmarks][stream] %d %d %l",
+		__NTHREADS,
+		__NTHREADS*__OBJSIZE,
+		time_kernel
+	);
 }
 
 /**
@@ -219,29 +103,21 @@ static inline void memcopy(word_t *dest, const word_t *src, size_t n)
  */
 static void *task(void *arg)
 {
+	uint64_t time_kernel;
 	struct tdata *t = arg;
 	int start = t->start;
-	int end = t->end;
-	uint64_t stats[BENCHMARK_PERF_EVENTS];
-
-	/* Warm up. */
-	memfill(&obj1[start], (word_t) - 1, end - start);
-	memfill(&obj2[start], 0, end - start);
 
 	for (int i = 0; i < __NITERATIONS + __SKIP; i++)
 	{
-		for (int j = 0; j < BENCHMARK_PERF_EVENTS; j++)
-		{
-			perf_start(0, perf_events[j]);
+		perf_start(0, PERF_CYCLES);
 
-				memcopy(&obj1[start], &obj2[start], end - start);
+			umemcpy(&obj1[start], &obj2[start], __OBJSIZE);
 
-			perf_stop(0);
-			stats[j] = perf_read(0);
-		}
+		perf_stop(0);
+		time_kernel = perf_read(0);
 
 		if (i >= __SKIP)
-			benchmark_dump_stats(i - __SKIP, BENCHMARK_NAME, __OBJSIZE, stats);
+			benchmark_dump_stats(time_kernel);
 	}
 
 	return (NULL);
@@ -252,18 +128,13 @@ static void *task(void *arg)
  */
 static void kernel_memmove(void)
 {
-	size_t nbytes;
 	kthread_t tid[__NTHREADS];
-
-	nbytes = (__OBJSIZE/WORD_SIZE)/__NTHREADS;
 
 	/* Spawn threads. */
 	for (int i = 0; i < __NTHREADS; i++)
 	{
 		/* Initialize thread data structure. */
-		tdata[i].start = nbytes*i;
-		tdata[i].end = (i == (__NTHREADS - 1)) ? (__OBJSIZE/WORD_SIZE) : (i + 1)*nbytes;
-		tdata[i].tnum = i;
+		tdata[i].start = i*__OBJSIZE;
 
 		kthread_create(&tid[i], task, &tdata[i]);
 	}
