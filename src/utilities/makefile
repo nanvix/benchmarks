@@ -26,19 +26,22 @@
 all:          \
 	all-diff  \
 	all-grep  \
-	all-hello
+	all-hello \
+	all-qsort
 
 # Cleans up build objects.
 clean:          \
 	clean-diff  \
 	clean-grep  \
-	clean-hello
+	clean-hello \
+	clean-qsort
 
 # Cleans up everything.
 distclean:          \
 	distclean-diff  \
 	distclean-grep  \
 	distclean-hello \
+	distclean-qsort
 
 #===============================================================================
 # Diff
@@ -90,3 +93,22 @@ clean-hello:
 
 distclean-hello:
 	$(MAKE) -C hello distclean
+
+#===============================================================================
+# Quick Sort
+#===============================================================================
+
+all-qsort:
+ifneq ($(TARGET), unix64)
+	$(MAKE) -C qsort all
+endif
+
+clean-qsort:
+ifneq ($(TARGET), unix64)
+	$(MAKE) -C qsort clean
+endif
+
+distclean-qsort:
+ifneq ($(TARGET), unix64)
+	$(MAKE) -C qsort distclean
+endif
