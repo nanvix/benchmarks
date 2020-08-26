@@ -40,5 +40,10 @@ include/machine/
 include/nanvix/
 include/posix/
 
+# MPI Headers
+include/mpi/
+include/mpi.h
+include/mputil
+
 # Excludes
 !img/*.img
