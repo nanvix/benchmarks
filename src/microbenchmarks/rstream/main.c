@@ -102,9 +102,9 @@ static void benchmark_cleanup(void)
 static void benchmark_dump_stats(void)
 {
 #ifndef NDEBUG
-	uprintf("[benchmarks][memread] nprocs %d, read size %d, read, %l",
+	uprintf("[benchmarks][rstream] nprocs %d, read size %d, read, %l",
 #else
-	uprintf("[benchmarks][memread] %d %d %l",
+	uprintf("[benchmarks][rstream] %d %d %l",
 #endif
 		__NPROCS,
 		__NUM_BLOCKS*RMEM_BLOCK_SIZE,
@@ -121,10 +121,7 @@ static void benchmark_kernel(void)
 
 	/* Read and write. */
 	for (unsigned long i = 0; i < __NUM_BLOCKS; i++)
-	{
-		uassert(nanvix_rmem_read(blks[i], buffer) == RMEM_BLOCK_SIZE);
 		uassert(nanvix_rmem_write(blks[i], buffer) == RMEM_BLOCK_SIZE);
-	}
 
 	/* Free all blocks. */
 	perf_stop(0);
