@@ -59,7 +59,7 @@ extern const char *grep(const char *text, const char *pattern);
  * @brief Length of pattern.
  */
 #ifndef __PATTERN_LENGTH
-#define __PATTERN_LENGTH 95
+#define __PATTERN_LENGTH 16
 #endif
 
 /**
@@ -88,12 +88,12 @@ static void benchmark_setup(void)
 
 	/* Initialize text. */
 	for (int i = 0; i < __TEXT_LENGTH; i++)
-		text[i] = urand()%__PATTERN_LENGTH + 32;
+		text[i] = urand()%95 + 32;
 	text[__TEXT_LENGTH] = '\0';
 
 	/* Initialize pattern. */
 	for (int i = 0; i < __PATTERN_LENGTH; i++)
-		pattern[i] = urand()%__PATTERN_LENGTH + 32;
+		pattern[i] = urand()%95 + 32;
 	pattern[__PATTERN_LENGTH] = '\0';
 }
 
