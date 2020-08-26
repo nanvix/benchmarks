@@ -22,11 +22,10 @@ following benchmarks are featured.
 - `kcall-remote`
 - `lookup`
 - `mail`
-- `memread`
-- `memwrite`
 - `noise`
 - `pgfetch`
 - `pginval`
+- `rstream`
 - `signal`
 - `stream`
 
