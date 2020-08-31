@@ -27,7 +27,7 @@
 static struct item tasks[PROBLEM_SIZE];
 
 /* Total of friendly numbers */
-static int friendlyNumbers = 0;
+int friendlyNumbers = 0;
 
 /* Parameters.*/
 static int tasksize[PROBLEM_NUM_WORKERS]; /* tasks size.         */

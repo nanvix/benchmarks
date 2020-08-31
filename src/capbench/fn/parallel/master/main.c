@@ -40,6 +40,8 @@ int __main3(int argc, char **argv)
 	/* Shutdown MPI runtime system. */
 	MPI_Finalize();
 
+	uprintf("Result: %d", friendlyNumbers);
+
 	/* Print timing statistics. */
 	uprintf("---------------------------------------------");
 	uprintf("[capbench][fn] timing statistics:");

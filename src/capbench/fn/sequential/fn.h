@@ -22,8 +22,8 @@
  * SOFTWARE.
  */
 
-#ifndef _FN_H_
-#define _FN_H_
+#ifndef _FN2_H_
+#define _FN2_H_
 
 	#include <nanvix/sys/perf.h>
 	#include <nanvix/hal.h>
@@ -34,40 +34,19 @@
 	#include <posix/stdint.h>
 	#include <posix/stddef.h>
 
-	#include <mputil/proc.h>
-	#include <mpi.h>
-
 /*============================================================================*
  * Parameters                                                                 *
  *============================================================================*/
 
-	#define PROBLEM_SIZE                                   128
+	#define PROBLEM_SIZE                                    28
 	#define PROBLEM_START_NUM                          1000001
 	#define PROBLEM_END_NUM      (PROBLEM_START + PROBLEM_SIZE)
-	#define PROBLEM_NUM_WORKERS          (MPI_PROCESSES_NR - 1)
-
-/*============================================================================*
- * Communication                                                              *
- *============================================================================*/
-
-	extern int rank;
-	extern MPI_Group group;
-
-	extern uint64_t data_send(int outfd, void *data, size_t n);
-	extern uint64_t data_receive(int infd, void *data, size_t n);
 
 /*============================================================================*
  * Statistics                                                                 *
  *============================================================================*/
 
-	extern uint64_t slave[PROBLEM_NUM_WORKERS];
-	extern size_t data_sent;
-	extern unsigned nsend;
-	extern size_t data_received;
-	extern unsigned nreceive;
-	extern uint64_t communication;
-	extern uint64_t total;
-	extern uint64_t master;
+	extern uint64_t total_time;
 
 /*============================================================================*
  * Math                                                                       *

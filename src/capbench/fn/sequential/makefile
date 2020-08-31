@@ -22,26 +22,21 @@
 # SOFTWARE.
 #
 
-all: all-parallel all-sequential
+include $(BUILDDIR)/makefile.config
 
-clean: clean-parallel clean-sequential
+#===============================================================================
+# Binaries Sources and Objects
+#===============================================================================
 
-distclean: distclean-parallel distclean-sequential
+# Binary
+EXEC = nanvix-fn-seq.$(OBJ_SUFFIX)
 
-all-parallel:
-	$(MAKE) -C parallel all
+# C Source Files
+SRC += $(wildcard *.c)
 
-all-sequential:
-	$(MAKE) -C sequential all
+# Objects
+OBJ = $(SRC:.c=.$(OBJ_SUFFIX).o)
 
-clean-parallel:
-	$(MAKE) -C parallel clean
+#===============================================================================
 
-clean-sequential:
-	$(MAKE) -C sequential clean
-
-distclean-parallel:
-	$(MAKE) -C parallel distclean
-
-distclean-sequential:
-	$(MAKE) -C sequential distclean
+include $(BUILDDIR)/makefile.executable

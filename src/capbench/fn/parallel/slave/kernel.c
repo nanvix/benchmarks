@@ -30,7 +30,6 @@ static struct item task[PROBLEM_SIZE];
 /* Informations about the task */
 static int tasksize;
 
-
 /*
  * Computes the Greatest Common Divisor of two numbers.
  */
