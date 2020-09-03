@@ -38,8 +38,8 @@ static unsigned char chunk[CHUNK_WITH_HALO_SIZE2]; /* Working Chunk */
 
 static void process_chunks(void)
 {
-	int ii = 0;
-	int jj = 0;
+	int ii = HALF;
+	int jj = HALF;
 	int nchunks = 0;
 	int msg = MSG_CHUNK;
 
@@ -188,4 +188,14 @@ void do_kernel(void)
 	gauss_filter();
 
 	total = master + communication;
+
+	/* Prints the resultant image. */
+	uprintf("Result:\n");
+	for (int imgI = 0; imgI < PROBLEM_IMGSIZE; imgI++)
+	{
+		for (int imgJ = 0; imgJ < PROBLEM_IMGSIZE; imgJ++)
+			uprintf("%d", NEWIMAGE(imgI, imgJ));
+
+		uprintf("-----");
+	}
 }

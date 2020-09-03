@@ -35,7 +35,6 @@
 	#include <posix/stddef.h>
 
 	#include <mputil/proc.h>
-	#include <mpi/datatype.h>
 	#include <mpi.h>
 
 /*============================================================================*
@@ -44,9 +43,9 @@
 
 	#define PROBLEM_SEED 0
 
-	#define PROBLEM_MASKSIZE                              7
-	#define PROBLEM_CHUNK_SIZE                           64
-	#define PROBLEM_IMGSIZE     (512 + PROBLEM_MASKSIZE - 1)
+	#define PROBLEM_MASKSIZE                              3
+	#define PROBLEM_CHUNK_SIZE                           4
+	#define PROBLEM_IMGSIZE     (4 + PROBLEM_MASKSIZE - 1)
 
 	#define PROBLEM_NUM_WORKERS (MPI_PROCESSES_NR - 1)
 
@@ -142,6 +141,9 @@
 
 	#define NEWCHUNK(i, j) \
 		newchunk[(i)*PROBLEM_CHUNK_SIZE + (j)]
+
+	#define NEWIMAGE(i, j) \
+		newimg[(i)*PROBLEM_IMGSIZE + (j)]
 
 	extern void do_kernel(void);
 
