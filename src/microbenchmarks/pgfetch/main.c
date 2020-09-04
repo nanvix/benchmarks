@@ -22,45 +22,110 @@
  * SOFTWARE.
  */
 
+#define __NEED_MM_RMEM_STUB
+
+#include <nanvix/runtime/barrier.h>
 #include <nanvix/runtime/runtime.h>
 #include <nanvix/sys/perf.h>
 #include <nanvix/ulib.h>
+
+/**
+ * @brief Number of Benchmark Iterations
+ */
+#ifndef __NITERATIONS
+#define __NITERATIONS 1
+#endif
+
+/**
+ * @brief Number of Warmup Iterations
+ */
+#ifndef __SKIP
+#define __SKIP 1
+#endif
+
+/**
+ * @brief Write Size
+ */
+#ifndef __NUM_PAGES
+#define __NUM_PAGES RCACHE_LENGTH
+#endif
+
+/**
+ * @brief Number of Working Processes
+ */
+#ifndef __NPROCS
+#define __NPROCS 1
+#endif
 
 /*============================================================================*
  * Benchmark                                                                  *
  *============================================================================*/
 
 /**
- * @brief Dummy buffer used for tests.
+ * @brief Working Buffer
  */
 static char buffer[RMEM_BLOCK_SIZE];
 
 /**
- * @brief Benchmarks page fetches.
+ * @brief Pages.
  */
-static void benchmark_pgfetch(void)
+static void *pages[__NUM_PAGES];
+
+/**
+ * @griup Timing Statistics
+ */
+/**@{*/
+static uint64_t time_kernel;
+/**@}*/
+
+/**
+ * @brief Benchmark setup.
+ */
+static void benchmark_setup(void)
 {
-	void *ptr;
-	uint64_t time_pgfetch;
+	for (int i = 0; i < __NUM_PAGES; i++)
+		uassert((pages[i] = nanvix_vmem_alloc(1)) != NULL);
+}
 
-		uassert((ptr = nanvix_vmem_alloc(1)) != NULL);
+/**
+ * @brief Benchmark cleanup.
+ */
+static void benchmark_cleanup(void)
+{
+	for (int i = __NUM_PAGES - 1; i >= 0; i--)
+		uassert(nanvix_vmem_free(pages[i]) == 0);
+}
 
+/**
+ * @brief Dump execution statistics.
+ */
+static void benchmark_dump_stats(void)
+{
+#ifndef NDEBUG
+	uprintf("[benchmarks][pgfetch] nprocs %d, read size %d, read, %l",
+#else
+	uprintf("[benchmarks][pfetch] %d %d %l",
+#endif
+		__NPROCS,
+		__NUM_PAGES,
+		time_kernel
+	);
+}
+
+/**
+ * @brief Benchmark Kernel
+ */
+static void benchmark_kernel(void)
+{
 	perf_start(0, PERF_CYCLES);
 
-		uassert(nanvix_vmem_read(buffer, ptr, RMEM_BLOCK_SIZE) == RMEM_BLOCK_SIZE);
+		/* Fetch pages. */
+		for (int i = 0; i < __NUM_PAGES; i++)
+			uassert(nanvix_vmem_write(pages[i], buffer, RMEM_BLOCK_SIZE) == RMEM_BLOCK_SIZE);
 
+	/* Free all blocks. */
 	perf_stop(0);
-	time_pgfetch = perf_read(0);
-
-	uassert(nanvix_vmem_free(ptr) == 0);
-
-#ifndef NDEBUG
-	uprintf("[benchmarks][pgfetch] %l",
-#else
-	uprintf("[benchmarks][pgfetch] %l",
-#endif
-		time_pgfetch
-	);
+	time_kernel = perf_read(0);
 }
 
 /*============================================================================*
@@ -72,10 +137,47 @@ static void benchmark_pgfetch(void)
  */
 int __main3(int argc, const char *argv[])
 {
+#if (__NPROCS > 1)
+	barrier_t barrier;
+	int nodes[__NPROCS];
+#endif
+
 	((void) argc);
 	((void) argv);
 
-	benchmark_pgfetch();
+#if (__NPROCS > 1)
+	/* Build list of nodes. */
+	for (int i = 0; i < __NPROCS; i++)
+		nodes[i] = PROCESSOR_NODENUM_LEADER + i;
+
+	barrier = barrier_create(nodes, __NPROCS);
+	uassert(BARRIER_IS_VALID(barrier));
+#endif
+
+	benchmark_setup();
+
+#if (__NPROCS > 1)
+	uassert(barrier_wait(barrier) == 0);
+#endif
+
+	for (int i = 0; i < __NITERATIONS + __SKIP; i++)
+	{
+		benchmark_kernel();
+
+		if (i >= __SKIP)
+			benchmark_dump_stats();
+	}
+
+#if (__NPROCS > 1)
+	uassert(barrier_wait(barrier) == 0);
+#endif
+
+	benchmark_cleanup();
+
+#if (__NPROCS > 1)
+	uassert(barrier_wait(barrier) == 0);
+	uassert(barrier_destroy(barrier) == 0);
+#endif
 
 	return (0);
 }
