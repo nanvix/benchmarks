@@ -29,6 +29,27 @@
 #include <nanvix/limits.h>
 #include <posix/sys/stat.h>
 
+/**
+ * @brief Number of Benchmark Iterations
+ */
+#ifndef __NITERATIONS
+#define __NITERATIONS 1
+#endif
+
+/**
+ * @brief Number of Warmup Iterations
+ */
+#ifndef __SKIP
+#define __SKIP 1
+#endif
+
+/**
+ * @brief Number of Working Processes
+ */
+#ifndef __NPROCS
+#define __NPROCS 2
+#endif
+
 /*============================================================================*
  * Benchmark                                                                  *
  *============================================================================*/
@@ -36,45 +57,77 @@
 /**
  * @brief Dummy buffer used for tests.
  */
-static char buffer[RMEM_BLOCK_SIZE];
+static char buffer[NANVIX_SHM_SIZE_MAX];
 
 /**
  * @brief Benchmarks invalidation of shared memory regions.
  */
-static void benchmark_msync(void)
+static void benchmark_pgfetch(void)
 {
 	int shmid;
+	barrier_t barrier;
+	int nodes[__NPROCS];
+	uint64_t time_pgfetch;
 	const char *shm_name = "cool-region";
-	uint64_t time_msync;
 
-	/* Leader. */
-	if (kcluster_get_num() == PROCESSOR_CLUSTERNUM_LEADER)
+	/* Build list of nodes. */
+	for (int i = 0; i < __NPROCS; i++)
+		nodes[i] = PROCESSOR_NODENUM_LEADER + i;
+
+	barrier = barrier_create(nodes, __NPROCS);
+	uassert(BARRIER_IS_VALID(barrier));
+
+	/* IPC initialization. */
+	if (knode_get_num() == PROCESSOR_NODENUM_LEADER)
 	{
 		uassert((shmid = __nanvix_shm_open(shm_name, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR)) >= 0);
+		uassert(__nanvix_shm_ftruncate(shmid, NANVIX_SHM_SIZE_MAX) == 0);
+		umemset(buffer, 1, NANVIX_SHM_SIZE_MAX);
+		uassert(__nanvix_shm_write(shmid, buffer, NANVIX_SHM_SIZE_MAX, 0) == NANVIX_SHM_SIZE_MAX);
+		umemset(buffer, 0, NANVIX_SHM_SIZE_MAX);
+		uassert(__nanvix_shm_read(shmid, buffer, NANVIX_SHM_SIZE_MAX, 0) == NANVIX_SHM_SIZE_MAX);
 
-			uassert(__nanvix_shm_ftruncate(shmid, NANVIX_SHM_SIZE_MAX) == 0);
-
-			umemset(buffer, 1, NANVIX_SHM_SIZE_MAX);
-			uassert(__nanvix_shm_write(shmid, buffer, NANVIX_SHM_SIZE_MAX, 0) == NANVIX_SHM_SIZE_MAX);
-			umemset(buffer, 0, NANVIX_SHM_SIZE_MAX);
-			uassert(__nanvix_shm_read(shmid, buffer, NANVIX_SHM_SIZE_MAX, 0) == NANVIX_SHM_SIZE_MAX);
-
-			perf_start(0, PERF_CYCLES);
-			uassert(__nanvix_shm_inval(shmid) == 0);
-			perf_stop(0);
-			time_msync = perf_read(0);
-
-		uassert(__nanvix_shm_close(shmid) == 0);
-		uassert(__nanvix_shm_unlink(shm_name) == 0);
-
-#ifndef NDEBUG
-		uprintf("[benchmarks][msync] %l",
-#else
-		uprintf("[benchmarks][msync] %l",
-#endif
-			time_msync
-		);
+		uassert(barrier_wait(barrier) == 0);
 	}
+	else
+	{
+		uassert(barrier_wait(barrier) == 0);
+		uassert((shmid = __nanvix_shm_open(shm_name, O_RDWR, 0)) >= 0);
+	}
+
+	uassert(barrier_wait(barrier) == 0);
+
+	for (int i = 0; i < __NITERATIONS + __SKIP; i++)
+	{
+		if (knode_get_num() == PROCESSOR_NODENUM_LEADER)
+		{
+			perf_start(0, PERF_CYCLES);
+
+				uassert(__nanvix_shm_inval(shmid) == 0);
+
+			perf_stop(0);
+			time_pgfetch = perf_read(0);
+
+			if (i >= __SKIP)
+			{
+#ifndef NDEBUG
+				uprintf("[benchmarks][pginval] %l",
+#else
+				uprintf("[benchmarks][pginval] %l",
+#endif
+					time_pgfetch
+				);
+			}
+		}
+	}
+
+	uassert(barrier_wait(barrier) == 0);
+
+	/* House keeping. */
+	uassert(__nanvix_shm_close(shmid) == 0);
+	if (knode_get_num() == PROCESSOR_NODENUM_LEADER)
+		uassert(__nanvix_shm_unlink(shm_name) == 0);
+	uassert(barrier_destroy(barrier) == 0);
 }
 
 /*============================================================================*
@@ -86,24 +139,10 @@ static void benchmark_msync(void)
  */
 int __main3(int argc, const char *argv[])
 {
-	barrier_t barrier;
-	int nodes[NANVIX_PROC_MAX];
-
 	((void) argc);
 	((void) argv);
 
-	/* Build list of nodes. */
-	for (int i = 0; i < NANVIX_PROC_MAX; i++)
-		nodes[i] = PROCESSOR_NODENUM_LEADER + i;
-
-	barrier = barrier_create(nodes, NANVIX_PROC_MAX);
-	uassert(BARRIER_IS_VALID(barrier));
-	uassert(barrier_wait(barrier) == 0);
-
-		benchmark_msync();
-
-	uassert(barrier_wait(barrier) == 0);
-	uassert(barrier_destroy(barrier) == 0);
+	benchmark_pgfetch();
 
 	return (0);
 }
