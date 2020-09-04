@@ -36,7 +36,7 @@
 /**
  * @brief Number of messages to send.
  */
-#define NUM_ITEMS 128
+#define NUM_ROWS (NANVIX_SHM_MAX/(2*sizeof(unsigned)))
 
 /**
  * @brief Shared Table.
@@ -47,7 +47,7 @@ struct table
 	{
 		unsigned key;
 		unsigned value;
-	} rows [NUM_ITEMS];
+	} rows [NUM_ROWS];
 } table;
 
 /*============================================================================*
@@ -57,21 +57,21 @@ struct table
 /**
  * @brief Number of operations.
  */
-#ifdef NDEBUG
-#define NUM_OPS 128
-#else
-#define NUM_OPS 16
+#ifndef __NUM_QUERIES
+#define __NUM_QUERIES 8
 #endif
 
 /**
  * @brief Number of writers.
  */
-#define NUM_WRITERS (1)
+#ifndef __NUM_WRITERS
+#define __NUM_WRITERS 1
+#endif
 
 /**
  * @brief Number of readers.
  */
-#define NUM_READERS (NANVIX_PROC_MAX - NUM_WRITERS)
+#define NUM_READERS (NANVIX_PROC_MAX - __NUM_WRITERS)
 
 /**
  * @group IPC
@@ -144,10 +144,12 @@ static void writer(void)
 		uassert((shmid = __nanvix_shm_open(dbname, O_RDWR, 0)) >= 0);
 	}
 
+	uassert(barrier_wait(barrier) == 0);
+
 	perf_start(0, PERF_CYCLES);
 
-		/* Write to the db. */
-		for (int i = 0; i < NUM_OPS; /* noop */)
+		/* Read from the db. */
+		for (int i = 0; i < __NUM_QUERIES; i++)
 		{
 			down(sem_readers, NUM_READERS);
 
@@ -155,13 +157,15 @@ static void writer(void)
 			uassert(__nanvix_shm_read(shmid, &table, sizeof(struct table), 0) == sizeof(struct table));
 			uassert(__nanvix_shm_write(shmid, &table, sizeof(struct table), 0) == sizeof(struct table));
 
-			i++;
 			up(sem_readers, NUM_READERS);
 		}
 
 		uassert(barrier_wait(barrier) == 0);
 
+	perf_stop(0);
 	t = perf_read(0);
+
+	uassert(barrier_wait(barrier) == 0);
 
 	/* House keeping. */
 	uassert(__nanvix_shm_close(shmid) == 0);
@@ -173,10 +177,11 @@ static void writer(void)
 	if (knode_get_num() == PROCESSOR_NODENUM_LEADER)
 	{
 #ifdef NDEBUG
-		uprintf("[benchmarks][simpledb] simpledb takes %l",
+		uprintf("[benchmarks][simpledb] queries %d, time %l",
 #else
-		uprintf("[benchmarks][simpledb] %l",
+		uprintf("[benchmarks][simpledb] %d %l",
 #endif
+			__NUM_QUERIES,
 			t
 		);
 	}
@@ -199,12 +204,16 @@ static void reader(void)
 	/* IPC initialization. */
 	barrier = barrier_create(nodes, NANVIX_PROC_MAX);
 	uassert(BARRIER_IS_VALID(barrier));
-	uassert((sem_readers = __nanvix_semget(SEM_KEY_MUTEX, IPC_CREAT)) >= 0);
+
 	uassert(barrier_wait(barrier) == 0);
+
+	uassert((sem_readers = __nanvix_semget(SEM_KEY_MUTEX, IPC_CREAT)) >= 0);
 	uassert((shmid = __nanvix_shm_open(dbname, O_RDWR, 0)) >= 0);
 
+	uassert(barrier_wait(barrier) == 0);
+
 	/* Write to the db. */
-	for (int i = 0; i < NUM_OPS; i++)
+	for (int i = 0; i < __NUM_QUERIES; i++)
 	{
 		down(sem_readers, 1);
 
@@ -219,6 +228,7 @@ static void reader(void)
 	/* House keeping. */
 	uassert(__nanvix_shm_close(shmid) == 0);
 	uassert(__nanvix_sem_close(sem_readers) == 0);
+	uassert(barrier_wait(barrier) == 0);
 	uassert(barrier_destroy(barrier) == 0);
 }
 
@@ -229,7 +239,7 @@ static void benchmark_simpledb(void)
 {
 	void (*fn)(void);
 
-	fn = (knode_get_num() < (PROCESSOR_NODENUM_LEADER + NUM_WRITERS)) ?
+	fn = (knode_get_num() < (PROCESSOR_NODENUM_LEADER + __NUM_WRITERS)) ?
 		writer : reader;
 
 	fn();

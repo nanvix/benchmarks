@@ -386,7 +386,7 @@ jobs:
       - ssh-add travis_benchmarks_rsa
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
-      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-sysv-simpledb.img'
+      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --debug unix64-simpledb.img'
     - stage: "SimpleDB Debug"
       name: "MPPA-256"
       if: (NOT type IN (pull_request))
@@ -398,7 +398,7 @@ jobs:
         - ssh-add travis_benchmarks_rsa
       script:
         - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
-        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-sysv-simpledb.img'
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --debug mppa256-simpledb.img'
 
     # SimpleDB Release
     - stage: "SimpleDB Release"
@@ -412,7 +412,7 @@ jobs:
       - ssh-add travis_benchmarks_rsa
       script:
       - rsync -avz --delete-after --exclude=".git" . $SERVER_NAME:~/travis/benchmarks
-      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-sysv-simpledb.img'
+      - ssh $SERVER_NAME 'bash travis/run-benchmarks.sh --silent --release unix64-simpledb.img'
     - stage: "SimpleDB Release"
       name: "MPPA-256"
       if: (NOT type IN (pull_request))
@@ -424,7 +424,7 @@ jobs:
         - ssh-add travis_benchmarks_rsa
       script:
         - rsync -avz --delete-after --exclude=".git" . mppa:~/travis/benchmarks
-        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-sysv-simpledb.img'
+        - ssh mppa 'bash travis/test-benchmarks.sh --no-verbose --release mppa256-simpledb.img'
 
 #===============================================================================
 # Micro-Benchmarks
