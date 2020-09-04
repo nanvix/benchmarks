@@ -32,6 +32,8 @@ static int map[PROBLEM_LNPOINTS];                            /* Map of clusters.
 static int ppopulation[PROBLEM_NUM_CENTROIDS];               /* Partial population.       */
 static int has_changed;                                      /* Has any centroid changed? */
 
+const int _dimension = DIMENSION_MAX;
+
 /*============================================================================*
  * populate()                                                                 *
  *============================================================================*/

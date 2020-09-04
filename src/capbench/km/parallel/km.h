@@ -43,8 +43,8 @@
  *============================================================================*/
 
 	#define PROBLEM_SEED                            0
-	#define PROBLEM_LNPOINTS                 (15*2048)
-	#define PROBLEM_NUM_CENTROIDS                  64
+	#define PROBLEM_LNPOINTS                      (64)
+	#define PROBLEM_NUM_CENTROIDS                   8
 	#define DIMENSION_MAX                           4
 	#define PROBLEM_NUM_POINTS      (PROBLEM_LNPOINTS)
 	#define PROBLEM_NUM_WORKERS (MPI_PROCESSES_NR - 1)
@@ -75,11 +75,6 @@
 /*============================================================================*
  * Vector                                                                     *
  *============================================================================*/
-
-	/**
-	 * @brief Used for floating-point zero comparison.
-	 */
-	#define ZERO 0.0000001
 
 	extern float vector_distance(float *a, float *b);
 	extern float *vector_add(float *v1, const float *v2);

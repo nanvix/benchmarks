@@ -22,7 +22,13 @@
  * SOFTWARE.
  */
 
-#include "km.h"
+/**
+ * @brief Used for floating-point zero comparison.
+ */
+#define ZERO 0.0000001
+
+/* Max dimension of the problem. */
+extern int _dimension;
 
 /*============================================================================*
  * vector_distance()                                                          *
@@ -35,7 +41,7 @@ float vector_distance(float *a, float *b)
 {
 	float distance = 0;
 
-	for (int i = 0; i < DIMENSION_MAX; i++)
+	for (int i = 0; i < _dimension; i++)
 		distance += (a[i] - b[i])*(a[i] - b[i]);
 
 	return (distance);
@@ -50,7 +56,7 @@ float vector_distance(float *a, float *b)
  */
 float *vector_add(float *v1, const float *v2)
 {
-	for (int i = 0; i < DIMENSION_MAX; i++)
+	for (int i = 0; i < _dimension; i++)
 		v1[i] += v2[i];
 
 	return (v1);
@@ -65,7 +71,7 @@ float *vector_add(float *v1, const float *v2)
  */
 float *vector_mult(float *v, float scalar)
 {
-	for (int i = 0; i < DIMENSION_MAX; i++)
+	for (int i = 0; i < _dimension; i++)
 		v[i] *= scalar;
 
 	return (v);
@@ -80,7 +86,7 @@ float *vector_mult(float *v, float scalar)
  */
 float *vector_assign(float *v1, const float *v2)
 {
-	for (int i = 0; i < DIMENSION_MAX; i++)
+	for (int i = 0; i < _dimension; i++)
 		v1[i] = v2[i];
 
 	return (v1);
@@ -95,13 +101,13 @@ float *vector_assign(float *v1, const float *v2)
  */
 int vector_equal(const float *v1, const float *v2)
 {
-	for (int i = 0; i < DIMENSION_MAX; i++)
+	for (int i = 0; i < _dimension; i++)
 	{
 		float val = (v1[i] - v2[i]);
 		if (val < 0)
 			val = -1;
 
-		if (val <= 0.0000001)
+		if (val <= ZERO)
 			return (0);
 	}
 

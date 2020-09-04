@@ -34,6 +34,8 @@ static int lnpoints[PROBLEM_NUM_WORKERS];                                       
 static int has_changed[PROBLEM_NUM_WORKERS];                                      /* Has any centroid changed?  */
 static float points[PROBLEM_NUM_POINTS*DIMENSION_MAX];                            /* Data points.               */
 
+const int _dimension = DIMENSION_MAX;
+
 /*============================================================================*
  * initialize_variables()                                                     *
  *============================================================================*/

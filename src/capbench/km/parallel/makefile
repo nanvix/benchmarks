@@ -22,34 +22,26 @@
 # SOFTWARE.
 #
 
-#===============================================================================
-# C Source Files
-#===============================================================================
+all: all-master all-slave
 
-export SRC += $(wildcard $(CURDIR)/*.c)
+clean: clean-master clean-slave
 
-#===============================================================================
+distclean: distclean-master distclean-slave
 
-all: all-parallel all-sequential
+all-master:
+	$(MAKE) -C master all
 
-clean: clean-parallel clean-sequential
+all-slave:
+	$(MAKE) -C slave all
 
-distclean: distclean-parallel distclean-sequential
+clean-master:
+	$(MAKE) -C master clean
 
-all-parallel:
-	$(MAKE) -C parallel all
+clean-slave:
+	$(MAKE) -C slave clean
 
-all-sequential:
-	$(MAKE) -C sequential all
+distclean-master:
+	$(MAKE) -C master distclean
 
-clean-parallel:
-	$(MAKE) -C parallel clean
-
-clean-sequential:
-	$(MAKE) -C sequential clean
-
-distclean-parallel:
-	$(MAKE) -C parallel distclean
-
-distclean-sequential:
-	$(MAKE) -C sequential distclean
+distclean-slave:
+	$(MAKE) -C slave distclean
