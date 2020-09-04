@@ -46,6 +46,7 @@ following benchmarks are featured.
 - `diff`
 - `grep`
 - `hello`
+- `qsort`
 
 License & Maintainers
 ---------------------
