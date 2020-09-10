@@ -155,16 +155,6 @@ void do_kernel(void)
 
 	total_time += perf_read(0);
 
-	/* Prints the resultant image. */
-	uprintf("Result:\n");
-	for (int imgI = 0; imgI < PROBLEM_IMGSIZE; imgI++)
-	{
-		for (int imgJ = 0; imgJ < PROBLEM_IMGSIZE; imgJ++)
-			uprintf("%u", NEWIMAGE(imgI, imgJ));
-
-		uprintf("-----");
-	}
-
 	/* Frees the allocated memory. */
 	nanvix_free((void *) newimg);
 	nanvix_free((void *) mask);

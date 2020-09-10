@@ -42,12 +42,12 @@
  * Parameters                                                                 *
  *============================================================================*/
 
-	#define PROBLEM_SEED                            0
-	#define PROBLEM_LNPOINTS                      (64)
-	#define PROBLEM_NUM_CENTROIDS                   8
-	#define DIMENSION_MAX                           4
-	#define PROBLEM_NUM_POINTS      (PROBLEM_LNPOINTS)
-	#define PROBLEM_NUM_WORKERS (MPI_PROCESSES_NR - 1)
+	#define PROBLEM_SEED                                0
+	#define PROBLEM_LNPOINTS                        (2048)
+	#define PROBLEM_NUM_CENTROIDS                      64
+	#define DIMENSION_MAX                               4
+	#define PROBLEM_NUM_POINTS     (15 * PROBLEM_LNPOINTS)
+	#define PROBLEM_NUM_WORKERS     (MPI_PROCESSES_NR - 1)
 
 /*============================================================================*
  * Communication                                                              *

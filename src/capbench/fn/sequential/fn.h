@@ -38,7 +38,7 @@
  * Parameters                                                                 *
  *============================================================================*/
 
-	#define PROBLEM_SIZE                                    28
+	#define PROBLEM_SIZE                                   512
 	#define PROBLEM_START_NUM                          1000001
 	#define PROBLEM_END_NUM      (PROBLEM_START + PROBLEM_SIZE)
 

@@ -188,14 +188,4 @@ void do_kernel(void)
 	gauss_filter();
 
 	total = master + communication;
-
-	/* Prints the resultant image. */
-	uprintf("Result:\n");
-	for (int imgI = 0; imgI < PROBLEM_IMGSIZE; imgI++)
-	{
-		for (int imgJ = 0; imgJ < PROBLEM_IMGSIZE; imgJ++)
-			uprintf("%d", NEWIMAGE(imgI, imgJ));
-
-		uprintf("-----");
-	}
 }
