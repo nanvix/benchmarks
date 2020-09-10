@@ -47,6 +47,7 @@ following benchmarks are featured.
 - `grep`
 - `hello`
 - `qsort`
+- `sed`
 
 License & Maintainers
 ---------------------

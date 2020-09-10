@@ -27,21 +27,24 @@ all:          \
 	all-diff  \
 	all-grep  \
 	all-hello \
-	all-qsort
+	all-qsort \
+	all-sed
 
 # Cleans up build objects.
 clean:          \
 	clean-diff  \
 	clean-grep  \
 	clean-hello \
-	clean-qsort
+	clean-qsort \
+	clean-sed
 
 # Cleans up everything.
 distclean:          \
 	distclean-diff  \
 	distclean-grep  \
 	distclean-hello \
-	distclean-qsort
+	distclean-qsort \
+	distclean-sed
 
 #===============================================================================
 # Diff
@@ -111,4 +114,23 @@ endif
 distclean-qsort:
 ifneq ($(TARGET), unix64)
 	$(MAKE) -C qsort distclean
+endif
+
+#===============================================================================
+# Sed
+#===============================================================================
+
+all-sed:
+ifneq ($(TARGET), unix64)
+	$(MAKE) -C sed all
+endif
+
+clean-sed:
+ifneq ($(TARGET), unix64)
+	$(MAKE) -C sed clean
+endif
+
+distclean-sed:
+ifneq ($(TARGET), unix64)
+	$(MAKE) -C sed distclean
 endif
