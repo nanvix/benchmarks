@@ -58,14 +58,14 @@ struct table
  * @brief Number of operations.
  */
 #ifndef __NUM_QUERIES
-#define __NUM_QUERIES 8
+#define __NUM_QUERIES 64
 #endif
 
 /**
  * @brief Number of writers.
  */
 #ifndef __NUM_WRITERS
-#define __NUM_WRITERS 1
+#define __NUM_WRITERS 8
 #endif
 
 /**
@@ -165,13 +165,20 @@ static void writer(void)
 	perf_stop(0);
 	t = perf_read(0);
 
-	uassert(barrier_wait(barrier) == 0);
-
 	/* House keeping. */
-	uassert(__nanvix_shm_close(shmid) == 0);
 	if (knode_get_num() == PROCESSOR_NODENUM_LEADER)
+	{
+		uassert(barrier_wait(barrier) == 0);
+		uassert(__nanvix_shm_close(shmid) == 0);
 		uassert(__nanvix_shm_unlink(dbname) == 0);
-	uassert(__nanvix_sem_close(sem_readers) == 0);
+		uassert(__nanvix_sem_close(sem_readers) == 0);
+	}
+	else
+	{
+		uassert(__nanvix_shm_close(shmid) == 0);
+		uassert(__nanvix_sem_close(sem_readers) == 0);
+		uassert(barrier_wait(barrier) == 0);
+	}
 	uassert(barrier_destroy(barrier) == 0);
 
 	if (knode_get_num() == PROCESSOR_NODENUM_LEADER)
