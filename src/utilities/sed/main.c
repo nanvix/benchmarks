@@ -52,7 +52,7 @@ extern char *sed(const char *text, const char *pattern, const char *newpattern);
  * @brief Length of text.
  */
 #ifndef __TEXT_LENGTH
-#define __TEXT_LENGTH 4096
+#define __TEXT_LENGTH 65536 - 1
 #endif
 
 /**
@@ -109,9 +109,9 @@ static void benchmark_setup(void)
 	pattern[__PATTERN_LENGTH] = '\0';
 
 	/* Initialize pattern. */
-	for (int i = 0; i < __PATTERN_LENGTH; i++)
+	for (int i = 0; i < __NEWPATTERN_LENGTH; i++)
 		newpattern[i] = urand()%95 + 32;
-	pattern[__NEWPATTERN_LENGTH] = '\0';
+	newpattern[__NEWPATTERN_LENGTH] = '\0';
 }
 
 /**
@@ -143,9 +143,9 @@ static void benchmark_kernel(void)
 static void benchmark_dump_stats(void)
 {
 #ifndef NDEBUG
-	uprintf("[benchmarks][grep] text %d, pattern %d, time %l",
+	uprintf("[benchmarks][sed] text %d, pattern %d, time %l",
 #else
-	uprintf("[benchmarks][grep] %d %d %l",
+	uprintf("[benchmarks][sed] %d %d %l",
 #endif
 		__TEXT_LENGTH,
 		__PATTERN_LENGTH,

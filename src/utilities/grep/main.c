@@ -52,7 +52,7 @@ extern const char *grep(const char *text, const char *pattern);
  * @brief Length of text.
  */
 #ifndef __TEXT_LENGTH
-#define __TEXT_LENGTH 4096
+#define __TEXT_LENGTH 131072
 #endif
 
 /**

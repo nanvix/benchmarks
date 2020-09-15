@@ -53,7 +53,7 @@ extern int diff(const char *s, const char *t);
  * @brief Length of text1.
  */
 #ifndef __TEXT_LENGTH
-#define __TEXT_LENGTH 32
+#define __TEXT_LENGTH 128
 #endif
 
 /**
