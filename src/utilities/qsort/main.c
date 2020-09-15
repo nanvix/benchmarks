@@ -52,7 +52,7 @@
  * @brief Number of numbers.
  */
 #ifndef __NUM_NUMBERS
-#define __NUM_NUMBERS 2048
+#define __NUM_NUMBERS 32768
 #endif
 
 /* Import definitions. */
