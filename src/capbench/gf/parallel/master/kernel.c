@@ -152,14 +152,24 @@ static void generate_mask(void)
 	float total_aux;
 
 	total_aux = 0;
-	first = __fdiv(1.0, (2.0*PI*SD*SD));
+	first     = (2.0 * PI * SD * SD);
 
 	for (int i = -HALF; i <= HALF; i++)
 	{
 		for (int j = -HALF; j <= HALF; j++)
 		{
-			sec = -((i*i + j*j))*__fdiv(1.0, (2.0*SD*SD));
-			MASK(i + HALF, j + HALF) = first*sec;
+			/**
+			 * @note Uses the positive expoent due to negative expoent limitations
+			 * on used power algorithm.
+			 */
+			sec = ((i*i + j*j) * __fdiv(1.0, (2.0*SD*SD)));
+			sec = power(E,sec);
+
+			/**
+			 * @note Inverts the second member to keep the Math equivalence
+			 * with the previous workaround.
+			 */
+			MASK(i + (HALF), j + (HALF)) = __fdiv(1.0, (first * sec));
 			total_aux += MASK(i + HALF, j + HALF);
 		}
 	}
@@ -173,8 +183,10 @@ static void generate_mask(void)
 
 static void init(void)
 {
+	srandnum(PROBLEM_SEED);
 	for (int i = 0; i < PROBLEM_IMGSIZE2; i++)
 		img[i] = randnum() & 0xff;
+
 	generate_mask();
 }
 
