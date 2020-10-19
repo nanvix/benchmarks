@@ -31,7 +31,6 @@
 #include <posix/errno.h>
 #include <posix/sys/stat.h>
 #include <posix/sys/ipc.h>
-#include <posix/errno.h>
 
 /**
  * @brief Number of messages to send.
