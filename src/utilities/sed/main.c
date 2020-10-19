@@ -46,13 +46,18 @@
  *============================================================================*/
 
 /* Import definitions. */
-extern char *sed(const char *text, const char *pattern, const char *newpattern);
+extern char *sed(
+	const char *text,
+	const char *newtext,
+	const char *pattern,
+	const char *newpattern
+);
 
 /**
  * @brief Length of text.
  */
 #ifndef __TEXT_LENGTH
-#define __TEXT_LENGTH 65536 - 1
+#define __TEXT_LENGTH 61440 - 1
 #endif
 
 /**
@@ -77,9 +82,14 @@ static uint64_t time_kernel;
 /**@}*/
 
 /**
- * @brief Text.
+ * @brief Text
  */
 static char *text = NULL;
+
+/**
+ * @brief New Text
+ */
+static char *newtext = NULL;
 
 /**
  * @brief Pattern.
@@ -97,6 +107,7 @@ static char newpattern[__NEWPATTERN_LENGTH + 1];
 static void benchmark_setup(void)
 {
 	uassert((text = nanvix_malloc(__TEXT_LENGTH + 1)) != NULL);
+	uassert((newtext = nanvix_malloc(__TEXT_LENGTH + 1)) != NULL);
 
 	/* Initialize text. */
 	for (int i = 0; i < __TEXT_LENGTH; i++)
@@ -119,6 +130,7 @@ static void benchmark_setup(void)
  */
 static void benchmark_cleanup(void)
 {
+	nanvix_free(newtext);
 	nanvix_free(text);
 }
 
@@ -129,12 +141,10 @@ static void benchmark_kernel(void)
 {
 	perf_start(0, PERF_CYCLES);
 
-		char *newtext = sed(text, pattern, newpattern);
+		sed(text, newtext, pattern, newpattern);
 
 	perf_stop(0);
 	time_kernel = perf_read(0);
-
-	nanvix_free(newtext);
 }
 
 /**

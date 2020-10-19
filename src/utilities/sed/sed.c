@@ -34,16 +34,15 @@ extern const char *grep(const char *text, const char *pattern);
  */
 char *sed(
 	const char *text,
+	char *newtext,
 	const char *pattern,
 	const char *newpattern
 )
 {
-	char *newtext, *pnewtext;
-	int textlen = ustrlen(text);
+	char *pnewtext = newtext;
 	int patternlen = ustrlen(pattern);
 	int newpatternlen = ustrlen(newpattern);
-
-	uassert((newtext = pnewtext = nanvix_malloc(textlen + 1)) != NULL);
+	int textlen = ustrlen(text);
 
 	/*
 	 * FIXME: the new pattern should not be longer the old pattern.
