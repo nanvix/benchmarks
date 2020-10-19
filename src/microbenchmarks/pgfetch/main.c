@@ -121,7 +121,10 @@ static void benchmark_kernel(void)
 
 		/* Fetch pages. */
 		for (int i = 0; i < __NUM_PAGES; i++)
-			uassert(nanvix_vmem_write(pages[i], buffer, RMEM_BLOCK_SIZE) == RMEM_BLOCK_SIZE);
+		{
+			int j = urand()%__NUM_PAGES;
+			uassert(nanvix_vmem_write(pages[j], buffer, RMEM_BLOCK_SIZE) == RMEM_BLOCK_SIZE);
+		}
 
 	/* Free all blocks. */
 	perf_stop(0);
