@@ -57,7 +57,7 @@ extern char *sed(
  * @brief Length of text.
  */
 #ifndef __TEXT_LENGTH
-#define __TEXT_LENGTH 65536 - 1
+#define __TEXT_LENGTH 61440 - 1
 #endif
 
 /**
