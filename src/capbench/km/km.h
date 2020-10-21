@@ -43,7 +43,7 @@
  *============================================================================*/
 
 	#define PROBLEM_SEED                            0
-	#define PROBLEM_LNPOINTS                 (15*2048)
+	#define PROBLEM_LNPOINTS                 (8*2048)
 	#define PROBLEM_NUM_CENTROIDS                  64
 	#define DIMENSION_MAX                           4
 	#define PROBLEM_NUM_POINTS      (PROBLEM_LNPOINTS)

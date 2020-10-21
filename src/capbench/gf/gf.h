@@ -46,7 +46,7 @@
 
 	#define PROBLEM_MASKSIZE                              7
 	#define PROBLEM_CHUNK_SIZE                           64
-	#define PROBLEM_IMGSIZE     (512 + PROBLEM_MASKSIZE - 1)
+	#define PROBLEM_IMGSIZE     (256 + PROBLEM_MASKSIZE - 1)
 
 	#define PROBLEM_NUM_WORKERS (MPI_PROCESSES_NR - 1)
 
