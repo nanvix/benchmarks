@@ -23,13 +23,13 @@
 #
 
 # Builds Everything
-all: all-microbenchmarks all-pseudoapps all-utilities all-capbench
+all: all-microbenchmarks all-pseudoapps all-utilities
 
 # Cleans Build Objects
-clean: clean-microbenchmarks clean-pseudoapps clean-utilities clean-capbench
+clean: clean-microbenchmarks clean-pseudoapps clean-utilities
 
 # Cleans Everything
-distclean: distclean-microbenchmarks distclean-pseudoapps distclean-utilities distclean-capbench
+distclean: distclean-microbenchmarks distclean-pseudoapps distclean-utilities
 
 #===============================================================================
 # Micro Benchmarks
