@@ -37,7 +37,8 @@ all:                 \
 	all-noise        \
 	all-rstream      \
 	all-signal       \
-	all-stream
+	all-stream       \
+	all-task
 
 # Cleans up build objects.
 clean:                 \
@@ -54,7 +55,8 @@ clean:                 \
 	clean-noise        \
 	clean-rstream      \
 	clean-signal       \
-	clean-stream
+	clean-stream       \
+	clean-task
 
 # Cleans up everything.
 distclean:                 \
@@ -71,7 +73,8 @@ distclean:                 \
 	distclean-noise        \
 	distclean-rstream      \
 	distclean-signal       \
-	distclean-stream
+	distclean-stream       \
+	distclean-task
 
 #===============================================================================
 # Barrier
@@ -254,3 +257,16 @@ clean-stream:
 
 distclean-stream:
 	$(MAKE) -C stream distclean
+
+#===============================================================================
+# Task
+#===============================================================================
+
+all-task:
+	$(MAKE) -C task all
+
+clean-task:
+	$(MAKE) -C task clean
+
+distclean-task:
+	$(MAKE) -C task distclean
