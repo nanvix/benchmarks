@@ -100,14 +100,10 @@ static int request(
 		/* Gets mailbox information. */
 		uassert(kmailbox_ioctl(mfd, KMAILBOX_IOCTL_GET_NCREATES,         &infos.mcreates)     == 0);
 		uassert(kmailbox_ioctl(mfd, KMAILBOX_IOCTL_GET_NOPENS,           &infos.mopens)       == 0);
-		uassert(kmailbox_ioctl(mfd, KMAILBOX_IOCTL_GET_RECEIVED_DATA,    &infos.mreceived)    == 0);
-		uassert(kmailbox_ioctl(mfd, KMAILBOX_IOCTL_GET_TRANSFERRED_DATA, &infos.mtransferred) == 0);
 
 		/* Gets portal information. */
 		uassert(kportal_ioctl(pfd,  KPORTAL_IOCTL_GET_NCREATES,          &infos.pcreates)     == 0);
 		uassert(kportal_ioctl(pfd,  KPORTAL_IOCTL_GET_NOPENS,            &infos.popens)       == 0);
-		uassert(kportal_ioctl(pfd,  KPORTAL_IOCTL_GET_RECEIVED_DATA,     &infos.preceived)    == 0);
-		uassert(kportal_ioctl(pfd,  KPORTAL_IOCTL_GET_TRANSFERRED_DATA,  &infos.ptransferred) == 0);
 
 	/* Sends information. */
 	uassert(kmailbox_write(mfd, &infos, TEST_INFOS_SIZE) >= 0);

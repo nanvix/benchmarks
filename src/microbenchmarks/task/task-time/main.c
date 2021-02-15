@@ -25,6 +25,7 @@
 #include <nanvix/runtime/runtime.h>
 #include <nanvix/sys/perf.h>
 #include <nanvix/sys/thread.h>
+#include <nanvix/sys/task.h>
 #include <nanvix/limits.h>
 #include <nanvix/ulib.h>
 
@@ -53,7 +54,7 @@
  * @brief Iterations to skip on warmup.
  */
 #ifndef __SKIP
-#define __SKIP 1
+#define __SKIP 0
 #endif
 
 /**
@@ -100,7 +101,7 @@ static void benchmark_dump_stats(uint64_t t0, uint64_t t1)
 /**
  * @brief Operation dummy.
  */
-static int dummy(struct task_args * args)
+static int dummy(ktask_args_t * args)
 {
 	UNUSED(args);
 	return (TASK_RET_SUCCESS);
@@ -126,7 +127,7 @@ static void * _task_loop(void * args)
 static void benchmark_task_time(void)
 {
 	uint64_t t0, t1;
-	struct task task[__NTASKS];
+	ktask_t task[__NTASKS];
 	kthread_t tid[__NDISPATCHERS];
 
 	/* Build dispatchers (the kernel has one). */
