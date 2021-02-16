@@ -23,13 +23,13 @@
 #
 
 # Builds Everything
-all: all-microbenchmarks all-pseudoapps all-utilities
+all: all-microbenchmarks all-pseudoapps all-utilities all-samos
 
 # Cleans Build Objects
-clean: clean-microbenchmarks clean-pseudoapps clean-utilities
+clean: clean-microbenchmarks clean-pseudoapps clean-utilities clean-samos
 
 # Cleans Everything
-distclean: distclean-microbenchmarks distclean-pseudoapps distclean-utilities
+distclean: distclean-microbenchmarks distclean-pseudoapps distclean-utilities distclean-samos
 
 #===============================================================================
 # Micro Benchmarks
@@ -90,3 +90,19 @@ clean-capbench:
 # Cleans build.
 distclean-capbench:
 	$(MAKE) -C capbench distclean
+
+#===============================================================================
+# Samos Benchmarks
+#===============================================================================
+
+# Builds benchmarks.
+all-samos:
+	$(MAKE) -C samos all
+
+# Cleans build objects.
+clean-samos:
+	$(MAKE) -C samos clean
+
+# Cleans build.
+distclean-samos:
+	$(MAKE) -C samos distclean
