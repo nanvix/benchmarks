@@ -26,22 +26,19 @@
 all:             \
 	all-buffer   \
 	all-simpledb \
-	all-server   \
-	all-monitoring
+	all-server
 
 # Cleans up build objects.
 clean:             \
 	clean-buffer   \
 	clean-simpledb \
-	clean-server   \
-	clean-monitoring
+	clean-server
 
 # Cleans up everything.
 distclean:             \
 	distclean-buffer   \
 	distclean-simpledb \
-	distclean-server   \
-	distclean-monitoring
+	distclean-server
 
 #===============================================================================
 # Buffer

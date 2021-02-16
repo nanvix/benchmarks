@@ -37,8 +37,7 @@ all:                 \
 	all-noise        \
 	all-rstream      \
 	all-signal       \
-	all-stream       \
-	all-task
+	all-stream
 
 # Cleans up build objects.
 clean:                 \
@@ -55,8 +54,7 @@ clean:                 \
 	clean-noise        \
 	clean-rstream      \
 	clean-signal       \
-	clean-stream       \
-	clean-task
+	clean-stream
 
 # Cleans up everything.
 distclean:                 \
@@ -73,8 +71,7 @@ distclean:                 \
 	distclean-noise        \
 	distclean-rstream      \
 	distclean-signal       \
-	distclean-stream       \
-	distclean-task
+	distclean-stream
 
 #===============================================================================
 # Barrier
