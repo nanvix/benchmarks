@@ -24,7 +24,24 @@
 
 #include "../km.h"
 
-/* K-means Data */
+#define CENTROID(i) \
+	(&centroids[(i)*DIMENSION_MAX])
+
+#define POINT(i) \
+	(&points[(i)*DIMENSION_MAX])
+
+#define PCENTROID(i, j) \
+	(&pcentroids[(i)*PROBLEM_NUM_CENTROIDS*DIMENSION_MAX + (j)*DIMENSION_MAX])
+
+#define PPOPULATION(i, j) \
+	(&ppopulation[(i)*PROBLEM_NUM_CENTROIDS + (j)])
+
+/* Timing statistics. */
+uint64_t master = 0;                 /* Time spent on master.       */
+uint64_t spawn = 0;                  /* Time spent spawning slaves. */
+uint64_t slave[PROBLEM_NUM_WORKERS]; /* Time spent on slaves.       */
+
+/* Kernel Data. */
 static float centroids[PROBLEM_NUM_CENTROIDS*DIMENSION_MAX];                      /* Data centroids.            */
 static int map[PROBLEM_NUM_POINTS];                                               /* Map of clusters.           */
 static int population[PROBLEM_NUM_CENTROIDS];                                     /* Population of centroids.   */
@@ -71,6 +88,7 @@ static void initialize_variables()
 static void send_work(void)
 {
 	int count = 0;
+	uint64_t time_elapsed;
 
 	perf_start(0, PERF_CYCLES);
 
@@ -88,6 +106,10 @@ static void send_work(void)
 
 	for (int i = 0; i < PROBLEM_NUM_WORKERS; i++)
 	{
+#if VERBOSE
+	uprintf("sending work to rank %d...", (i+1));
+#endif /* VERBOSE */
+
 		/* Util information for the problem. */
 		data_send(i + 1, &lnpoints[i], sizeof(int));
 
@@ -97,9 +119,14 @@ static void send_work(void)
 		data_send(i + 1, centroids, PROBLEM_NUM_CENTROIDS*DIMENSION_MAX*sizeof(float));
 
 		count += lnpoints[i];
+
+#if VERBOSE
+	uprintf("Sent!");
+#endif /* VERBOSE */
 	}
 
-	communication += perf_read(0);
+	time_elapsed = perf_read(0);
+	update_communication(time_elapsed);
 }
 
 /*============================================================================*
@@ -111,17 +138,25 @@ static int _iterations = 0;
 static int sync(void)
 {
 	int again = 0;
+	uint64_t time_elapsed;
 
 	perf_start(0, PERF_CYCLES);
 
 	for (int i = 0; i < PROBLEM_NUM_WORKERS; i++)
 	{
+#if VERBOSE
+		uprintf("Syncing rank %d...", (i+1));
+#endif /* VERBOSE */
 		data_receive(i + 1, PCENTROID(i,0), PROBLEM_NUM_CENTROIDS*DIMENSION_MAX*sizeof(float));
 		data_receive(i + 1, PPOPULATION(i,0), PROBLEM_NUM_CENTROIDS*sizeof(int));
 		data_receive(i + 1, &has_changed[i], sizeof(int));
+#if VERBOSE
+		uprintf("Done!", (i+1));
+#endif /* VERBOSE */
 	}
 
-	communication += perf_read(0);
+	time_elapsed = perf_read(0);
+	update_communication(time_elapsed);
 
 	perf_start(0, PERF_CYCLES);
 
@@ -155,6 +190,11 @@ static int sync(void)
 
 	perf_start(0, PERF_CYCLES);
 
+#if VERBOSE
+	if (again == 1)
+		uprintf("Necessity of executing AGAIN...");
+#endif
+
 	for (int i = 0; i < PROBLEM_NUM_WORKERS; i++)
 	{
 		data_send(i + 1, &again, sizeof(int));
@@ -162,7 +202,8 @@ static int sync(void)
 			data_send(i + 1, centroids, PROBLEM_NUM_CENTROIDS*DIMENSION_MAX*sizeof(float));
 	}
 
-	communication += perf_read(0);
+	time_elapsed = perf_read(0);
+	update_communication(time_elapsed);
 
 	return again;
 }
@@ -187,29 +228,40 @@ static void get_results(void)
  * do_kmeans()                                                                *
  *============================================================================*/
 
-void do_kernel(void)
+void do_master(void)
 {
-#ifndef NDEBUG
+#if VERBOSE
+	int i = 0;
+
 	uprintf("initializing...");
-#endif
+#endif /* VERBOSE */
 
 	/* Benchmark initialization. */
 	initialize_variables();
 
-	/* Cluster data. */
-#ifndef NDEBUG
-	uprintf("clustering data...");
-#endif
+#if VERBOSE
+	uprintf("sending work...");
+#endif /* VERBOSE */
 
 	send_work();
+
+#if VERBOSE
+	uprintf("clustering data...");
+#endif /* VERBOSE */
 
 	/* Cluster data. */
 	do
 	{
-		/* noop */
+#if VERBOSE
+	uprintf("iteration %d...", ++i);
+#endif /* VERBOSE */
 	} while (sync());
+
+#if VERBOSE
+	uprintf("getting results...");
+#endif /* VERBOSE */
 
 	get_results();
 
-	total = master + communication;
+	update_total(master + communication());
 }

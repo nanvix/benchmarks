@@ -29,35 +29,55 @@
  */
 int __main3(int argc, char **argv)
 {
+	int rank;
+
 	/* Initialize MPI runtime system. */
 	MPI_Init(&argc, &argv);
-	MPI_Comm_group(MPI_COMM_WORLD, &group);
-	uassert(group != MPI_GROUP_EMPTY);
-	MPI_Group_rank(group, &rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-	do_kernel();
+	/* Master process? */
+	if (rank == 0)
+	{
+#if VERBOSE
+		uprintf("Master process executing...");
+#endif /* VERBOSE */
+
+		do_master();
+
+		/* Print timing statistics. */
+		uprintf("---------------------------------------------");
+		uprintf("[capbench][km] timing statistics:");
+		uprintf("[capbench][km]   master:         %l", master);
+		for (int i = 0; i < PROBLEM_NUM_WORKERS; i++)
+		{
+			uprintf("[capbench][km]   slave %s%d:       %l",
+				(i < 10) ? " " : "",
+				i, slave[i]);
+		}
+		uprintf("[capbench][km]   communication:  %l", communication());
+		uprintf("[capbench][km]   total time:     %l", total());
+		uprintf("[capbench][km] data exchange statistics:");
+		uprintf("[capbench][km]   data sent:            %d", (int)data_sent());
+		uprintf("[capbench][km]   number sends:         %d", nsend());
+		uprintf("[capbench][km]   data received:        %d", (int)data_received());
+		uprintf("[capbench][km]   number receives:      %d", nreceive());
+		uprintf("---------------------------------------------");
+	}
+	else
+	{
+#if VERBOSE
+		uprintf("Slave process %d executing...", rank);
+#endif /* VERBOSE */
+
+		do_slave();
+
+#if VERBOSE
+		uprintf("Slave process %d done...", rank);
+#endif /* VERBOSE */
+	}
 
 	/* Shutdown MPI runtime system. */
 	MPI_Finalize();
-
-	/* Print timing statistics. */
-	uprintf("---------------------------------------------");
-	uprintf("[capbench][km] timing statistics:");
-	uprintf("[capbench][km]   master:         %l", master);
-	for (int i = 0; i < PROBLEM_NUM_WORKERS; i++)
-	{
-		uprintf("[capbench][km]   slave %s%d:       %l",
-			(i < 10) ? " " : "",
-			i, slave[i]);
-	}
-	uprintf("[capbench][km]   communication:  %l", communication);
-	uprintf("[capbench][km]   total time:     %l", total);
-	uprintf("[capbench][km] data exchange statistics:");
-	uprintf("[capbench][km]   data sent:            %d", (int)data_sent);
-	uprintf("[capbench][km]   number sends:         %d", nsend);
-	uprintf("[capbench][km]   data received:        %d", (int)data_received);
-	uprintf("[capbench][km]   number receives:      %d", nreceive);
-	uprintf("---------------------------------------------");
 
 	return (0);
 }

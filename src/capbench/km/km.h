@@ -35,26 +35,31 @@
 	#include <posix/stddef.h>
 
 	#include <mputil/proc.h>
-	#include <mpi/datatype.h>
 	#include <mpi.h>
+
+/*============================================================================*
+ * Constants                                                                  *
+ *============================================================================*/
+
+	/**
+	 * @brief Enables benchmark verbose mode.
+	 */
+	#define VERBOSE 0
 
 /*============================================================================*
  * Parameters                                                                 *
  *============================================================================*/
 
-	#define PROBLEM_SEED                            0
-	#define PROBLEM_LNPOINTS                 (15*2048)
-	#define PROBLEM_NUM_CENTROIDS                  64
-	#define DIMENSION_MAX                           4
-	#define PROBLEM_NUM_POINTS      (PROBLEM_LNPOINTS)
-	#define PROBLEM_NUM_WORKERS (MPI_PROCESSES_NR - 1)
+	#define PROBLEM_SEED                                                    0
+	#define PROBLEM_LNPOINTS                                            (1024)
+	#define PROBLEM_NUM_CENTROIDS                                          64
+	#define DIMENSION_MAX                                                   4
+	#define PROBLEM_NUM_POINTS    (PROBLEM_NUM_WORKERS / 2 * PROBLEM_LNPOINTS)
+	#define PROBLEM_NUM_WORKERS                         (MPI_PROCESSES_NR - 1)
 
 /*============================================================================*
  * Communication                                                              *
  *============================================================================*/
-
-	extern int rank;
-	extern MPI_Group group;
 
 	extern uint64_t data_send(int outfd, void *data, size_t n);
 	extern uint64_t data_receive(int infd, void *data, size_t n);
@@ -64,22 +69,20 @@
  *============================================================================*/
 
 	extern uint64_t slave[PROBLEM_NUM_WORKERS];
-	extern size_t data_sent;
-	extern unsigned nsend;
-	extern size_t data_received;
-	extern unsigned nreceive;
-	extern uint64_t communication;
-	extern uint64_t total;
 	extern uint64_t master;
+
+	extern uint64_t total();
+	extern void update_total(uint64_t amnt);
+	extern uint64_t communication();
+	extern void update_communication(uint64_t amnt);
+	extern size_t data_sent();
+	extern size_t data_received();
+	extern unsigned nsend();
+	extern unsigned nreceive();
 
 /*============================================================================*
  * Vector                                                                     *
  *============================================================================*/
-
-	/**
-	 * @brief Used for floating-point zero comparison.
-	 */
-	#define ZERO 0.0000001
 
 	extern float vector_distance(float *a, float *b);
 	extern float *vector_add(float *v1, const float *v2);
@@ -97,19 +100,8 @@
  * Kernel                                                                     *
  *============================================================================*/
 
-	#define CENTROID(i) \
-		(&centroids[(i)*DIMENSION_MAX])
-
-	#define POINT(i) \
-		(&points[(i)*DIMENSION_MAX])
-
-	#define PCENTROID(i, j) \
-		(&pcentroids[(i)*PROBLEM_NUM_CENTROIDS*DIMENSION_MAX + (j)*DIMENSION_MAX])
-
-	#define PPOPULATION(i, j) \
-		(&ppopulation[(i)*PROBLEM_NUM_CENTROIDS + (j)])
-
-	extern void do_kernel();
+	extern void do_master();
+	extern void do_slave();
 
 /*============================================================================*
  * Utilities                                                                  *

@@ -30,26 +30,17 @@ export SRC += $(wildcard $(CURDIR)/*.c)
 
 #===============================================================================
 
-all: all-master all-slave
+all: all-master
 
-clean: clean-master clean-slave
+clean: clean-master
 
-distclean: distclean-master distclean-slave
+distclean: distclean-master
 
 all-master:
 	$(MAKE) -C master all
 
-all-slave:
-	$(MAKE) -C slave all
-
 clean-master:
 	$(MAKE) -C master clean
 
-clean-slave:
-	$(MAKE) -C slave clean
-
 distclean-master:
 	$(MAKE) -C master distclean
-
-distclean-slave:
-	$(MAKE) -C slave distclean

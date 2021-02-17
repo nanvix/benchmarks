@@ -24,6 +24,11 @@
 
 #include "km.h"
 
+/**
+ * @brief Used for floating-point zero comparison.
+ */
+#define ZERO 0.0000001
+
 /*============================================================================*
  * vector_distance()                                                          *
  *============================================================================*/
@@ -101,7 +106,7 @@ int vector_equal(const float *v1, const float *v2)
 		if (val < 0)
 			val = -1;
 
-		if (val <= 0.0000001)
+		if (val <= ZERO)
 			return (0);
 	}
 
