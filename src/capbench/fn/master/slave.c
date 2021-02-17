@@ -24,12 +24,12 @@
 
 #include "../fn.h"
 
-/* Task sent by IO */
-static struct item task[PROBLEM_SIZE];
-
-/* Informations about the task */
-static int tasksize;
-
+/* FN Data. */
+PRIVATE struct local_data
+{
+	struct item task[CHUNK_MAX_SIZE];
+	int tasksize;
+} _local_data[MPI_PROCS_PER_CLUSTER_MAX];
 
 /*
  * Computes the Greatest Common Divisor of two numbers.
@@ -67,45 +67,71 @@ static int sumdiv(int n)
 	return (sum);
 }
 
-static void get_work(void)
+static void get_work(struct local_data *data)
 {
-    data_receive(0, &tasksize, sizeof(int));
-	data_receive(0, &task, tasksize*sizeof(struct item));
+	data_receive(0, &data->tasksize, sizeof(int));
+	data_receive(0, &data->task, data->tasksize*sizeof(struct item));
 }
 
-static void send_result(void)
+static void send_result(struct local_data *data)
 {
-    data_send(0, &task, tasksize*sizeof(struct item));
-	data_send(0, &total, sizeof(uint64_t));
+	uint64_t total_time;
 
+	total_time = total();
+
+	data_send(0, &data->task, data->tasksize*sizeof(struct item));
+	data_send(0, &total_time, sizeof(uint64_t));
 }
 
-void do_kernel(void)
+void do_slave(void)
 {
-	get_work();
+	struct local_data *data;
+	uint64_t time_passed;
+
+#if VERBOSE
+	int rank;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif /* VERBOSE */
+
+	data = &_local_data[curr_mpi_proc_index()];
+
+#if VERBOSE
+	uprintf("Slave %d waiting to receive work...", rank);
+#endif /* VERBOSE */
+
+	get_work(data);
+
+#if VERBOSE
+	uprintf("Slave %d starting computation...", rank);
+#endif /* VERBOSE */
 
 	perf_start(0, PERF_CYCLES);
 
 	/* Compute abundances. */
-	for (int i = 0; i < tasksize; i++)
+	for (int i = 0; i < data->tasksize; i++)
 	{
 		int n;
 
-		task[i].num = sumdiv(task[i].number);
-		task[i].den = task[i].number;
+		data->task[i].num = sumdiv(data->task[i].number);
+		data->task[i].den = data->task[i].number;
 
-		n = gcd(task[i].num, task[i].den);
+		n = gcd(data->task[i].num, data->task[i].den);
 
 		if (n != 0)
 		{
-			struct division result1 = divide(task[i].num, n);
-			struct division result2 = divide(task[i].den, n);
-			task[i].num = result1.quotient;
-			task[i].den = result2.quotient;
+			struct division result1 = divide(data->task[i].num, n);
+			struct division result2 = divide(data->task[i].den, n);
+			data->task[i].num = result1.quotient;
+			data->task[i].den = result2.quotient;
 		}
 	}
 
-	total += perf_read(0);
+	time_passed = perf_read(0);
+	update_total(time_passed);
 
-	send_result();
+#if VERBOSE
+	uprintf("Slave %d preparing to send result back...", rank);
+#endif /* VERBOSE */
+
+	send_result(data);
 }

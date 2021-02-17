@@ -24,13 +24,15 @@
 
 #include "../fn.h"
 
+/* Timing statistics. */
+uint64_t master = 0;                 /* Time spent on master.       */
+uint64_t spawn = 0;                  /* Time spent spawning slaves. */
+uint64_t slave[PROBLEM_NUM_WORKERS]; /* Time spent on slaves.       */
+
+/* FN Data. */
 static struct item tasks[PROBLEM_SIZE];
-
-/* Total of friendly numbers */
+static int tasksize[PROBLEM_NUM_WORKERS]; /* Tasks size. */
 static int friendlyNumbers = 0;
-
-/* Parameters.*/
-static int tasksize[PROBLEM_NUM_WORKERS]; /* tasks size.         */
 
 static void init(void)
 {
@@ -48,23 +50,49 @@ static void send_work(void)
 {
 	for (int i = 0, offset = 0; i < PROBLEM_NUM_WORKERS; i++)
 	{
+#if VERBOSE
+		uprintf("Sending work to slave %d...", (i+1));
+#endif /* VERBOSE */
+
 		data_send(i + 1, &tasksize[i], sizeof(int));
+
+#if VERBOSE
+		uprintf("Sent first message...");
+#endif /* VERBOSE */
+
 		data_send(i + 1, &tasks[offset], tasksize[i]*sizeof(struct item));
 		offset += tasksize[i];
-    }
+
+#if VERBOSE
+		uprintf("Sent!");
+#endif /* VERBOSE */
+	}
 }
 
 static void receive_result(void)
 {
 	for (int i = 0, offset = 0; i < PROBLEM_NUM_WORKERS; i++)
 	{
-        data_receive(i + 1, &tasks[offset], tasksize[i]*sizeof(struct item));
+#if VERBOSE
+		uprintf("Waiting to receive results from slave %d...", (i+1));
+#endif /* VERBOSE */
+
+		data_receive(i + 1, &tasks[offset], tasksize[i]*sizeof(struct item));
+
+#if VERBOSE
+		uprintf("Received first message...");
+#endif /* VERBOSE */
+
 		data_receive(i + 1, &slave[i], sizeof(uint64_t));
-        offset += tasksize[i];
+		offset += tasksize[i];
+
+#if VERBOSE
+		uprintf("Received");
+#endif /* VERBOSE */
 	}
 }
 
-static void sumFriendlyNumbers(void)
+static void sum_friendly_numbers(void)
 {
 	perf_start(0, PERF_CYCLES);
 
@@ -79,15 +107,31 @@ static void sumFriendlyNumbers(void)
 	master += perf_read(0);
 }
 
-void do_kernel(void)
+void do_master(void)
 {
+#if VERBOSE
+	uprintf("Master process initializing data structures...");
+#endif /* VERBOSE */
+
 	init();
+
+#if VERBOSE
+	uprintf("Master process sending work...");
+#endif /* VERBOSE */
 
 	send_work();
 
+#if VERBOSE
+	uprintf("Master process waiting for results...");
+#endif /* VERBOSE */
+
 	receive_result();
 
-	sumFriendlyNumbers();
+#if VERBOSE
+	uprintf("Master process calculating final result...");
+#endif /* VERBOSE */
 
-	total = master + communication;
+	sum_friendly_numbers();
+
+	update_total(master + communication());
 }

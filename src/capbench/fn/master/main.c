@@ -29,35 +29,55 @@
  */
 int __main3(int argc, char **argv)
 {
+	int rank;
+
 	/* Initialize MPI runtime system. */
 	MPI_Init(&argc, &argv);
-	MPI_Comm_group(MPI_COMM_WORLD, &group);
-	uassert(group != MPI_GROUP_EMPTY);
-	MPI_Group_rank(group, &rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-	do_kernel();
+	/* Master process? */
+	if (rank == 0)
+	{
+#if VERBOSE
+		uprintf("Master process executing...");
+#endif /* VERBOSE */
+
+		do_master();
+
+		/* Print timing statistics. */
+		uprintf("---------------------------------------------");
+		uprintf("[capbench][fn] timing statistics:");
+		uprintf("[capbench][fn]   master:         %l", master);
+		for (int i = 0; i < PROBLEM_NUM_WORKERS; i++)
+		{
+			uprintf("[capbench][fn]   slave %s%d:       %l",
+				(i < 10) ? " " : "",
+				i, slave[i]);
+		}
+		uprintf("[capbench][fn]   communication:  %l", communication());
+		uprintf("[capbench][fn]   total time:     %l", total());
+		uprintf("[capbench][fn] data exchange statistics:");
+		uprintf("[capbench][fn]   data sent:            %d", (int)data_sent());
+		uprintf("[capbench][fn]   number sends:         %d", nsend());
+		uprintf("[capbench][fn]   data received:        %d", (int)data_received());
+		uprintf("[capbench][fn]   number receives:      %d", nreceive());
+		uprintf("---------------------------------------------");
+	}
+	else
+	{
+#if VERBOSE
+		uprintf("Slave process %d executing...", rank);
+#endif /* VERBOSE */
+
+		do_slave();
+
+#if VERBOSE
+		uprintf("Slave process %d done...", rank);
+#endif /* VERBOSE */
+	}
 
 	/* Shutdown MPI runtime system. */
 	MPI_Finalize();
-
-	/* Print timing statistics. */
-	uprintf("---------------------------------------------");
-	uprintf("[capbench][fn] timing statistics:");
-	uprintf("[capbench][fn]   master:         %l", master);
-	for (int i = 0; i < PROBLEM_NUM_WORKERS; i++)
-	{
-		uprintf("[capbench][fn]   slave %s%d:       %l",
-			(i < 10) ? " " : "",
-			i, slave[i]);
-	}
-	uprintf("[capbench][fn]   communication:  %l", communication);
-	uprintf("[capbench][fn]   total time:     %l", total);
-	uprintf("[capbench][fn] data exchange statistics:");
-	uprintf("[capbench][fn]   data sent:            %d", (int)data_sent);
-	uprintf("[capbench][fn]   number sends:         %d", nsend);
-	uprintf("[capbench][fn]   data received:        %d", (int)data_received);
-	uprintf("[capbench][fn]   number receives:      %d", nreceive);
-	uprintf("---------------------------------------------");
 
 	return (0);
 }

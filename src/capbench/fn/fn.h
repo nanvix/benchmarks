@@ -38,6 +38,15 @@
 	#include <mpi.h>
 
 /*============================================================================*
+ * Constants                                                                  *
+ *============================================================================*/
+
+	/**
+	 * @brief Enables benchmark verbose mode.
+	 */
+	#define VERBOSE 0
+
+/*============================================================================*
  * Parameters                                                                 *
  *============================================================================*/
 
@@ -46,12 +55,11 @@
 	#define PROBLEM_END_NUM      (PROBLEM_START + PROBLEM_SIZE)
 	#define PROBLEM_NUM_WORKERS          (MPI_PROCESSES_NR - 1)
 
+	#define CHUNK_MAX_SIZE ((PROBLEM_SIZE / PROBLEM_NUM_WORKERS) * 2)
+
 /*============================================================================*
  * Communication                                                              *
  *============================================================================*/
-
-	extern int rank;
-	extern MPI_Group group;
 
 	extern uint64_t data_send(int outfd, void *data, size_t n);
 	extern uint64_t data_receive(int infd, void *data, size_t n);
@@ -61,13 +69,16 @@
  *============================================================================*/
 
 	extern uint64_t slave[PROBLEM_NUM_WORKERS];
-	extern size_t data_sent;
-	extern unsigned nsend;
-	extern size_t data_received;
-	extern unsigned nreceive;
-	extern uint64_t communication;
-	extern uint64_t total;
 	extern uint64_t master;
+
+	extern uint64_t total();
+	extern void update_total(uint64_t amnt);
+	extern uint64_t communication();
+	extern void update_communication(uint64_t amnt);
+	extern size_t data_sent();
+	extern size_t data_received();
+	extern unsigned nsend();
+	extern unsigned nreceive();
 
 /*============================================================================*
  * Math                                                                       *
@@ -93,7 +104,8 @@
 		int den;
 	};
 
-	extern void do_kernel(void);
+	extern void do_master(void);
+	extern void do_slave(void);
 
 /*============================================================================*
  * Utilities                                                                  *
