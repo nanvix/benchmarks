@@ -29,7 +29,7 @@ include $(BUILDDIR)/makefile.config
 #===============================================================================
 
 # Binary
-EXEC = nanvix-noise.$(OBJ_SUFFIX)
+EXEC = nanvix-samos-noise.$(OBJ_SUFFIX)
 
 # C Source Files
 SRC = $(wildcard *.c)

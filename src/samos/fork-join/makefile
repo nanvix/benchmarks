@@ -29,7 +29,7 @@ include $(BUILDDIR)/makefile.config
 #===============================================================================
 
 # Binary
-EXEC = nanvix-fork-join.$(OBJ_SUFFIX)
+EXEC = nanvix-samos-fork-join.$(OBJ_SUFFIX)
 
 # C Source Files
 SRC = $(wildcard *.c)

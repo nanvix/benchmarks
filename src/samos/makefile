@@ -23,19 +23,22 @@
 #
 
 # Builds Everything
-all:                        \
-	all-fork-join           \
-	all-dispatch-wait
+all:                            \
+	all-fork-join               \
+	all-dispatch-wait           \
+	all-master-core-usage
 
 # Cleans Build Objects
-clean:                      \
-	clean-fork-join         \
-	clean-dispatch-wait
+clean:                          \
+	clean-fork-join             \
+	clean-dispatch-wait         \
+	clean-master-core-usage
 
 # Cleans Everything
-distclean:                  \
-	distclean-fork-join     \
-	distclean-dispatch-wait
+distclean:                      \
+	distclean-fork-join         \
+	distclean-dispatch-wait     \
+	distclean-master-core-usage
 
 #===============================================================================
 # Fork-Join Benchmark
@@ -62,3 +65,16 @@ clean-dispatch-wait:
 
 distclean-dispatch-wait:
 	$(MAKE) -C dispatch-wait distclean
+
+#===============================================================================
+# Master Core Usage Benchmark
+#===============================================================================
+
+all-master-core-usage:
+	$(MAKE) -C master-core-usage all
+
+clean-master-core-usage:
+	$(MAKE) -C master-core-usage clean
+
+distclean-master-core-usage:
+	$(MAKE) -C master-core-usage distclean
