@@ -24,20 +24,34 @@
 
 #include "../gf.h"
 
+#define MASK(data, i, j) \
+	data->mask[(i)*PROBLEM_MASKSIZE + (j)]
+
+#define CHUNK(data, i, j) \
+	data->chunk[(i)*(PROBLEM_CHUNK_SIZE + PROBLEM_MASKSIZE - 1) + (j)]
+
+#define NEWCHUNK(data, i, j) \
+	data->newchunk[(i)*PROBLEM_CHUNK_SIZE + (j)]
+
 /**
  * @brief Kernel Data
  */
 /**@{*/
-static float mask[PROBLEM_MASKSIZE2];               /* Mask         */
-static unsigned char chunk[CHUNK_WITH_HALO_SIZE2];  /* Input Chunk  */
-static unsigned char newchunk[PROBLEM_CHUNK_SIZE2]; /* Output Chunk */
+PRIVATE struct local_data
+{
+	float mask[PROBLEM_MASKSIZE2];               /* Mask         */
+	unsigned char chunk[CHUNK_WITH_HALO_SIZE2];  /* Input Chunk  */
+	unsigned char newchunk[PROBLEM_CHUNK_SIZE2]; /* Output Chunk */
+} _local_data[MPI_PROCS_PER_CLUSTER_MAX];
 /**@}*/
 
 /**
  * @brief Gaussian Filter kernel.
  */
-void gauss_filter(void)
+void gauss_filter(struct local_data *data)
 {
+	uint64_t time_elapsed;
+
 	perf_start(0, PERF_CYCLES);
 
 	for (int chunkI = 0; chunkI < PROBLEM_CHUNK_SIZE; chunkI++)
@@ -49,23 +63,31 @@ void gauss_filter(void)
 			for (int maskI = 0; maskI < PROBLEM_MASKSIZE; maskI++)
 			{
 				for (int maskJ = 0; maskJ < PROBLEM_MASKSIZE; maskJ++)
-					pixel += CHUNK(chunkI + maskI, chunkJ + maskJ)*MASK(maskI, maskJ);
+					pixel += CHUNK(data, chunkI + maskI, chunkJ + maskJ)*MASK(data, maskI, maskJ);
 			}
 
-			NEWCHUNK(chunkI, chunkJ) = (pixel > 255) ? 255 : (unsigned char) pixel;
+			NEWCHUNK(data, chunkI, chunkJ) = (pixel > 255) ? 255 : (unsigned char) pixel;
 		}
 	}
 
-	total += perf_read(0);
+	time_elapsed = perf_read(0);
+	update_total(time_elapsed);
 }
 
 /**
  * @brief Kernel wrapper.
  */
-void do_kernel(void)
+void do_slave(void)
 {
+	int local_index;
+	uint64_t total_time;
+	struct local_data *data;
+
+	local_index = curr_mpi_proc_index();
+	data = &_local_data[local_index];
+
 	/* Receive kernel parameters. */
-	data_receive(0, mask, sizeof(float)*PROBLEM_MASKSIZE2);
+	data_receive(0, data->mask, sizeof(float)*PROBLEM_MASKSIZE2);
 
 	while (1)
 	{
@@ -76,13 +98,14 @@ void do_kernel(void)
 		if (msg == MSG_DIE)
 			break;
 
-		data_receive(0, chunk, CHUNK_WITH_HALO_SIZE2*sizeof(unsigned char));
+		data_receive(0, data->chunk, CHUNK_WITH_HALO_SIZE2*sizeof(unsigned char));
 
-		gauss_filter();
+		gauss_filter(data);
 
-		data_send(0, &newchunk, PROBLEM_CHUNK_SIZE2*sizeof(unsigned char));
+		data_send(0, &data->newchunk, PROBLEM_CHUNK_SIZE2*sizeof(unsigned char));
 	}
 
 	/* Send back statistics. */
-	data_send(0, &total, sizeof(uint64_t));
+	total_time = total();
+	data_send(0, &total_time, sizeof(uint64_t));
 }

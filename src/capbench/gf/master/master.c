@@ -24,6 +24,20 @@
 
 #include "../gf.h"
 
+#define MASK(i, j) \
+	mask[(i)*PROBLEM_MASKSIZE + (j)]
+
+#define CHUNK(i, j) \
+	chunk[(i)*(PROBLEM_CHUNK_SIZE + PROBLEM_MASKSIZE - 1) + (j)]
+
+#define NEWCHUNK(i, j) \
+	newchunk[(i)*PROBLEM_CHUNK_SIZE + (j)]
+
+/* Timing statistics. */
+uint64_t master = 0;                 /* Time spent on master.       */
+uint64_t spawn = 0;                  /* Time spent spawning slaves. */
+uint64_t slave[PROBLEM_NUM_WORKERS]; /* Time spent on slaves.       */
+
 /**
  * @brief Kernel Data
  */
@@ -178,14 +192,20 @@ static void init(void)
 	generate_mask();
 }
 
-void do_kernel(void)
+void do_master(void)
 {
+#if VERBOSE
 	uprintf("initializing...\n");
+#endif /* VERBOSE */
+
 	init();
 
-	/* Apply filter. */
+#if VERBOSE
 	uprintf("applying filter...\n");
+#endif /* VERBOSE */
+
+	/* Apply filter. */
 	gauss_filter();
 
-	total = master + communication;
+	update_total(master + communication());
 }

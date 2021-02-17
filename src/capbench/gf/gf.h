@@ -35,8 +35,16 @@
 	#include <posix/stddef.h>
 
 	#include <mputil/proc.h>
-	#include <mpi/datatype.h>
 	#include <mpi.h>
+
+/*============================================================================*
+ * Constants                                                                  *
+ *============================================================================*/
+
+	/**
+	 * @brief Enables benchmark verbose mode.
+	 */
+	#define VERBOSE 0
 
 /*============================================================================*
  * Parameters                                                                 *
@@ -58,9 +66,6 @@
  * Communication                                                              *
  *============================================================================*/
 
-	extern int rank;
-	extern MPI_Group group;
-
 	extern uint64_t data_send(int outfd, void *data, size_t n);
 	extern uint64_t data_receive(int infd, void *data, size_t n);
 
@@ -73,20 +78,17 @@
 	 */
 	/**@{*/
 	extern uint64_t master;
-	extern uint64_t slave[MPI_PROCESSES_NR];
-	extern uint64_t communication;
-	extern uint64_t total;
+	extern uint64_t slave[PROBLEM_NUM_WORKERS];
 	/**@}*/
 
-	/**
-	 * @brief Data Exchange Statistics
-	 */
-	/**@{*/
-	extern size_t data_sent;
-	extern unsigned nsend;
-	extern size_t data_received;
-	extern unsigned nreceive;
-	/**@}*/
+	extern uint64_t total();
+	extern void update_total(uint64_t amnt);
+	extern uint64_t communication();
+	extern void update_communication(uint64_t amnt);
+	extern size_t data_sent();
+	extern size_t data_received();
+	extern unsigned nsend();
+	extern unsigned nreceive();
 
 /*============================================================================*
  * Math                                                                       *
@@ -134,16 +136,8 @@
 	#define CHUNK_WITH_HALO_SIZE (PROBLEM_CHUNK_SIZE + PROBLEM_MASKSIZE - 1)
 	#define CHUNK_WITH_HALO_SIZE2 (CHUNK_WITH_HALO_SIZE*CHUNK_WITH_HALO_SIZE)
 
-	#define MASK(i, j) \
-		mask[(i)*PROBLEM_MASKSIZE + (j)]
-
-	#define CHUNK(i, j) \
-		chunk[(i)*(PROBLEM_CHUNK_SIZE + PROBLEM_MASKSIZE - 1) + (j)]
-
-	#define NEWCHUNK(i, j) \
-		newchunk[(i)*PROBLEM_CHUNK_SIZE + (j)]
-
-	extern void do_kernel(void);
+	extern void do_master(void);
+	extern void do_slave(void);
 
 /*============================================================================*
  * Utilities                                                                  *
