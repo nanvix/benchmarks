@@ -25,11 +25,13 @@
 #ifndef _SAMOS_H_
 #define _SAMOS_H_
 
+#include <nanvix/kernel/kernel.h>
 #include <nanvix/sys/perf.h>
 #include <nanvix/sys/thread.h>
 #include <nanvix/sys/task.h>
 #include <nanvix/sys/noc.h>
 #include <nanvix/ulib.h>
+#include <nanvix/runtime/runtime.h>
 #include <nanvix/config.h>
 #include <nanvix/limits.h>
 #include <posix/stdint.h>
@@ -78,6 +80,15 @@
 	#ifndef NDISPATCHERS
 		#define NDISPATCHERS 1
 	#endif
+
+	/**
+	 * @name Number of operations.
+	 */
+	/**@{*/
+	#define FLOPS       (10008) /**< Floating Point Operations */
+	#define NIOOPS        (100) /**< Syscall Operations        */
+	#define NHEARTBEATS   (100) /**< IO Operations             */
+	/**@}*/
 
 /*============================================================================*
  * Statistics                                                                 *
