@@ -31,8 +31,15 @@
 /**
  * @brief Name of the benchmark.
  */
-#define BENCHMARK_NAME0 "master-core-usage-global"
-#define BENCHMARK_NAME1 "master-core-usage-specific"
+#define BENCHMARK_NAME0 "user-syscall"
+#define BENCHMARK_NAME0 "dispatcher-syscall"
+
+/**
+ * @name Auxiliary variables
+ */
+/**@{*/
+static struct fence_t _fence; /**< Global fence. */
+/**@}*/
 
 /**
  * Performance events.
@@ -126,92 +133,121 @@ static void benchmark_dump_stats(
 }
 
 /*============================================================================*
- * Benchmark                                                                  *
+ * Syscall scenarios                                                          *
  *============================================================================*/
 
 /**
- * @brief Fork-Join Kernel
- *
- * @param nthreads Number of working threads.
+ * @brief Measures syscall time.
  */
-void kernel_master_core_global_usage(void)
+static void do_syscall(const char * benchmark)
 {
-	uint64_t heartbeat_ustats[BENCHMARK_PERF_EVENTS];
-	uint64_t heartbeat_kstats[BENCHMARK_PERF_EVENTS];
-
-	/* Save kernel parameters. */
-	NTHREADS = nthreads;
+	fence(&_fence);
 
 	for (int i = 0; i < (NITERATIONS + SKIP); i++)
 	{
-		for (int j = 0; j < BENCHMARK_PERF_EVENTS; j++)
-		{
-			perf_start(0, perf_events[j]);
-			kstats(NULL, perf_events[j]);
-
-				/* Spawn threads. */
-				for (int k = 0; k < NHEARTBEATS; k++)
-					nanvix_name_heartbeat();
-
-			kstats(&heartbeat_kstats[j], perf_events[j]);
-			perf_stop(0);
-			heartbeat_ustats[j] = perf_read(0);
-		}
-
-		if (i >= SKIP)
-		{
-			benchmark_dump_stats(
-				i - SKIP,
-				BENCHMARK_NAME0,
-				heartbeat_ustats,
-				heartbeat_kstats
-			);
-		}
+		/* Do syscalls. */
+		for (int j = 0; j < 2*NHEARTBEATS; j++)
+			(void) knode_get_num();
 	}
+
+	fence(&_fence);
 }
 
 /**
- * @brief Fork-Join Kernel
- *
- * @param nthreads Number of working threads.
+ * @brief Measures syscall time.
  */
-void kernel_master_core_specific_usage(void)
+static void do_syscall_measurements(const char * benchmark)
 {
-#if defined(__mppa256__)
+	uint64_t heartbeat_ustats[BENCHMARK_PERF_EVENTS];
 
-	uint64_t heartbeat_stats[BENCHMARK_PERF_EVENTS];
+	umenset(stats, 0, BENCHMARK_PERF_EVENTS * sizeof(uint64_t));
 
-	umemset((void *) heartbeat_stats, 0, (BENCHMARK_PERF_EVENTS * sizeof(uint64_t)));
+	fence(&_fence);
 
 	for (int i = 0; i < (NITERATIONS + SKIP); i++)
 	{
-		perf_start(0, perf_events[j]);
+		perf_start(0, PERF_CYCLES);
 
-		uassert(kthread_stats(KTHREAD_DISPATCHER_TID, NULL, KTHREAD_STATS_EXEC_TIME) == 0);
-		uassert(kthread_stats(KTHREAD_MASTER_TID, NULL, KTHREAD_STATS_EXEC_TIME) == 0);
-
-			/* Spawn threads. */
-			for (int k = 0; k < NHEARTBEATS; k++)
-				nanvix_name_heartbeat();
-
-		uassert(kthread_stats(KTHREAD_MASTER_TID, &heartbeat_stats[1], KTHREAD_STATS_EXEC_TIME) == 0);
-		uassert(kthread_stats(KTHREAD_DISPATCHER_TID, &heartbeat_stats[0], KTHREAD_STATS_EXEC_TIME) == 0);
+			/* Do syscalls. */
+			for (int j = 0; j < NHEARTBEATS; j++)
+				(void) knode_get_num();
 
 		perf_stop(0);
-		heartbeat_ustats[0] = perf_read(0);
+		stats[0] = perf_read(0);
 
 		if (i >= SKIP)
 		{
 			benchmark_dump_stats(
 				i - SKIP,
-				BENCHMARK_NAME1,
-				heartbeat_stats,
+				benchmark,
+				heartbeat_ustats,
 				NULL
 			);
 		}
 	}
 
-#endif
+	fence(&_fence);
+}
+
+/**
+ * @brief Dummy task.
+ *
+ * @param arg Unused argument.
+ */
+static int dummy(ktask_args_t * args)
+{
+	UNUSED(args);
+
+	do_syscall();
+
+	return (TASK_RET_SUCCESS);
+}
+
+/**
+ * @brief Measure syscall.
+ *
+ * @param arg Unused argument.
+ */
+static int measures(ktask_args_t * args)
+{
+	UNUSED(args);
+
+	do_syscall_measurements(BENCHMARK_NAME1);
+
+	return (TASK_RET_SUCCESS);
+}
+/*============================================================================*
+ * Benchmark                                                                  *
+ *============================================================================*/
+
+/**
+ * @brief Measures syscall time.
+ */
+static void kernel_user_syscall(void)
+{
+	ktask_t task;
+
+	uassert(ktask_create(&task, dummy, NULL, 0) == 0);
+	uassert(ktask_dispatch(&task) == 0);
+
+	do_syscall_measurements(BENCHMARK_NAME0);
+
+	uassert(ktask_wait(&task) == 0);
+}
+
+/**
+ * @brief Measures syscall time.
+ */
+static void kernel_user_syscall(void)
+{
+	ktask_t task;
+
+	uassert(ktask_create(&task, measures, NULL, 0) == 0);
+	uassert(ktask_dispatch(&task) == 0);
+
+	do_syscall();
+
+	uassert(ktask_wait(&task) == 0);
 }
 
 /*============================================================================*
@@ -231,9 +267,9 @@ int __main2(int argc, const char *argv[])
 
 	uprintf(HLINE);
 
-	kernel_master_core_global_usage();
+	kernel_user_syscall();
 
-	kernel_master_core_specific_usage();
+	kernel_dispatcher_syscall();
 
 	uprintf(HLINE);
 
