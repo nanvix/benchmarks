@@ -75,9 +75,9 @@
 	 * @name Number of operations.
 	 */
 	/**@{*/
-	#define FLOPS       (10008) /**< Floating Point Operations */
-	#define NIOOPS        (100) /**< Syscall Operations        */
-	#define NHEARTBEATS   (100) /**< IO Operations             */
+	#define FLOPS        (10000) /**< Floating Point Operations */
+	#define NIOOPS        (1000) /**< Syscall Operations        */
+	#define NHEARTBEATS    (125) /**< IO Operations             */
 	/**@}*/
 
 /*============================================================================*

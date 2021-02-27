@@ -27,13 +27,17 @@
 #ifndef __qemu_riscv32__
 
 /**
+ * @brief Max number of threas.
+ */
+#define NTHREADS_LOCAL_MAX (CORES_NUM - 1)
+
+/**
  * @name Benchmark Kernel Parameters
  */
 /**@{*/
 static int NWORKERS;                 /**< Number of Worker Threads        */
 static int NIDLES;                   /**< Number of Idle Threads          */
 static int NIOS;                     /**< Number of IO Threads            */
-static char *NOISE = "y";            /**< Noise On?                       */
 static int SYSCALL_NR = NR_SYSCALLS; /**< Type of the syscall with 1 arg. */
 /**@}*/
 
@@ -89,18 +93,18 @@ static void benchmark_dump_stats(int it, const char *name, const char *rule, uin
 {
 	uprintf(
 #if (BENCHMARK_PERF_EVENTS >= 7)
-		"[benchmarks][%s][%s] %d %s %d %d %d %d %d %d %d %d %d",
+		"[benchmarks][%s][%s] %d %d %d %d %d %d %d %d %d %d %d",
 #elif (BENCHMARK_PERF_EVENTS >= 5)
-		"[benchmarks][%s][%s] %d %s %d %d %d %d %d %d %d",
+		"[benchmarks][%s][%s] %d %d %d %d %d %d %d %d %d",
 #else
-		"[benchmarks][%s][%s] %d %s %d %d %d",
+		"[benchmarks][%s][%s] %d %d %d %d %d",
 #endif
 		name,
 		rule,
 		it,
-		NOISE,
 		NWORKERS,
 		NIDLES,
+		NIOS,
 #if (BENCHMARK_PERF_EVENTS >= 7)
 		UINT32(stats[6]),
 		UINT32(stats[5]),
@@ -129,7 +133,7 @@ static void benchmark_dump_stats(int it, const char *name, const char *rule, uin
 static struct tdata
 {
 	float scratch;  /**< Scratch Variable  */
-} tdata[NTHREADS_MAX] ALIGN(CACHE_LINE_SIZE);
+} tdata[NTHREADS_LOCAL_MAX] ALIGN(CACHE_LINE_SIZE);
 
 /**
  * @brief Performs some FPU intensive computation.
@@ -140,10 +144,10 @@ static void *task_worker(void *arg)
 	register float tmp = t->scratch;
 	uint64_t stats[BENCHMARK_PERF_EVENTS];
 
-	fence(&_fence);
-
 	for (int i = 0; i < NITERATIONS + SKIP; i++)
 	{
+		fence(&_fence);
+
 		for (int j = 0; j < BENCHMARK_PERF_EVENTS; j++)
 		{
 			perf_start(0, perf_events[j]);
@@ -183,10 +187,10 @@ static void *task_idle(void *arg)
 {
 	UNUSED(arg);
 
-	fence(&_fence);
-
 	for (int i = 0; i < NITERATIONS + SKIP; i++)
 	{
+		fence(&_fence);
+
 		for (int j = 0; j < BENCHMARK_PERF_EVENTS; j++)
 		{
 			for (int k = 0; k < NIOOPS; k++)
@@ -210,10 +214,10 @@ static void *task_io(void *arg)
 
 	UNUSED(arg);
 
-	fence(&_fence);
-
 	for (int i = 0; i < NITERATIONS + SKIP; i++)
 	{
+		fence(&_fence);
+
 		for (int j = 0; j < BENCHMARK_PERF_EVENTS; j++)
 		{
 			perf_start(0, perf_events[j]);
@@ -244,9 +248,9 @@ static void *task_io(void *arg)
  */
 static void benchmark_noise(int nworkers, int nidles, int nios)
 {
-	kthread_t tid_workers[NTHREADS_MAX];
-	kthread_t tid_idles[NTHREADS_MAX];
-	kthread_t tid_ios[NTHREADS_MAX];
+	kthread_t tid_workers[NTHREADS_LOCAL_MAX];
+	kthread_t tid_idles[NTHREADS_LOCAL_MAX];
+	kthread_t tid_ios[NTHREADS_LOCAL_MAX];
 
 	/* Save kernel parameters. */
 	NWORKERS = nworkers;
@@ -305,8 +309,7 @@ int __main3(int argc, const char *argv[])
 
 #ifndef NDEBUG
 
-	benchmark_noise(1, 1, 1);
-	//benchmark_noise(NTHREADS_MAX/3, NTHREADS_MAX/3, NTHREADS_MAX/3);
+	benchmark_noise(NTHREADS_LOCAL_MAX/3, NTHREADS_LOCAL_MAX/3, NTHREADS_LOCAL_MAX/3);
 
 #else
 
@@ -314,17 +317,17 @@ int __main3(int argc, const char *argv[])
 	 * With noise:
 	 * x = number of worker threads
 	 * y = number of idle threads
-	 * w = number of io threads
+	 * z = number of io threads
 	 */
-	for (int x = 0; x < NTHREADS_MAX; x += NTHREADS_STEP)
-		for (int y = 0; y < NTHREADS_MAX; y += NTHREADS_STEP)
-			for (int z = 0; z < NTHREADS_MAX; z += NTHREADS_STEP)
+	for (int x = 0; x < NTHREADS_LOCAL_MAX; x += NTHREADS_STEP)
+		for (int y = 0; y < NTHREADS_LOCAL_MAX; y += NTHREADS_STEP)
+			for (int z = 0; z < NTHREADS_LOCAL_MAX; z += NTHREADS_STEP)
 			{
 				/**
 				 * Mininum of one type thread and maximum of one
 				 * type thread per user core.
 				 */
-				if (!WITHIN((x + y + z), 1, NTHREADS_MAX))
+				if (!WITHIN((x + y + z), 1, NTHREADS_LOCAL_MAX))
 					continue;
 
 				benchmark_noise(x, y, z);
