@@ -307,13 +307,10 @@ void kernel_fork_join(int nthreads)
  * @param argc Argument counter.
  * @param argv Argument variables.
  */
-int __main2(int argc, const char *argv[])
+int __main3(int argc, const char *argv[])
 {
 	((void) argc);
 	((void) argv);
-
-	if (knode_get_num() != PROCESSOR_NODENUM_MASTER)
-		return (0);
 
 	uprintf(HLINE);
 

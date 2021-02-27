@@ -139,9 +139,6 @@ void kernel_master_core_global_usage(void)
 	uint64_t heartbeat_ustats[BENCHMARK_PERF_EVENTS];
 	uint64_t heartbeat_kstats[BENCHMARK_PERF_EVENTS];
 
-	/* Save kernel parameters. */
-	NTHREADS = nthreads;
-
 	for (int i = 0; i < (NITERATIONS + SKIP); i++)
 	{
 		for (int j = 0; j < BENCHMARK_PERF_EVENTS; j++)
@@ -177,17 +174,22 @@ void kernel_master_core_global_usage(void)
  */
 void kernel_master_core_specific_usage(void)
 {
-#if defined(__mppa256__)
+#if defined(__mppa256__) && __NANVIX_MICROKERNEL_THREAD_STATS
 
 	uint64_t heartbeat_stats[BENCHMARK_PERF_EVENTS];
 
 	umemset((void *) heartbeat_stats, 0, (BENCHMARK_PERF_EVENTS * sizeof(uint64_t)));
 
+	uassert(kthread_stats(KTHREAD_MASTER_TID, NULL, KTHREAD_STATS_EXEC_TIME) == 0);
+	uassert(kthread_stats(KTHREAD_MASTER_TID, &heartbeat_stats[3], KTHREAD_STATS_EXEC_TIME) == 0);
+
 	for (int i = 0; i < (NITERATIONS + SKIP); i++)
 	{
-		perf_start(0, perf_events[j]);
+		perf_start(0, PERF_CYCLES);
 
+#if __NANVIX_USE_TASKS
 		uassert(kthread_stats(KTHREAD_DISPATCHER_TID, NULL, KTHREAD_STATS_EXEC_TIME) == 0);
+#endif
 		uassert(kthread_stats(KTHREAD_MASTER_TID, NULL, KTHREAD_STATS_EXEC_TIME) == 0);
 
 			/* Spawn threads. */
@@ -195,10 +197,12 @@ void kernel_master_core_specific_usage(void)
 				nanvix_name_heartbeat();
 
 		uassert(kthread_stats(KTHREAD_MASTER_TID, &heartbeat_stats[1], KTHREAD_STATS_EXEC_TIME) == 0);
+#if __NANVIX_USE_TASKS
 		uassert(kthread_stats(KTHREAD_DISPATCHER_TID, &heartbeat_stats[0], KTHREAD_STATS_EXEC_TIME) == 0);
+#endif
 
 		perf_stop(0);
-		heartbeat_ustats[0] = perf_read(0);
+		heartbeat_stats[2] = perf_read(0);
 
 		if (i >= SKIP)
 		{
@@ -210,6 +214,10 @@ void kernel_master_core_specific_usage(void)
 			);
 		}
 	}
+
+#else
+
+	uprintf("[benchmark][%s] Ignore core specific usage!", BENCHMARK_NAME1);
 
 #endif
 }
@@ -224,7 +232,7 @@ void kernel_master_core_specific_usage(void)
  * @param argc Argument counter.
  * @param argv Argument variables.
  */
-int __main2(int argc, const char *argv[])
+int __main3(int argc, const char *argv[])
 {
 	((void) argc);
 	((void) argv);

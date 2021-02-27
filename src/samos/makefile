@@ -26,19 +26,25 @@
 all:                            \
 	all-fork-join               \
 	all-dispatch-wait           \
-	all-master-core-usage
+	all-master-core-usage       \
+	all-noise                   \
+	all-syscall
 
 # Cleans Build Objects
 clean:                          \
 	clean-fork-join             \
 	clean-dispatch-wait         \
-	clean-master-core-usage
+	clean-master-core-usage     \
+	clean-noise                 \
+	clean-syscall
 
 # Cleans Everything
 distclean:                      \
 	distclean-fork-join         \
 	distclean-dispatch-wait     \
-	distclean-master-core-usage
+	distclean-master-core-usage \
+	distclean-noise             \
+	distclean-syscall
 
 #===============================================================================
 # Fork-Join Benchmark
@@ -78,3 +84,29 @@ clean-master-core-usage:
 
 distclean-master-core-usage:
 	$(MAKE) -C master-core-usage distclean
+
+#===============================================================================
+# Noise Benchmark
+#===============================================================================
+
+all-noise:
+	$(MAKE) -C noise all
+
+clean-noise:
+	$(MAKE) -C noise clean
+
+distclean-noise:
+	$(MAKE) -C noise distclean
+
+#===============================================================================
+# Syscall Benchmark
+#===============================================================================
+
+all-syscall:
+	$(MAKE) -C syscall all
+
+clean-syscall:
+	$(MAKE) -C syscall clean
+
+distclean-syscall:
+	$(MAKE) -C syscall distclean

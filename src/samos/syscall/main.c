@@ -32,7 +32,7 @@
  * @brief Name of the benchmark.
  */
 #define BENCHMARK_NAME0 "user-syscall"
-#define BENCHMARK_NAME0 "dispatcher-syscall"
+#define BENCHMARK_NAME1 "dispatcher-syscall"
 
 /**
  * @name Auxiliary variables
@@ -69,64 +69,64 @@ static int perf_events[BENCHMARK_PERF_EVENTS] = {
 /**
  * @brief Dump execution statistics.
  *
- * @param it               Benchmark iteration.
- * @param name             Benchmark name.
- * @param heartbeat_ustats User land heartbeat statistics.
- * @param heartbeat_kstats Kernel land heartbeat statistics.
+ * @param it     Benchmark iteration.
+ * @param name   Benchmark name.
+ * @param ustats User land statistics.
+ * @param kstats Kernel land statistics.
  */
 static void benchmark_dump_stats(
 	int it,
 	const char *name,
-	uint64_t *heartbeat_ustats,
-	uint64_t *heartbeat_kstats
+	uint64_t *ustats,
+	uint64_t *kstats
 )
 {
-	if (heartbeat_ustats)
+	if (ustats)
 	{
 		uprintf(
 #if defined(__mppa256__) || defined(__optimsoc__)
-			"[benchmarks][%s][u] %d %s %d %d %d %d %d %d %d",
+			"[benchmarks][%s][u] %d %d %d %d %d %d %d %d %d",
 #else
-			"[benchmarks][%s][u] %d %s %d",
+			"[benchmarks][%s][u] %d %d %d",
 #endif
 			name,
 			it,
-			"f",
+			NHEARTBEATS,
 #if defined(__mppa256__) || defined(__optimsoc__)
-			UINT32(heartbeat_ustats[0]),
-			UINT32(heartbeat_ustats[1]),
-			UINT32(heartbeat_ustats[2]),
-			UINT32(heartbeat_ustats[3]),
-			UINT32(heartbeat_ustats[4]),
-			UINT32(heartbeat_ustats[5]),
-			UINT32(heartbeat_ustats[6])
+			UINT32(ustats[0]),
+			UINT32(ustats[1]),
+			UINT32(ustats[2]),
+			UINT32(ustats[3]),
+			UINT32(ustats[4]),
+			UINT32(ustats[5]),
+			UINT32(ustats[6])
 #else
-			UINT32(heartbeat_ustats[0])
+			UINT32(ustats[0])
 #endif
 		);
 	}
 
-	if (heartbeat_kstats)
+	if (kstats)
 	{
 		uprintf(
 #if defined(__mppa256__) || defined(__optimsoc__)
-			"[benchmarks][%s][k] %d %s %d %d %d %d %d %d %d",
+			"[benchmarks][%s][k] %d %d %d %d %d %d %d %d %d",
 #else
-			"[benchmarks][%s][k] %d %s %d",
+			"[benchmarks][%s][k] %d %d %d",
 #endif
 			name,
 			it,
-			"f",
+			NHEARTBEATS,
 #if defined(__mppa256__) || defined(__optimsoc__)
-			UINT32(heartbeat_kstats[0]),
-			UINT32(heartbeat_kstats[1]),
-			UINT32(heartbeat_kstats[2]),
-			UINT32(heartbeat_kstats[3]),
-			UINT32(heartbeat_kstats[4]),
-			UINT32(heartbeat_kstats[5]),
-			UINT32(heartbeat_kstats[6])
+			UINT32(kstats[0]),
+			UINT32(kstats[1]),
+			UINT32(kstats[2]),
+			UINT32(kstats[3]),
+			UINT32(kstats[4]),
+			UINT32(kstats[5]),
+			UINT32(kstats[6])
 #else
-			UINT32(heartbeat_kstats[0])
+			UINT32(kstats[0])
 #endif
 		);
 	}
@@ -139,7 +139,7 @@ static void benchmark_dump_stats(
 /**
  * @brief Measures syscall time.
  */
-static void do_syscall(const char * benchmark)
+static void do_syscall(void)
 {
 	fence(&_fence);
 
@@ -147,7 +147,7 @@ static void do_syscall(const char * benchmark)
 	{
 		/* Do syscalls. */
 		for (int j = 0; j < 2*NHEARTBEATS; j++)
-			(void) knode_get_num();
+			knode_get_num();
 	}
 
 	fence(&_fence);
@@ -158,9 +158,9 @@ static void do_syscall(const char * benchmark)
  */
 static void do_syscall_measurements(const char * benchmark)
 {
-	uint64_t heartbeat_ustats[BENCHMARK_PERF_EVENTS];
+	uint64_t stats[BENCHMARK_PERF_EVENTS];
 
-	umenset(stats, 0, BENCHMARK_PERF_EVENTS * sizeof(uint64_t));
+	umemset(stats, 0, BENCHMARK_PERF_EVENTS * sizeof(uint64_t));
 
 	fence(&_fence);
 
@@ -170,7 +170,7 @@ static void do_syscall_measurements(const char * benchmark)
 
 			/* Do syscalls. */
 			for (int j = 0; j < NHEARTBEATS; j++)
-				(void) knode_get_num();
+				knode_get_num();
 
 		perf_stop(0);
 		stats[0] = perf_read(0);
@@ -180,7 +180,7 @@ static void do_syscall_measurements(const char * benchmark)
 			benchmark_dump_stats(
 				i - SKIP,
 				benchmark,
-				heartbeat_ustats,
+				stats,
 				NULL
 			);
 		}
@@ -227,6 +227,8 @@ static void kernel_user_syscall(void)
 {
 	ktask_t task;
 
+	fence_init(&_fence, 2);
+
 	uassert(ktask_create(&task, dummy, NULL, 0) == 0);
 	uassert(ktask_dispatch(&task) == 0);
 
@@ -238,9 +240,11 @@ static void kernel_user_syscall(void)
 /**
  * @brief Measures syscall time.
  */
-static void kernel_user_syscall(void)
+static void kernel_dispatcher_syscall(void)
 {
 	ktask_t task;
+
+	fence_init(&_fence, 2);
 
 	uassert(ktask_create(&task, measures, NULL, 0) == 0);
 	uassert(ktask_dispatch(&task) == 0);
@@ -260,12 +264,14 @@ static void kernel_user_syscall(void)
  * @param argc Argument counter.
  * @param argv Argument variables.
  */
-int __main2(int argc, const char *argv[])
+int __main3(int argc, const char *argv[])
 {
 	((void) argc);
 	((void) argv);
 
 	uprintf(HLINE);
+
+	UNUSED(perf_events);
 
 	kernel_user_syscall();
 

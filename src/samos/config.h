@@ -32,6 +32,7 @@
 #include <nanvix/sys/noc.h>
 #include <nanvix/ulib.h>
 #include <nanvix/runtime/runtime.h>
+#include <nanvix/runtime/fence.h>
 #include <nanvix/config.h>
 #include <nanvix/limits.h>
 #include <posix/stdint.h>
@@ -42,7 +43,7 @@
  *============================================================================*/
 
 	/**
-	 * @name Benchmark Parameters
+	 * @name Number of threads.
 	 */
 	/**@{*/
 	#define NTHREADS_MIN                1  /**< Minimum Number of Working Threads      */
@@ -51,24 +52,13 @@
 	/**@}*/
 
 	/**
-	 * @name Benchmark Parameters
+	 * @name Number of tasks.
 	 */
 	/**@{*/
 	#define NTASKS_MIN                1  /**< Minimum Number of Working Tasks      */
 	#define NTASKS_MAX  (THREAD_MAX - 1) /**< Maximum Number of Working Tasks      */
 	#define NTASKS_STEP               1  /**< Increment on Number of Working Tasks */
 	/**@}*/
-
-	/**
-	 * @brief Number of tasks.
-	 */
-	#ifndef NTASKS
-		#ifdef NDEBUG
-			#define NTASKS (NTHREAD_MAX - 1)
-		#else
-			#define NTASKS 1 
-		#endif
-	#endif
 
 	/**
 	 * @brief Number of dispatchers. Two or more will create user dispatcher

@@ -29,7 +29,7 @@ include $(BUILDDIR)/makefile.config
 #===============================================================================
 
 # Binary
-EXEC = nanvix-samos-master-core-usage.$(OBJ_SUFFIX)
+EXEC = nanvix-samos-syscall.$(OBJ_SUFFIX)
 
 # C Source Files
 SRC = $(wildcard *.c)

@@ -256,8 +256,8 @@ static void kernel_dispatch_wait(int ntasks)
 				/* Spawn tasks. */
 				for (int k = 0; k < ntasks; k++)
 				{
-					uassert(ktask_create(&tasks[j], task, NULL, 0) == 0);
-					uassert(ktask_dispatch(&tasks[j]) == 0);
+					uassert(ktask_create(&tasks[k], task, NULL, 0) == 0);
+					uassert(ktask_dispatch(&tasks[k]) == 0);
 				}
 
 			kstats(&dispatch_kstats[j], perf_events[j]);
@@ -269,7 +269,7 @@ static void kernel_dispatch_wait(int ntasks)
 
 				/* Wait for tasks. */
 				for (int k = 0; k < ntasks; k++)
-					uassert(ktask_wait(&task[j]) == 0);
+					uassert(ktask_wait(&tasks[k]) == 0);
 
 			kstats(&wait_kstats[j], perf_events[j]);
 			perf_stop(0);
@@ -320,7 +320,7 @@ static void * _task_loop(void * args)
  * @param argc Argument counter.
  * @param argv Argument variables.
  */
-int __main2(int argc, const char *argv[])
+int __main3(int argc, const char *argv[])
 {
 	kthread_t tid[NDISPATCHERS];
 

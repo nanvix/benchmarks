@@ -31,7 +31,7 @@
  */
 /**@{*/
 static int NWORKERS;                 /**< Number of Worker Threads        */
-static int NIDLESS;                  /**< Number of Idle Threads          */
+static int NIDLES;                   /**< Number of Idle Threads          */
 static int NIOS;                     /**< Number of IO Threads            */
 static char *NOISE = "y";            /**< Noise On?                       */
 static int SYSCALL_NR = NR_SYSCALLS; /**< Type of the syscall with 1 arg. */
@@ -85,17 +85,18 @@ static int perf_events[BENCHMARK_PERF_EVENTS] = {
  * @oaram name  Benchmark name.
  * @param stats Execution statistics.
  */
-static void benchmark_dump_stats(int it, const char *name, uint64_t *stats)
+static void benchmark_dump_stats(int it, const char *name, const char *rule, uint64_t *stats)
 {
 	uprintf(
 #if (BENCHMARK_PERF_EVENTS >= 7)
-		"[benchmarks][%s] %d %s %d %d %d %d %d %d %d %d %d",
+		"[benchmarks][%s][%s] %d %s %d %d %d %d %d %d %d %d %d",
 #elif (BENCHMARK_PERF_EVENTS >= 5)
-		"[benchmarks][%s] %d %s %d %d %d %d %d %d %d",
+		"[benchmarks][%s][%s] %d %s %d %d %d %d %d %d %d",
 #else
-		"[benchmarks][%s] %d %s %d %d %d",
+		"[benchmarks][%s][%s] %d %s %d %d %d",
 #endif
 		name,
+		rule,
 		it,
 		NOISE,
 		NWORKERS,
@@ -162,7 +163,7 @@ static void *task_worker(void *arg)
 		}
 
 		if (i >= SKIP)
-			benchmark_dump_stats(i - SKIP, BENCHMARK_NAME, stats);
+			benchmark_dump_stats(i - SKIP, BENCHMARK_NAME, "worker", stats);
 	}
 
 	/* Avoid compiler optimizations. */
@@ -201,25 +202,11 @@ static void *task_idle(void *arg)
  *----------------------------------------------------------------------------*/
 
 /**
- * @brief Dummy task.
- *
- * @param arg Unused argument.
- */
-static int do_heartbeat(ktask_args_t * args)
-{
-	UNUSED(args);
-
-	nanvix_name_heartbeat();
-
-	return (TASK_RET_SUCCESS);
-}
-
-/**
  * @brief Issues some remote kernel calls.
  */
-static void *task_task(void *arg)
+static void *task_io(void *arg)
 {
-	ktask_t task;
+	uint64_t stats[BENCHMARK_PERF_EVENTS];
 
 	UNUSED(arg);
 
@@ -229,13 +216,17 @@ static void *task_task(void *arg)
 	{
 		for (int j = 0; j < BENCHMARK_PERF_EVENTS; j++)
 		{
+			perf_start(0, perf_events[j]);
+
 			for (int k = 0; k < NHEARTBEATS; k++)
-			{
-				uassert(ktask_create(&task, do_heartbeat, NULL, 0) == 0);
-				uassert(ktask_dispatch(&task) == 0);
-				uassert(ktask_wait(&task) == 0);
-			}
+				nanvix_name_heartbeat();
+
+			perf_stop(0);
+			stats[j] = perf_read(0);
 		}
+
+		if (i >= SKIP)
+			benchmark_dump_stats(i - SKIP, BENCHMARK_NAME, "io", stats);
 	}
 
 	return (NULL);
@@ -254,7 +245,7 @@ static void *task_task(void *arg)
 static void benchmark_noise(int nworkers, int nidles, int nios)
 {
 	kthread_t tid_workers[NTHREADS_MAX];
-	kthread_t tid_idle[NTHREADS_MAX];
+	kthread_t tid_idles[NTHREADS_MAX];
 	kthread_t tid_ios[NTHREADS_MAX];
 
 	/* Save kernel parameters. */
@@ -303,7 +294,7 @@ static void benchmark_noise(int nworkers, int nidles, int nios)
  * @param argc Argument counter.
  * @param argv Argument variables.
  */
-int __main2(int argc, const char *argv[])
+int __main3(int argc, const char *argv[])
 {
 	((void) argc);
 	((void) argv);
