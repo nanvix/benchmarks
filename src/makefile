@@ -23,13 +23,14 @@
 #
 
 # Builds Everything
-all: all-microbenchmarks all-pseudoapps all-utilities all-samos
+# all: all-microbenchmarks all-pseudoapps all-utilities all-samos
+all: all-microbenchmarks all-samos
 
 # Cleans Build Objects
-clean: clean-microbenchmarks clean-pseudoapps clean-utilities clean-samos
+clean: clean-microbenchmarks clean-samos
 
 # Cleans Everything
-distclean: distclean-microbenchmarks distclean-pseudoapps distclean-utilities distclean-samos
+distclean: distclean-microbenchmarks distclean-samos
 
 #===============================================================================
 # Micro Benchmarks
