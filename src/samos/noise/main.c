@@ -162,6 +162,23 @@ static void *task_worker(void *arg)
 
 	for (int i = 0; i < NITERATIONS + SKIP; i++)
 	{
+		stats[BENCHMARK_PERF_EVENTS] = 0;
+		k = 0;
+		t0 = clock_read();
+		do
+		{
+			register float k1 = k*1.1;
+			register float k2 = k*2.1;
+			register float k3 = k*3.1;
+			register float k4 = k*4.1;
+
+			tmp += k1 + k2 + k3 + k4;
+			k   += 9;
+
+			stats[BENCHMARK_PERF_EVENTS]++;
+		}
+		while (!time_out(t0, error));
+
 		for (int j = 0; j < BENCHMARK_PERF_EVENTS; j++)
 		{
 			perf_start(0, perf_events[j]);
@@ -178,8 +195,6 @@ static void *task_worker(void *arg)
 
 					tmp += k1 + k2 + k3 + k4;
 					k   += 9;
-
-					stats[BENCHMARK_PERF_EVENTS]++;
 				}
 				while (!time_out(t0, error));
 
@@ -217,10 +232,9 @@ static void *task_idle(void *arg)
 
 	for (int i = 0; i < NITERATIONS + SKIP; i++)
 	{
-		for (int j = 0; j < BENCHMARK_PERF_EVENTS; j++)
+		for (int j = 0; j < (BENCHMARK_PERF_EVENTS + 1); j++)
 		{
 			t0 = clock_read();
-
 			do
 				kcall0(SYSCALL_NR);
 			while (!time_out(t0, error));
@@ -251,17 +265,24 @@ static void *task_io(void *arg)
 
 	for (int i = 0; i < NITERATIONS + SKIP; i++)
 	{
+		stats[BENCHMARK_PERF_EVENTS] = 0;
+
+		t0 = clock_read();
+		do
+		{
+			nanvix_name_heartbeat();
+			stats[BENCHMARK_PERF_EVENTS]++;
+		}
+		while (!time_out(t0, error));
+
 		for (int j = 0; j < BENCHMARK_PERF_EVENTS; j++)
 		{
+
 			perf_start(0, perf_events[j]);
 
 				t0 = clock_read();
-
 				do
-				{
 					nanvix_name_heartbeat();
-					stats[BENCHMARK_PERF_EVENTS]++;
-				}
 				while (!time_out(t0, error));
 
 			perf_stop(0);
