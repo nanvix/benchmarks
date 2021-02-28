@@ -80,6 +80,13 @@
 	#define NHEARTBEATS    (125) /**< IO Operations             */
 	/**@}*/
 
+	/**
+	 * @brief Execution period in cycles (from worker thread iteration).
+	 *
+	 * @details On MPPA-256: 400000/CLUSTER_FREQ/MILI = 1ms
+	 */
+	#define EXECUTION_PERIOD (CLUSTER_FREQ / 100)
+
 /*============================================================================*
  * Statistics                                                                 *
  *============================================================================*/
@@ -91,7 +98,7 @@
 		#ifdef NDEBUG
 			#define NITERATIONS 50
 		#else
-			#define NITERATIONS 1
+			#define NITERATIONS 50
 		#endif
 	#endif
 

@@ -83,6 +83,14 @@ static int perf_events[BENCHMARK_PERF_EVENTS] = {
 };
 
 /**
+ * @brief Time out verification
+ */
+static inline uint64_t time_out(uint64_t t0, uint64_t error)
+{
+	return ((clock_read() - t0 - error) >= EXECUTION_PERIOD);
+}
+
+/**
  * @brief Dump execution statistics.
  *
  * @param it    Benchmark iteration.
@@ -93,11 +101,11 @@ static void benchmark_dump_stats(int it, const char *name, const char *rule, uin
 {
 	uprintf(
 #if (BENCHMARK_PERF_EVENTS >= 7)
-		"[benchmarks][%s][%s] %d %d %d %d %d %d %d %d %d %d %d",
+		"[benchmarks][%s][%s] %d %d %d %d %d %d %d %d %d %d %d %d",
 #elif (BENCHMARK_PERF_EVENTS >= 5)
-		"[benchmarks][%s][%s] %d %d %d %d %d %d %d %d %d",
+		"[benchmarks][%s][%s] %d %d %d %d %d %d %d %d %d %d",
 #else
-		"[benchmarks][%s][%s] %d %d %d %d %d",
+		"[benchmarks][%s][%s] %d %d %d %d %d %d",
 #endif
 		name,
 		rule,
@@ -105,6 +113,7 @@ static void benchmark_dump_stats(int it, const char *name, const char *rule, uin
 		NWORKERS,
 		NIDLES,
 		NIOS,
+		UINT32(stats[BENCHMARK_PERF_EVENTS]),
 #if (BENCHMARK_PERF_EVENTS >= 7)
 		UINT32(stats[6]),
 		UINT32(stats[5]),
@@ -140,19 +149,27 @@ static struct tdata
  */
 static void *task_worker(void *arg)
 {
+	int k;
+	uint64_t t0, error;
 	struct tdata *t = arg;
 	register float tmp = t->scratch;
-	uint64_t stats[BENCHMARK_PERF_EVENTS];
+	uint64_t stats[BENCHMARK_PERF_EVENTS + 1];
+
+	t0    = clock_read();
+	error = clock_read() - t0;
+
+	fence(&_fence);
 
 	for (int i = 0; i < NITERATIONS + SKIP; i++)
 	{
-		fence(&_fence);
-
 		for (int j = 0; j < BENCHMARK_PERF_EVENTS; j++)
 		{
 			perf_start(0, perf_events[j]);
 
-				for (int k = 0; k < FLOPS; k += 9)
+				k = 0;
+				t0 = clock_read();
+
+				do
 				{
 					register float k1 = k*1.1;
 					register float k2 = k*2.1;
@@ -160,7 +177,11 @@ static void *task_worker(void *arg)
 					register float k4 = k*4.1;
 
 					tmp += k1 + k2 + k3 + k4;
+					k   += 9;
+
+					stats[BENCHMARK_PERF_EVENTS]++;
 				}
+				while (!time_out(t0, error));
 
 			perf_stop(0);
 			stats[j] = perf_read(0);
@@ -185,16 +206,24 @@ static void *task_worker(void *arg)
  */
 static void *task_idle(void *arg)
 {
+	uint64_t t0, error;
+
 	UNUSED(arg);
+
+	t0    = clock_read();
+	error = clock_read() - t0;
+
+	fence(&_fence);
 
 	for (int i = 0; i < NITERATIONS + SKIP; i++)
 	{
-		fence(&_fence);
-
 		for (int j = 0; j < BENCHMARK_PERF_EVENTS; j++)
 		{
-			for (int k = 0; k < NIOOPS; k++)
+			t0 = clock_read();
+
+			do
 				kcall0(SYSCALL_NR);
+			while (!time_out(t0, error));
 		}
 	}
 
@@ -210,20 +239,30 @@ static void *task_idle(void *arg)
  */
 static void *task_io(void *arg)
 {
-	uint64_t stats[BENCHMARK_PERF_EVENTS];
+	uint64_t t0, error;
+	uint64_t stats[BENCHMARK_PERF_EVENTS + 1];
 
 	UNUSED(arg);
 
+	t0    = clock_read();
+	error = clock_read() - t0;
+
+	fence(&_fence);
+
 	for (int i = 0; i < NITERATIONS + SKIP; i++)
 	{
-		fence(&_fence);
-
 		for (int j = 0; j < BENCHMARK_PERF_EVENTS; j++)
 		{
 			perf_start(0, perf_events[j]);
 
-			for (int k = 0; k < NHEARTBEATS; k++)
-				nanvix_name_heartbeat();
+				t0 = clock_read();
+
+				do
+				{
+					nanvix_name_heartbeat();
+					stats[BENCHMARK_PERF_EVENTS]++;
+				}
+				while (!time_out(t0, error));
 
 			perf_stop(0);
 			stats[j] = perf_read(0);
