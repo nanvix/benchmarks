@@ -35,36 +35,24 @@
 #define BENCHMARK_NAME1 "dispatcher-syscall"
 
 /**
+ * @brief Mumber of operations.
+ */
+#define NOPERATIONS 100
+
+/**
+ * @brief Max number of threads.
+ */
+#define NTHREADS_LOCAL_MAX (CORES_NUM - 1)
+
+/**
  * @name Auxiliary variables
  */
 /**@{*/
-static struct fence_t _fence; /**< Global fence. */
+static struct fence_t _fence;        /**< Global fence. */
+static int NUSERS;                   /**< Number of Worker Threads        */
+static int NDISPATCHERS;             /**< Number of Worker Threads        */
+static int SYSCALL_NR = NR_SYSCALLS; /**< Type of the syscall with 1 arg. */
 /**@}*/
-
-/**
- * Performance events.
- */
-static int perf_events[BENCHMARK_PERF_EVENTS] = {
-#if defined(__mppa256__)
-	PERF_DTLB_STALLS,
-	PERF_ITLB_STALLS,
-	PERF_REG_STALLS,
-	PERF_BRANCH_STALLS,
-	PERF_DCACHE_STALLS,
-	PERF_ICACHE_STALLS,
-	PERF_CYCLES
-#elif defined(__optimsoc__)
-	MOR1KX_PERF_LSU_HITS,
-	MOR1KX_PERF_BRANCH_STALLS,
-	MOR1KX_PERF_ICACHE_HITS,
-	MOR1KX_PERF_REG_STALLS,
-	MOR1KX_PERF_ICACHE_MISSES,
-	MOR1KX_PERF_IFETCH_STALLS,
-	MOR1KX_PERF_LSU_STALLS,
-#else
-	0
-#endif
-};
 
 /**
  * @brief Dump execution statistics.
@@ -77,90 +65,26 @@ static int perf_events[BENCHMARK_PERF_EVENTS] = {
 static void benchmark_dump_stats(
 	int it,
 	const char *name,
-	uint64_t *ustats,
-	uint64_t *kstats
+	uint64_t cycles
 )
 {
-	if (ustats)
-	{
-		uprintf(
-#if defined(__mppa256__) || defined(__optimsoc__)
-			"[benchmarks][%s][u] %d %d %d %d %d %d %d %d %d",
-#else
-			"[benchmarks][%s][u] %d %d %d",
-#endif
-			name,
-			it,
-			NHEARTBEATS,
-#if defined(__mppa256__) || defined(__optimsoc__)
-			UINT32(ustats[0]),
-			UINT32(ustats[1]),
-			UINT32(ustats[2]),
-			UINT32(ustats[3]),
-			UINT32(ustats[4]),
-			UINT32(ustats[5]),
-			UINT32(ustats[6])
-#else
-			UINT32(ustats[0])
-#endif
-		);
-	}
-
-	if (kstats)
-	{
-		uprintf(
-#if defined(__mppa256__) || defined(__optimsoc__)
-			"[benchmarks][%s][k] %d %d %d %d %d %d %d %d %d",
-#else
-			"[benchmarks][%s][k] %d %d %d",
-#endif
-			name,
-			it,
-			NHEARTBEATS,
-#if defined(__mppa256__) || defined(__optimsoc__)
-			UINT32(kstats[0]),
-			UINT32(kstats[1]),
-			UINT32(kstats[2]),
-			UINT32(kstats[3]),
-			UINT32(kstats[4]),
-			UINT32(kstats[5]),
-			UINT32(kstats[6])
-#else
-			UINT32(kstats[0])
-#endif
-		);
-	}
-}
-
-/*============================================================================*
- * Syscall scenarios                                                          *
- *============================================================================*/
-
-/**
- * @brief Measures syscall time.
- */
-static void do_syscall(void)
-{
-	fence(&_fence);
-
-	for (int i = 0; i < (NITERATIONS + SKIP); i++)
-	{
-		/* Do syscalls. */
-		for (int j = 0; j < 2*NHEARTBEATS; j++)
-			knode_get_num();
-	}
-
-	fence(&_fence);
+	uprintf(
+		"[benchmarks][%s] %d %d %d %d %d",
+		name,
+		it,
+		NOPERATIONS,
+		NUSERS,
+		NDISPATCHERS,
+		UINT32(cycles)
+	);
 }
 
 /**
  * @brief Measures syscall time.
  */
-static void do_syscall_measurements(const char * benchmark)
+static void do_syscall(const char * benchmark)
 {
-	uint64_t stats[BENCHMARK_PERF_EVENTS];
-
-	umemset(stats, 0, BENCHMARK_PERF_EVENTS * sizeof(uint64_t));
+	uint64_t stats[NITERATIONS];
 
 	fence(&_fence);
 
@@ -169,38 +93,17 @@ static void do_syscall_measurements(const char * benchmark)
 		perf_start(0, PERF_CYCLES);
 
 			/* Do syscalls. */
-			for (int j = 0; j < NHEARTBEATS; j++)
-				knode_get_num();
+			for (int j = 0; j < NOPERATIONS; j++)
+				kcall0(SYSCALL_NR);
 
 		perf_stop(0);
-		stats[0] = perf_read(0);
 
 		if (i >= SKIP)
-		{
-			benchmark_dump_stats(
-				i - SKIP,
-				benchmark,
-				stats,
-				NULL
-			);
-		}
+			stats[i - SKIP] = perf_read(0);
 	}
 
-	fence(&_fence);
-}
-
-/**
- * @brief Dummy task.
- *
- * @param arg Unused argument.
- */
-static int dummy(ktask_args_t * args)
-{
-	UNUSED(args);
-
-	do_syscall();
-
-	return (TASK_RET_SUCCESS);
+	for (int i = 0; i < NITERATIONS; i++)
+		benchmark_dump_stats(i, benchmark, stats[i]);
 }
 
 /**
@@ -208,14 +111,29 @@ static int dummy(ktask_args_t * args)
  *
  * @param arg Unused argument.
  */
-static int measures(ktask_args_t * args)
+static void * measures0(void * args)
 {
 	UNUSED(args);
 
-	do_syscall_measurements(BENCHMARK_NAME1);
+	do_syscall(BENCHMARK_NAME0);
+
+	return (NULL);
+}
+
+/**
+ * @brief Measure syscall.
+ *
+ * @param arg Unused argument.
+ */
+static int measures1(ktask_args_t * args)
+{
+	UNUSED(args);
+
+	do_syscall(BENCHMARK_NAME1);
 
 	return (TASK_RET_SUCCESS);
 }
+
 /*============================================================================*
  * Benchmark                                                                  *
  *============================================================================*/
@@ -223,35 +141,28 @@ static int measures(ktask_args_t * args)
 /**
  * @brief Measures syscall time.
  */
-static void kernel_user_syscall(void)
+static void kernel_syscall(int nusers, int ndispatchers)
 {
 	ktask_t task;
+	kthread_t tids[NTHREADS_LOCAL_MAX];
 
-	fence_init(&_fence, 2);
+	NUSERS       = nusers;
+	NDISPATCHERS = ndispatchers;
 
-	uassert(ktask_create(&task, dummy, NULL, 0) == 0);
-	uassert(ktask_dispatch(&task) == 0);
+	fence_init(&_fence, nusers + ndispatchers);
 
-	do_syscall_measurements(BENCHMARK_NAME0);
+	for (int i = 0; i < nusers; i++)
+		kthread_create(&tids[i], measures0, NULL);
 
-	uassert(ktask_wait(&task) == 0);
-}
+	if (ndispatchers)
+	{
+		uassert(ktask_create(&task, measures1, NULL, 0) == 0);
+		uassert(ktask_dispatch(&task) == 0);
+		uassert(ktask_wait(&task) == 0);
+	}
 
-/**
- * @brief Measures syscall time.
- */
-static void kernel_dispatcher_syscall(void)
-{
-	ktask_t task;
-
-	fence_init(&_fence, 2);
-
-	uassert(ktask_create(&task, measures, NULL, 0) == 0);
-	uassert(ktask_dispatch(&task) == 0);
-
-	do_syscall();
-
-	uassert(ktask_wait(&task) == 0);
+	for (int i = 0; i < nusers; i++)
+		kthread_join(tids[i], NULL);
 }
 
 /*============================================================================*
@@ -273,11 +184,13 @@ int __main3(int argc, const char *argv[])
 
 	UNUSED(perf_events);
 
-	kernel_user_syscall();
+	kernel_syscall(1, 0);
 
-	kernel_dispatcher_syscall();
+	for (int i = 0; i < NTHREADS_LOCAL_MAX; ++i)
+		kernel_syscall(i, 1);
 
 	uprintf(HLINE);
 
 	return (0);
 }
+

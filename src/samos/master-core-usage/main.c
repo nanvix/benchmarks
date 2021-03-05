@@ -31,98 +31,32 @@
 /**
  * @brief Name of the benchmark.
  */
-#define BENCHMARK_NAME0 "master-core-usage-global"
-#define BENCHMARK_NAME1 "master-core-usage-specific"
-
-/**
- * Performance events.
- */
-static int perf_events[BENCHMARK_PERF_EVENTS] = {
-#if defined(__mppa256__)
-	PERF_DTLB_STALLS,
-	PERF_ITLB_STALLS,
-	PERF_REG_STALLS,
-	PERF_BRANCH_STALLS,
-	PERF_DCACHE_STALLS,
-	PERF_ICACHE_STALLS,
-	PERF_CYCLES
-#elif defined(__optimsoc__)
-	MOR1KX_PERF_LSU_HITS,
-	MOR1KX_PERF_BRANCH_STALLS,
-	MOR1KX_PERF_ICACHE_HITS,
-	MOR1KX_PERF_REG_STALLS,
-	MOR1KX_PERF_ICACHE_MISSES,
-	MOR1KX_PERF_IFETCH_STALLS,
-	MOR1KX_PERF_LSU_STALLS,
-#else
-	0
-#endif
-};
+#define BENCHMARK_NAME0 "detailed-usage-heartbeat"
+#define BENCHMARK_NAME1 "detailed-usage-lookup"
 
 /**
  * @brief Dump execution statistics.
  *
- * @param it               Benchmark iteration.
- * @param name             Benchmark name.
- * @param heartbeat_ustats User land heartbeat statistics.
- * @param heartbeat_kstats Kernel land heartbeat statistics.
+ * @param it     Benchmark iteration.
+ * @param name   Benchmark name.
+ * @param ustats User land heartbeat statistics.
+ * @param kstats Kernel land heartbeat statistics.
  */
 static void benchmark_dump_stats(
 	int it,
 	const char *name,
-	uint64_t *heartbeat_ustats,
-	uint64_t *heartbeat_kstats
+	uint64_t *stats
 )
 {
-	if (heartbeat_ustats)
-	{
-		uprintf(
-#if defined(__mppa256__) || defined(__optimsoc__)
-			"[benchmarks][%s][u] %d %s %d %d %d %d %d %d %d",
-#else
-			"[benchmarks][%s][u] %d %s %d",
-#endif
-			name,
-			it,
-			"f",
-#if defined(__mppa256__) || defined(__optimsoc__)
-			UINT32(heartbeat_ustats[0]),
-			UINT32(heartbeat_ustats[1]),
-			UINT32(heartbeat_ustats[2]),
-			UINT32(heartbeat_ustats[3]),
-			UINT32(heartbeat_ustats[4]),
-			UINT32(heartbeat_ustats[5]),
-			UINT32(heartbeat_ustats[6])
-#else
-			UINT32(heartbeat_ustats[0])
-#endif
-		);
-	}
-
-	if (heartbeat_kstats)
-	{
-		uprintf(
-#if defined(__mppa256__) || defined(__optimsoc__)
-			"[benchmarks][%s][k] %d %s %d %d %d %d %d %d %d",
-#else
-			"[benchmarks][%s][k] %d %s %d",
-#endif
-			name,
-			it,
-			"f",
-#if defined(__mppa256__) || defined(__optimsoc__)
-			UINT32(heartbeat_kstats[0]),
-			UINT32(heartbeat_kstats[1]),
-			UINT32(heartbeat_kstats[2]),
-			UINT32(heartbeat_kstats[3]),
-			UINT32(heartbeat_kstats[4]),
-			UINT32(heartbeat_kstats[5]),
-			UINT32(heartbeat_kstats[6])
-#else
-			UINT32(heartbeat_kstats[0])
-#endif
-		);
-	}
+	uprintf(
+		"[benchmarks][%s] %d %d %d %d %d",
+		name,
+		it,
+		UINT32(stats[0]),
+		UINT32(stats[1]),
+		UINT32(stats[2]),
+		UINT32(stats[3]),
+	);
 }
 
 /*============================================================================*
@@ -134,37 +68,65 @@ static void benchmark_dump_stats(
  *
  * @param nthreads Number of working threads.
  */
-void kernel_master_core_global_usage(void)
+void kernel_core_usage0(void)
 {
-	uint64_t heartbeat_ustats[BENCHMARK_PERF_EVENTS];
-	uint64_t heartbeat_kstats[BENCHMARK_PERF_EVENTS];
+#if defined(__mppa256__) && __NANVIX_MICROKERNEL_THREAD_STATS
+
+	kthread_t tid;
+	uint64_t stats[BENCHMARK_PERF_EVENTS];
+	uint64_t error_thread;
+	uint64_t error_clock;
+
+	tid = kthread_self();
+	umemset((void *) stats, 0, (BENCHMARK_PERF_EVENTS * sizeof(uint64_t)));
+	uassert(BENCHMARK_PERF_EVENTS >= 5);
+
+	uassert(kthread_stats(tid, NULL, KTHREAD_STATS_EXEC_TIME) == 0);
+	uassert(kthread_stats(tid, &error_thread, KTHREAD_STATS_EXEC_TIME) == 0);
+	error_clock = kclock_read();
+	error_clock = kclock_read() - error_clock;
 
 	for (int i = 0; i < (NITERATIONS + SKIP); i++)
 	{
-		for (int j = 0; j < BENCHMARK_PERF_EVENTS; j++)
-		{
-			perf_start(0, perf_events[j]);
-			kstats(NULL, perf_events[j]);
+		stats[3] = kclock_read();
 
-				/* Spawn threads. */
-				for (int k = 0; k < NHEARTBEATS; k++)
-					nanvix_name_heartbeat();
+		uassert(kthread_stats(tid, NULL, KTHREAD_STATS_EXEC_TIME) == 0);
+#if __NANVIX_USE_TASKS
+		uassert(kthread_stats(KTHREAD_DISPATCHER_TID, NULL, KTHREAD_STATS_EXEC_TIME) == 0);
+#endif
+		uassert(kthread_stats(KTHREAD_MASTER_TID, NULL, KTHREAD_STATS_EXEC_TIME) == 0);
 
-			kstats(&heartbeat_kstats[j], perf_events[j]);
-			perf_stop(0);
-			heartbeat_ustats[j] = perf_read(0);
-		}
+			/* Spawn threads. */
+			nanvix_name_heartbeat();
+
+		uassert(kthread_stats(KTHREAD_MASTER_TID, &stats[0], KTHREAD_STATS_EXEC_TIME) == 0);
+#if __NANVIX_USE_TASKS
+		uassert(kthread_stats(KTHREAD_DISPATCHER_TID, &stats[1], KTHREAD_STATS_EXEC_TIME) == 0);
+#endif
+		uassert(kthread_stats(tid, &stats[2], KTHREAD_STATS_EXEC_TIME) == 0);
+
+		stats[3] = kclock_read() - stats[3];
+
+		stast[0] -= (1 * error_thread + error_clock);
+		stast[1] -= (2 * error_thread + error_clock);
+		stast[2] -= (3 * error_thread + error_clock);
+		stast[3] -= (1 * error_thread + error_clock);
 
 		if (i >= SKIP)
 		{
 			benchmark_dump_stats(
 				i - SKIP,
 				BENCHMARK_NAME0,
-				heartbeat_ustats,
-				heartbeat_kstats
+				stats
 			);
 		}
 	}
+
+#else
+
+	uprintf("[benchmark][%s] Ignore core specific usage!", BENCHMARK_NAME1);
+
+#endif
 }
 
 /**
@@ -172,45 +134,58 @@ void kernel_master_core_global_usage(void)
  *
  * @param nthreads Number of working threads.
  */
-void kernel_master_core_specific_usage(void)
+void kernel_core_usage1(void)
 {
 #if defined(__mppa256__) && __NANVIX_MICROKERNEL_THREAD_STATS
 
-	uint64_t heartbeat_stats[BENCHMARK_PERF_EVENTS];
+	kthread_t tid;
+	const char *pname;
+	uint64_t stats[BENCHMARK_PERF_EVENTS];
+	uint64_t error_thread;
+	uint64_t error_clock;
 
-	umemset((void *) heartbeat_stats, 0, (BENCHMARK_PERF_EVENTS * sizeof(uint64_t)));
+	tid = kthread_self();
+	pname = namvix_getpname();
+	umemset((void *) stats, 0, (BENCHMARK_PERF_EVENTS * sizeof(uint64_t)));
+	uassert(BENCHMARK_PERF_EVENTS >= 5);
 
-	uassert(kthread_stats(KTHREAD_MASTER_TID, NULL, KTHREAD_STATS_EXEC_TIME) == 0);
-	uassert(kthread_stats(KTHREAD_MASTER_TID, &heartbeat_stats[3], KTHREAD_STATS_EXEC_TIME) == 0);
+	uassert(kthread_stats(tid, NULL, KTHREAD_STATS_EXEC_TIME) == 0);
+	uassert(kthread_stats(tid, &error_thread, KTHREAD_STATS_EXEC_TIME) == 0);
+	error_clock = kclock_read();
+	error_clock = kclock_read() - error_clock;
 
 	for (int i = 0; i < (NITERATIONS + SKIP); i++)
 	{
-		perf_start(0, PERF_CYCLES);
+		stats[3] = kclock_read();
 
+		uassert(kthread_stats(tid, NULL, KTHREAD_STATS_EXEC_TIME) == 0);
 #if __NANVIX_USE_TASKS
 		uassert(kthread_stats(KTHREAD_DISPATCHER_TID, NULL, KTHREAD_STATS_EXEC_TIME) == 0);
 #endif
 		uassert(kthread_stats(KTHREAD_MASTER_TID, NULL, KTHREAD_STATS_EXEC_TIME) == 0);
 
 			/* Spawn threads. */
-			for (int k = 0; k < NHEARTBEATS; k++)
-				nanvix_name_heartbeat();
+			nanvix_name_lookup(pname);
 
-		uassert(kthread_stats(KTHREAD_MASTER_TID, &heartbeat_stats[1], KTHREAD_STATS_EXEC_TIME) == 0);
+		uassert(kthread_stats(KTHREAD_MASTER_TID, &stats[0], KTHREAD_STATS_EXEC_TIME) == 0);
 #if __NANVIX_USE_TASKS
-		uassert(kthread_stats(KTHREAD_DISPATCHER_TID, &heartbeat_stats[0], KTHREAD_STATS_EXEC_TIME) == 0);
+		uassert(kthread_stats(KTHREAD_DISPATCHER_TID, &stats[1], KTHREAD_STATS_EXEC_TIME) == 0);
 #endif
+		uassert(kthread_stats(tid, &stats[2], KTHREAD_STATS_EXEC_TIME) == 0);
 
-		perf_stop(0);
-		heartbeat_stats[2] = perf_read(0);
+		stats[3] = kclock_read() - stats[3];
+
+		stast[0] -= (1 * error_thread + error_clock);
+		stast[1] -= (2 * error_thread + error_clock);
+		stast[2] -= (3 * error_thread + error_clock);
+		stast[3] -= (1 * error_thread + error_clock);
 
 		if (i >= SKIP)
 		{
 			benchmark_dump_stats(
 				i - SKIP,
 				BENCHMARK_NAME1,
-				heartbeat_stats,
-				NULL
+				stats
 			);
 		}
 	}
@@ -239,9 +214,8 @@ int __main3(int argc, const char *argv[])
 
 	uprintf(HLINE);
 
-	kernel_master_core_global_usage();
-
-	kernel_master_core_specific_usage();
+	kernel_core_usage0();
+	kernel_core_usage1();
 
 	uprintf(HLINE);
 
