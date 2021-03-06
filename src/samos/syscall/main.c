@@ -50,7 +50,7 @@
 /**@{*/
 static struct fence_t _fence;        /**< Global fence. */
 static int NUSERS;                   /**< Number of Worker Threads        */
-static int NDISPATCHERS;             /**< Number of Worker Threads        */
+static int NTAKERS;             /**< Number of Worker Threads        */
 static int SYSCALL_NR = NR_SYSCALLS; /**< Type of the syscall with 1 arg. */
 /**@}*/
 
@@ -74,7 +74,7 @@ static void benchmark_dump_stats(
 		it,
 		NOPERATIONS,
 		NUSERS,
-		NDISPATCHERS,
+		NTAKERS,
 		UINT32(cycles)
 	);
 }
@@ -146,8 +146,8 @@ static void kernel_syscall(int nusers, int ndispatchers)
 	ktask_t task;
 	kthread_t tids[NTHREADS_LOCAL_MAX];
 
-	NUSERS       = nusers;
-	NDISPATCHERS = ndispatchers;
+	NUSERS  = nusers;
+	NTAKERS = ndispatchers;
 
 	fence_init(&_fence, nusers + ndispatchers);
 
@@ -181,8 +181,6 @@ int __main3(int argc, const char *argv[])
 	((void) argv);
 
 	uprintf(HLINE);
-
-	UNUSED(perf_events);
 
 	kernel_syscall(1, 0);
 

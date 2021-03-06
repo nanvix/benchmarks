@@ -49,13 +49,15 @@ static void benchmark_dump_stats(
 )
 {
 	uprintf(
-		"[benchmarks][%s] %d %d %d %d %d",
+		"[benchmarks][%s] %d %d %d %d %d %d %d",
 		name,
 		it,
 		UINT32(stats[0]),
 		UINT32(stats[1]),
 		UINT32(stats[2]),
 		UINT32(stats[3]),
+		UINT32(stats[4]),
+		UINT32(stats[5])
 	);
 }
 
@@ -74,21 +76,19 @@ void kernel_core_usage0(void)
 
 	kthread_t tid;
 	uint64_t stats[BENCHMARK_PERF_EVENTS];
-	uint64_t error_thread;
-	uint64_t error_clock;
 
 	tid = kthread_self();
 	umemset((void *) stats, 0, (BENCHMARK_PERF_EVENTS * sizeof(uint64_t)));
-	uassert(BENCHMARK_PERF_EVENTS >= 5);
+	uassert(BENCHMARK_PERF_EVENTS >= 6);
 
 	uassert(kthread_stats(tid, NULL, KTHREAD_STATS_EXEC_TIME) == 0);
-	uassert(kthread_stats(tid, &error_thread, KTHREAD_STATS_EXEC_TIME) == 0);
-	error_clock = kclock_read();
-	error_clock = kclock_read() - error_clock;
+	uassert(kthread_stats(tid, &stats[4], KTHREAD_STATS_EXEC_TIME) == 0);
+	stats[5] = clock_read();
+	stats[5] = clock_read() - stats[5];
 
 	for (int i = 0; i < (NITERATIONS + SKIP); i++)
 	{
-		stats[3] = kclock_read();
+		stats[3] = clock_read();
 
 		uassert(kthread_stats(tid, NULL, KTHREAD_STATS_EXEC_TIME) == 0);
 #if __NANVIX_USE_TASKS
@@ -105,12 +105,14 @@ void kernel_core_usage0(void)
 #endif
 		uassert(kthread_stats(tid, &stats[2], KTHREAD_STATS_EXEC_TIME) == 0);
 
-		stats[3] = kclock_read() - stats[3];
+		stats[3] = clock_read() - stats[3];
 
-		stast[0] -= (1 * error_thread + error_clock);
-		stast[1] -= (2 * error_thread + error_clock);
-		stast[2] -= (3 * error_thread + error_clock);
-		stast[3] -= (1 * error_thread + error_clock);
+#if 0
+		stats[0] -= (1 * error_thread + error_clock);
+		stats[1] -= (2 * error_thread + error_clock);
+		stats[2] -= (3 * error_thread + error_clock);
+		stats[3] -= (1 * error_thread + error_clock);
+#endif
 
 		if (i >= SKIP)
 		{
@@ -141,22 +143,20 @@ void kernel_core_usage1(void)
 	kthread_t tid;
 	const char *pname;
 	uint64_t stats[BENCHMARK_PERF_EVENTS];
-	uint64_t error_thread;
-	uint64_t error_clock;
 
 	tid = kthread_self();
-	pname = namvix_getpname();
+	pname = nanvix_getpname();
 	umemset((void *) stats, 0, (BENCHMARK_PERF_EVENTS * sizeof(uint64_t)));
-	uassert(BENCHMARK_PERF_EVENTS >= 5);
+	uassert(BENCHMARK_PERF_EVENTS >= 6);
 
 	uassert(kthread_stats(tid, NULL, KTHREAD_STATS_EXEC_TIME) == 0);
-	uassert(kthread_stats(tid, &error_thread, KTHREAD_STATS_EXEC_TIME) == 0);
-	error_clock = kclock_read();
-	error_clock = kclock_read() - error_clock;
+	uassert(kthread_stats(tid, &stats[4], KTHREAD_STATS_EXEC_TIME) == 0);
+	stats[5] = clock_read();
+	stats[5] = clock_read() - stats[5];
 
 	for (int i = 0; i < (NITERATIONS + SKIP); i++)
 	{
-		stats[3] = kclock_read();
+		stats[3] = clock_read();
 
 		uassert(kthread_stats(tid, NULL, KTHREAD_STATS_EXEC_TIME) == 0);
 #if __NANVIX_USE_TASKS
@@ -173,12 +173,14 @@ void kernel_core_usage1(void)
 #endif
 		uassert(kthread_stats(tid, &stats[2], KTHREAD_STATS_EXEC_TIME) == 0);
 
-		stats[3] = kclock_read() - stats[3];
+		stats[3] = clock_read() - stats[3];
 
-		stast[0] -= (1 * error_thread + error_clock);
-		stast[1] -= (2 * error_thread + error_clock);
-		stast[2] -= (3 * error_thread + error_clock);
-		stast[3] -= (1 * error_thread + error_clock);
+#if 0
+		stats[0] -= (1 * error_thread + error_clock);
+		stats[1] -= (2 * error_thread + error_clock);
+		stats[2] -= (3 * error_thread + error_clock);
+		stats[3] -= (1 * error_thread + error_clock);
+#endif
 
 		if (i >= SKIP)
 		{

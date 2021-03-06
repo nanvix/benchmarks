@@ -33,6 +33,7 @@
 #include <nanvix/ulib.h>
 #include <nanvix/runtime/runtime.h>
 #include <nanvix/runtime/fence.h>
+#include <nanvix/pm.h>
 #include <nanvix/config.h>
 #include <nanvix/limits.h>
 #include <posix/stdint.h>
