@@ -33,14 +33,14 @@
  * @brief Number of Benchmark Iterations
  */
 #ifndef __NITERATIONS
-#define __NITERATIONS 1
+#define __NITERATIONS 50
 #endif
 
 /**
  * @brief Number of Warmup Iterations
  */
 #ifndef __SKIP
-#define __SKIP 1
+#define __SKIP 10
 #endif
 
 /**

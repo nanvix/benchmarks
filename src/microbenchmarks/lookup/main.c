@@ -27,6 +27,20 @@
 #include <nanvix/ulib.h>
 #include <nanvix/pm.h>
 
+/**
+ * @brief Number of Benchmark Iterations
+ */
+#ifndef __NITERATIONS
+#define __NITERATIONS 50
+#endif
+
+/**
+ * @brief Number of Warmup Iterations
+ */
+#ifndef __SKIP
+#define __SKIP 10
+#endif
+
 /*============================================================================*
  * Benchmark                                                                  *
  *============================================================================*/
@@ -43,18 +57,24 @@ static void benchmark_lookup(void)
 	nodenum = knode_get_num();
 	pname = nanvix_getpname();
 
-	perf_start(0, PERF_CYCLES);
-	uassert(nanvix_name_lookup(pname) == nodenum);
-	perf_stop(0);
-	time_lookup = perf_read(0);
+	for (int i = 0; i < __NITERATIONS; ++i)
+	{
+		perf_start(0, PERF_CYCLES);
+		uassert(nanvix_name_lookup(pname) == nodenum);
+		perf_stop(0);
+		time_lookup = perf_read(0);
 
+		if (i >= __SKIP)
+		{
 #ifndef NDEBUG
-	uprintf("[benchmarks][lookup] %l",
+			uprintf("[benchmarks][lookup] %d %l",
 #else
-	uprintf("[benchmarks][lookup] %l",
+			uprintf("[benchmarks][lookup] %d %l",
 #endif
-		time_lookup
-	);
+				(i - __SKIP), time_lookup
+			);
+		}
+	}
 }
 
 /*============================================================================*

@@ -26,6 +26,20 @@
 #include <nanvix/sys/perf.h>
 #include <nanvix/ulib.h>
 
+/**
+ * @brief Number of Benchmark Iterations
+ */
+#ifndef __NITERATIONS
+#define __NITERATIONS 50
+#endif
+
+/**
+ * @brief Number of Warmup Iterations
+ */
+#ifndef __SKIP
+#define __SKIP 10
+#endif
+
 /*============================================================================*
  * Benchmark                                                                  *
  *============================================================================*/
@@ -37,18 +51,24 @@ static void benchmark_heartbeat(void)
 {
 	uint64_t time_heartbeat;
 
-	perf_start(0, PERF_CYCLES);
-	nanvix_name_heartbeat();
-	perf_stop(0);
-	time_heartbeat = perf_read(0);
+	for (int i = 0; i < __NITERATIONS; ++i)
+	{
+		perf_start(0, PERF_CYCLES);
+		nanvix_name_heartbeat();
+		perf_stop(0);
+		time_heartbeat = perf_read(0);
 
+		if (i >= __SKIP)
+		{
 #ifndef NDEBUG
-	uprintf("[benchmarks][heartbeat] %l",
+			uprintf("[benchmarks][heartbeat] %d %l",
 #else
-	uprintf("[benchmarks][heartbeat] %l",
+			uprintf("[benchmarks][heartbeat] %d %l",
 #endif
-		time_heartbeat
-	);
+				(i - __SKIP), time_heartbeat
+			);
+		}
+	}
 }
 
 /*============================================================================*
