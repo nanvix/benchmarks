@@ -57,7 +57,7 @@ static void benchmark_lookup(void)
 	nodenum = knode_get_num();
 	pname = nanvix_getpname();
 
-	for (int i = 0; i < __NITERATIONS; ++i)
+	for (int i = 0; i < (__SKIP + __NITERATIONS); ++i)
 	{
 		perf_start(0, PERF_CYCLES);
 		uassert(nanvix_name_lookup(pname) == nodenum);
@@ -67,11 +67,11 @@ static void benchmark_lookup(void)
 		if (i >= __SKIP)
 		{
 #ifndef NDEBUG
-			uprintf("[benchmarks][lookup] %d %l",
+			uprintf("[benchmarks][lookup] %l",
 #else
-			uprintf("[benchmarks][lookup] %d %l",
+			uprintf("[benchmarks][lookup] %l",
 #endif
-				(i - __SKIP), time_lookup
+				time_lookup
 			);
 		}
 	}

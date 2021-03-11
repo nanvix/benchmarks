@@ -135,6 +135,11 @@
 	#define UINT32(x) ((uint32_t)((x) & 0xffffffff))
 
 	/**
+	 * @brief Casts something to a uint64_t.
+	 */
+	#define UINT64(x) ((uint64_t)(x))
+
+	/**
 	 * @brief Horizontal line.
 	 */
 	static const char *HLINE =

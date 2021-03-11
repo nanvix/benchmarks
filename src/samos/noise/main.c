@@ -101,11 +101,11 @@ static void benchmark_dump_stats(int it, const char *name, const char *rule, uin
 {
 	uprintf(
 #if (BENCHMARK_PERF_EVENTS >= 7)
-		"[benchmarks][%s][%s] %d %d %d %d %d %d %d %d %d %d %d %d",
+		"[benchmarks][%s][%s] %d %d %d %d %d %l %l %l %l %l %l %l",
 #elif (BENCHMARK_PERF_EVENTS >= 5)
-		"[benchmarks][%s][%s] %d %d %d %d %d %d %d %d %d %d",
+		"[benchmarks][%s][%s] %d %d %d %d %d %l %l %l %l %l",
 #else
-		"[benchmarks][%s][%s] %d %d %d %d %d %d",
+		"[benchmarks][%s][%s] %d %d %d %d %d %l",
 #endif
 		name,
 		rule,
@@ -113,18 +113,18 @@ static void benchmark_dump_stats(int it, const char *name, const char *rule, uin
 		NWORKERS,
 		NIDLES,
 		NIOS,
-		UINT32(stats[BENCHMARK_PERF_EVENTS]),
+		UINT64(stats[BENCHMARK_PERF_EVENTS]),
 #if (BENCHMARK_PERF_EVENTS >= 7)
-		UINT32(stats[6]),
-		UINT32(stats[5]),
+		UINT64(stats[6]),
+		UINT64(stats[5]),
 #endif
 #if (BENCHMARK_PERF_EVENTS >= 5)
-		UINT32(stats[4]),
-		UINT32(stats[3]),
-		UINT32(stats[2]),
-		UINT32(stats[1]),
+		UINT64(stats[4]),
+		UINT64(stats[3]),
+		UINT64(stats[2]),
+		UINT64(stats[1]),
 #endif
-		UINT32(stats[0])
+		UINT64(stats[0])
 	);
 }
 

@@ -51,7 +51,7 @@ static void benchmark_heartbeat(void)
 {
 	uint64_t time_heartbeat;
 
-	for (int i = 0; i < __NITERATIONS; ++i)
+	for (int i = 0; i < (__SKIP + __NITERATIONS); ++i)
 	{
 		perf_start(0, PERF_CYCLES);
 		nanvix_name_heartbeat();
@@ -61,11 +61,11 @@ static void benchmark_heartbeat(void)
 		if (i >= __SKIP)
 		{
 #ifndef NDEBUG
-			uprintf("[benchmarks][heartbeat] %d %l",
+			uprintf("[benchmarks][heartbeat] %l",
 #else
-			uprintf("[benchmarks][heartbeat] %d %l",
+			uprintf("[benchmarks][heartbeat] %l",
 #endif
-				(i - __SKIP), time_heartbeat
+				time_heartbeat
 			);
 		}
 	}

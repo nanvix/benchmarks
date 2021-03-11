@@ -69,13 +69,13 @@ static void benchmark_dump_stats(
 )
 {
 	uprintf(
-		"[benchmarks][%s] %d %d %d %d %d",
+		"[benchmarks][%s] %d %d %d %d %l",
 		name,
 		it,
 		NOPERATIONS,
 		NUSERS,
 		NTAKERS,
-		UINT32(cycles)
+		UINT64(cycles)
 	);
 }
 

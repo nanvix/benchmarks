@@ -31,8 +31,7 @@
 /**
  * @brief Name of the benchmark.
  */
-#define BENCHMARK_NAME0 "detailed-usage-heartbeat"
-#define BENCHMARK_NAME1 "detailed-usage-lookup"
+#define BENCHMARK_NAME "heartbeat-core-usage"
 
 /**
  * @brief Dump execution statistics.
@@ -49,15 +48,15 @@ static void benchmark_dump_stats(
 )
 {
 	uprintf(
-		"[benchmarks][%s] %d %d %d %d %d %d %d",
+		"[benchmarks][%s] %d %l %l %l %l %l %l",
 		name,
 		it,
-		UINT32(stats[0]),
-		UINT32(stats[1]),
-		UINT32(stats[2]),
-		UINT32(stats[3]),
-		UINT32(stats[4]),
-		UINT32(stats[5])
+		UINT64(stats[0]),
+		UINT64(stats[1]),
+		UINT64(stats[2]),
+		UINT64(stats[3]),
+		UINT64(stats[4]),
+		UINT64(stats[5])
 	);
 }
 
@@ -66,11 +65,11 @@ static void benchmark_dump_stats(
  *============================================================================*/
 
 /**
- * @brief Fork-Join Kernel
+ * @brief Heartbeat core usage kernel
  *
  * @param nthreads Number of working threads.
  */
-void kernel_core_usage0(void)
+void kernel_heartbeat_core_usage(void)
 {
 #if defined(__mppa256__) && __NANVIX_MICROKERNEL_THREAD_STATS
 
@@ -83,110 +82,37 @@ void kernel_core_usage0(void)
 
 	uassert(kthread_stats(tid, NULL, KTHREAD_STATS_EXEC_TIME) == 0);
 	uassert(kthread_stats(tid, &stats[4], KTHREAD_STATS_EXEC_TIME) == 0);
-	stats[5] = clock_read();
-	stats[5] = clock_read() - stats[5];
+	perf_start(0, PERF_CYCLES);
+	perf_stop(0);
+	stats[5] = perf_read(0);
 
 	for (int i = 0; i < (NITERATIONS + SKIP); i++)
 	{
-		stats[3] = clock_read();
-
-		uassert(kthread_stats(tid, NULL, KTHREAD_STATS_EXEC_TIME) == 0);
 #if __NANVIX_USE_TASKS
 		uassert(kthread_stats(KTHREAD_DISPATCHER_TID, NULL, KTHREAD_STATS_EXEC_TIME) == 0);
 #endif
 		uassert(kthread_stats(KTHREAD_MASTER_TID, NULL, KTHREAD_STATS_EXEC_TIME) == 0);
+		uassert(kthread_stats(tid, NULL, KTHREAD_STATS_EXEC_TIME) == 0);
+
+		perf_start(0, PERF_CYCLES);
 
 			/* Spawn threads. */
 			nanvix_name_heartbeat();
 
+		perf_stop(0);
+		stats[3] = perf_read(0);
+
+		uassert(kthread_stats(tid, &stats[2], KTHREAD_STATS_EXEC_TIME) == 0);
 		uassert(kthread_stats(KTHREAD_MASTER_TID, &stats[0], KTHREAD_STATS_EXEC_TIME) == 0);
 #if __NANVIX_USE_TASKS
 		uassert(kthread_stats(KTHREAD_DISPATCHER_TID, &stats[1], KTHREAD_STATS_EXEC_TIME) == 0);
-#endif
-		uassert(kthread_stats(tid, &stats[2], KTHREAD_STATS_EXEC_TIME) == 0);
-
-		stats[3] = clock_read() - stats[3];
-
-#if 0
-		stats[0] -= (1 * error_thread + error_clock);
-		stats[1] -= (2 * error_thread + error_clock);
-		stats[2] -= (3 * error_thread + error_clock);
-		stats[3] -= (1 * error_thread + error_clock);
 #endif
 
 		if (i >= SKIP)
 		{
 			benchmark_dump_stats(
 				i - SKIP,
-				BENCHMARK_NAME0,
-				stats
-			);
-		}
-	}
-
-#else
-
-	uprintf("[benchmark][%s] Ignore core specific usage!", BENCHMARK_NAME1);
-
-#endif
-}
-
-/**
- * @brief Fork-Join Kernel
- *
- * @param nthreads Number of working threads.
- */
-void kernel_core_usage1(void)
-{
-#if defined(__mppa256__) && __NANVIX_MICROKERNEL_THREAD_STATS
-
-	kthread_t tid;
-	const char *pname;
-	uint64_t stats[BENCHMARK_PERF_EVENTS];
-
-	tid = kthread_self();
-	pname = nanvix_getpname();
-	umemset((void *) stats, 0, (BENCHMARK_PERF_EVENTS * sizeof(uint64_t)));
-	uassert(BENCHMARK_PERF_EVENTS >= 6);
-
-	uassert(kthread_stats(tid, NULL, KTHREAD_STATS_EXEC_TIME) == 0);
-	uassert(kthread_stats(tid, &stats[4], KTHREAD_STATS_EXEC_TIME) == 0);
-	stats[5] = clock_read();
-	stats[5] = clock_read() - stats[5];
-
-	for (int i = 0; i < (NITERATIONS + SKIP); i++)
-	{
-		stats[3] = clock_read();
-
-		uassert(kthread_stats(tid, NULL, KTHREAD_STATS_EXEC_TIME) == 0);
-#if __NANVIX_USE_TASKS
-		uassert(kthread_stats(KTHREAD_DISPATCHER_TID, NULL, KTHREAD_STATS_EXEC_TIME) == 0);
-#endif
-		uassert(kthread_stats(KTHREAD_MASTER_TID, NULL, KTHREAD_STATS_EXEC_TIME) == 0);
-
-			/* Spawn threads. */
-			nanvix_name_lookup(pname);
-
-		uassert(kthread_stats(KTHREAD_MASTER_TID, &stats[0], KTHREAD_STATS_EXEC_TIME) == 0);
-#if __NANVIX_USE_TASKS
-		uassert(kthread_stats(KTHREAD_DISPATCHER_TID, &stats[1], KTHREAD_STATS_EXEC_TIME) == 0);
-#endif
-		uassert(kthread_stats(tid, &stats[2], KTHREAD_STATS_EXEC_TIME) == 0);
-
-		stats[3] = clock_read() - stats[3];
-
-#if 0
-		stats[0] -= (1 * error_thread + error_clock);
-		stats[1] -= (2 * error_thread + error_clock);
-		stats[2] -= (3 * error_thread + error_clock);
-		stats[3] -= (1 * error_thread + error_clock);
-#endif
-
-		if (i >= SKIP)
-		{
-			benchmark_dump_stats(
-				i - SKIP,
-				BENCHMARK_NAME1,
+				BENCHMARK_NAME,
 				stats
 			);
 		}
@@ -215,9 +141,7 @@ int __main3(int argc, const char *argv[])
 	((void) argv);
 
 	uprintf(HLINE);
-
-	kernel_core_usage0();
-	kernel_core_usage1();
+	kernel_heartbeat_core_usage();
 
 	uprintf(HLINE);
 

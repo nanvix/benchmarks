@@ -84,9 +84,9 @@ static void benchmark_dump_stats(
 {
 	uprintf(
 #if defined(__mppa256__)
-		"[benchmarks][%s][u] %d %s %d %d %d %d %d %d %d %d",
+		"[benchmarks][%s][u] %d %s %d %l %l %l %l %l %l %l",
 #elif defined(__optimsoc__)
-		"[benchmarks][%s][u] %d %s %d %d %d %d %d %d %d %d",
+		"[benchmarks][%s][u] %d %s %d %l %l %l %l %l %l %l",
 #else
 		"[benchmarks][%s][u] %d %s %d %d",
 #endif
@@ -95,31 +95,31 @@ static void benchmark_dump_stats(
 		"f",
 		NTASKS,
 #if defined(__mppa256__)
-		UINT32(dispatch_ustats[0]),
-		UINT32(dispatch_ustats[1]),
-		UINT32(dispatch_ustats[2]),
-		UINT32(dispatch_ustats[3]),
-		UINT32(dispatch_ustats[4]),
-		UINT32(dispatch_ustats[5]),
-		UINT32(dispatch_ustats[6])
+		UINT64(dispatch_ustats[0]),
+		UINT64(dispatch_ustats[1]),
+		UINT64(dispatch_ustats[2]),
+		UINT64(dispatch_ustats[3]),
+		UINT64(dispatch_ustats[4]),
+		UINT64(dispatch_ustats[5]),
+		UINT64(dispatch_ustats[6])
 #elif defined(__optimsoc__)
-		UINT32(dispatch_ustats[0]), /* instruction fetch        */
-		UINT32(dispatch_ustats[1]), /* load access              */
-		UINT32(dispatch_ustats[2]), /* store access             */
-		UINT32(dispatch_ustats[3]), /* instruction fetch stalls */
-		UINT32(dispatch_ustats[4]), /* dcache misses            */
-		UINT32(dispatch_ustats[5]), /* icache misses            */
-		UINT32(dispatch_ustats[6])  /* lsu stalls               */
+		UINT64(dispatch_ustats[0]), /* instruction fetch        */
+		UINT64(dispatch_ustats[1]), /* load access              */
+		UINT64(dispatch_ustats[2]), /* store access             */
+		UINT64(dispatch_ustats[3]), /* instruction fetch stalls */
+		UINT64(dispatch_ustats[4]), /* dcache misses            */
+		UINT64(dispatch_ustats[5]), /* icache misses            */
+		UINT64(dispatch_ustats[6])  /* lsu stalls               */
 #else
-		UINT32(dispatch_ustats[0])
+		UINT64(dispatch_ustats[0])
 #endif
 	);
 
 	uprintf(
 #if defined(__mppa256__)
-		"[benchmarks][%s][k] %d %s %d %d %d %d %d %d %d %d",
+		"[benchmarks][%s][k] %d %s %d %l %l %l %l %l %l %l",
 #elif defined(__optimsoc__)
-		"[benchmarks][%s][k] %d %s %d %d %d %d %d %d %d %d",
+		"[benchmarks][%s][k] %d %s %d %l %l %l %l %l %l %l",
 #else
 		"[benchmarks][%s][k] %d %s %d %d",
 #endif
@@ -128,31 +128,31 @@ static void benchmark_dump_stats(
 		"f",
 		NTASKS,
 #if defined(__mppa256__)
-		UINT32(dispatch_kstats[0]),
-		UINT32(dispatch_kstats[1]),
-		UINT32(dispatch_kstats[2]),
-		UINT32(dispatch_kstats[3]),
-		UINT32(dispatch_kstats[4]),
-		UINT32(dispatch_kstats[5]),
-		UINT32(dispatch_kstats[6])
+		UINT64(dispatch_kstats[0]),
+		UINT64(dispatch_kstats[1]),
+		UINT64(dispatch_kstats[2]),
+		UINT64(dispatch_kstats[3]),
+		UINT64(dispatch_kstats[4]),
+		UINT64(dispatch_kstats[5]),
+		UINT64(dispatch_kstats[6])
 #elif defined(__optimsoc__)
-		UINT32(dispatch_kstats[0]), /* instruction fetch        */
-		UINT32(dispatch_kstats[1]), /* load access              */
-		UINT32(dispatch_kstats[2]), /* store access             */
-		UINT32(dispatch_kstats[3]), /* instruction fetch stalls */
-		UINT32(dispatch_kstats[4]), /* dcache misses            */
-		UINT32(dispatch_kstats[5]), /* icache misses            */
-		UINT32(dispatch_kstats[6])  /* lsu stalls               */
+		UINT64(dispatch_kstats[0]), /* instruction fetch        */
+		UINT64(dispatch_kstats[1]), /* load access              */
+		UINT64(dispatch_kstats[2]), /* store access             */
+		UINT64(dispatch_kstats[3]), /* instruction fetch stalls */
+		UINT64(dispatch_kstats[4]), /* dcache misses            */
+		UINT64(dispatch_kstats[5]), /* icache misses            */
+		UINT64(dispatch_kstats[6])  /* lsu stalls               */
 #else
-		UINT32(dispatch_kstats[0])
+		UINT64(dispatch_kstats[0])
 #endif
 	);
 
 	uprintf(
 #if defined(__mppa256__)
-		"[benchmarks][%s][u] %d %s %d %d %d %d %d %d %d %d",
+		"[benchmarks][%s][u] %d %s %d %l %l %l %l %l %l %l",
 #elif defined(__optimsoc__)
-		"[benchmarks][%s][u] %d %s %d %d %d %d %d %d %d %d",
+		"[benchmarks][%s][u] %d %s %d %l %l %l %l %l %l %l",
 #else
 		"[benchmarks][%s][u] %d %s %d %d",
 #endif
@@ -161,56 +161,56 @@ static void benchmark_dump_stats(
 		"j",
 		NTASKS,
 #if defined(__mppa256__)
-		UINT32(wait_ustats[0]),
-		UINT32(wait_ustats[1]),
-		UINT32(wait_ustats[2]),
-		UINT32(wait_ustats[3]),
-		UINT32(wait_ustats[4]),
-		UINT32(wait_ustats[5]),
-		UINT32(wait_ustats[6])
+		UINT64(wait_ustats[0]),
+		UINT64(wait_ustats[1]),
+		UINT64(wait_ustats[2]),
+		UINT64(wait_ustats[3]),
+		UINT64(wait_ustats[4]),
+		UINT64(wait_ustats[5]),
+		UINT64(wait_ustats[6])
 #elif defined(__optimsoc__)
-		UINT32(wait_ustats[0]), /* instruction fetch        */
-		UINT32(wait_ustats[1]), /* load access              */
-		UINT32(wait_ustats[2]), /* store access             */
-		UINT32(wait_ustats[3]), /* instruction fetch stalls */
-		UINT32(wait_ustats[4]), /* dcache misses            */
-		UINT32(wait_ustats[5]), /* icache misses            */
-		UINT32(wait_ustats[6])  /* lsu stalls               */
+		UINT64(wait_ustats[0]), /* instruction fetch        */
+		UINT64(wait_ustats[1]), /* load access              */
+		UINT64(wait_ustats[2]), /* store access             */
+		UINT64(wait_ustats[3]), /* instruction fetch stalls */
+		UINT64(wait_ustats[4]), /* dcache misses            */
+		UINT64(wait_ustats[5]), /* icache misses            */
+		UINT64(wait_ustats[6])  /* lsu stalls               */
 #else
-		UINT32(wait_ustats[0])
+		UINT64(wait_ustats[0])
 #endif
 	);
 
 	uprintf(
 #if defined(__mppa256__)
-		"[benchmarks][%s][k] %d %s %d %d %d %d %d %d %d %d",
+		"[benchmarks][%s][k] %d %s %d %l %l %l %l %l %l %l",
 #elif defined(__optimsoc__)
-		"[benchmarks][%s][k] %d %s %d %d %d %d %d %d %d %d",
+		"[benchmarks][%s][k] %d %s %d %l %l %l %l %l %l %l",
 #else
-		"[benchmarks][%s][k] %d %s %d %d",
+		"[benchmarks][%s][k] %d %s %d %l",
 #endif
 		name,
 		it,
 		"j",
 		NTASKS,
 #if defined(__mppa256__)
-		UINT32(wait_kstats[0]),
-		UINT32(wait_kstats[1]),
-		UINT32(wait_kstats[2]),
-		UINT32(wait_kstats[3]),
-		UINT32(wait_kstats[4]),
-		UINT32(wait_kstats[5]),
-		UINT32(wait_kstats[6])
+		UINT64(wait_kstats[0]),
+		UINT64(wait_kstats[1]),
+		UINT64(wait_kstats[2]),
+		UINT64(wait_kstats[3]),
+		UINT64(wait_kstats[4]),
+		UINT64(wait_kstats[5]),
+		UINT64(wait_kstats[6])
 #elif defined(__optimsoc__)
-		UINT32(wait_kstats[0]), /* instruction fetch        */
-		UINT32(wait_kstats[1]), /* load access              */
-		UINT32(wait_kstats[2]), /* store access             */
-		UINT32(wait_kstats[3]), /* instruction fetch stalls */
-		UINT32(wait_kstats[4]), /* dcache misses            */
-		UINT32(wait_kstats[5]), /* icache misses            */
-		UINT32(wait_kstats[6])  /* lsu stalls               */
+		UINT64(wait_kstats[0]), /* instruction fetch        */
+		UINT64(wait_kstats[1]), /* load access              */
+		UINT64(wait_kstats[2]), /* store access             */
+		UINT64(wait_kstats[3]), /* instruction fetch stalls */
+		UINT64(wait_kstats[4]), /* dcache misses            */
+		UINT64(wait_kstats[5]), /* icache misses            */
+		UINT64(wait_kstats[6])  /* lsu stalls               */
 #else
-		UINT32(wait_kstats[0])
+		UINT64(wait_kstats[0])
 #endif
 	);
 }

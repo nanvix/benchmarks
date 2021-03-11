@@ -23,27 +23,30 @@
 #
 
 # Builds Everything
-all:                            \
-	all-fork-join               \
-	all-dispatch-wait           \
-	all-master-core-usage       \
-	all-noise                   \
+all:                               \
+	all-fork-join                  \
+	all-dispatch-wait              \
+	all-heartbeat-core-usage       \
+	all-lookup-core-usage          \
+	all-noise                      \
 	all-syscall
 
 # Cleans Build Objects
-clean:                          \
-	clean-fork-join             \
-	clean-dispatch-wait         \
-	clean-master-core-usage     \
-	clean-noise                 \
+clean:                             \
+	clean-fork-join                \
+	clean-dispatch-wait            \
+	clean-heartbeat-core-usage     \
+	clean-lookup-core-usage        \
+	clean-noise                    \
 	clean-syscall
 
 # Cleans Everything
-distclean:                      \
-	distclean-fork-join         \
-	distclean-dispatch-wait     \
-	distclean-master-core-usage \
-	distclean-noise             \
+distclean:                         \
+	distclean-fork-join            \
+	distclean-dispatch-wait        \
+	distclean-heartbeat-core-usage \
+	distclean-lookup-core-usage    \
+	distclean-noise                \
 	distclean-syscall
 
 #===============================================================================
@@ -73,17 +76,31 @@ distclean-dispatch-wait:
 	$(MAKE) -C dispatch-wait distclean
 
 #===============================================================================
-# Master Core Usage Benchmark
+# Hearbeat Core Usage Benchmark
 #===============================================================================
 
-all-master-core-usage:
-	$(MAKE) -C master-core-usage all
+all-heartbeat-core-usage:
+	$(MAKE) -C heartbeat-core-usage all
 
-clean-master-core-usage:
-	$(MAKE) -C master-core-usage clean
+clean-heartbeat-core-usage:
+	$(MAKE) -C heartbeat-core-usage clean
 
-distclean-master-core-usage:
-	$(MAKE) -C master-core-usage distclean
+distclean-heartbeat-core-usage:
+	$(MAKE) -C heartbeat-core-usage distclean
+
+
+#===============================================================================
+# Lookup Core Usage Benchmark
+#===============================================================================
+
+all-lookup-core-usage:
+	$(MAKE) -C lookup-core-usage all
+
+clean-lookup-core-usage:
+	$(MAKE) -C lookup-core-usage clean
+
+distclean-lookup-core-usage:
+	$(MAKE) -C lookup-core-usage distclean
 
 #===============================================================================
 # Noise Benchmark
