@@ -26,6 +26,7 @@
 all:                               \
 	all-fork-join                  \
 	all-dispatch-wait              \
+	all-heartbeat                  \
 	all-heartbeat-core-usage       \
 	all-lookup-core-usage          \
 	all-noise                      \
@@ -35,6 +36,7 @@ all:                               \
 clean:                             \
 	clean-fork-join                \
 	clean-dispatch-wait            \
+	clean-heartbeat                \
 	clean-heartbeat-core-usage     \
 	clean-lookup-core-usage        \
 	clean-noise                    \
@@ -44,6 +46,7 @@ clean:                             \
 distclean:                         \
 	distclean-fork-join            \
 	distclean-dispatch-wait        \
+	distclean-heartbeat            \
 	distclean-heartbeat-core-usage \
 	distclean-lookup-core-usage    \
 	distclean-noise                \
@@ -76,6 +79,19 @@ distclean-dispatch-wait:
 	$(MAKE) -C dispatch-wait distclean
 
 #===============================================================================
+# Hearbeat
+#===============================================================================
+
+all-heartbeat:
+	$(MAKE) -C heartbeat all
+
+clean-heartbeat:
+	$(MAKE) -C heartbeat clean
+
+distclean-heartbeat:
+	$(MAKE) -C heartbeat distclean
+
+#===============================================================================
 # Hearbeat Core Usage Benchmark
 #===============================================================================
 
@@ -87,7 +103,6 @@ clean-heartbeat-core-usage:
 
 distclean-heartbeat-core-usage:
 	$(MAKE) -C heartbeat-core-usage distclean
-
 
 #===============================================================================
 # Lookup Core Usage Benchmark
