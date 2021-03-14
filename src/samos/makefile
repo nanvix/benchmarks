@@ -27,6 +27,9 @@ all:                               \
 	all-fork-join                  \
 	all-dispatch-wait              \
 	all-heartbeat                  \
+	all-lookup                     \
+	all-pginval                    \
+	all-services-dispatcher        \
 	all-heartbeat-core-usage       \
 	all-lookup-core-usage          \
 	all-noise                      \
@@ -37,6 +40,9 @@ clean:                             \
 	clean-fork-join                \
 	clean-dispatch-wait            \
 	clean-heartbeat                \
+	clean-lookup                   \
+	clean-pginval                  \
+	clean-services-dispatcher      \
 	clean-heartbeat-core-usage     \
 	clean-lookup-core-usage        \
 	clean-noise                    \
@@ -47,6 +53,9 @@ distclean:                         \
 	distclean-fork-join            \
 	distclean-dispatch-wait        \
 	distclean-heartbeat            \
+	distclean-lookup               \
+	distclean-pginval              \
+	distclean-services-dispatcher  \
 	distclean-heartbeat-core-usage \
 	distclean-lookup-core-usage    \
 	distclean-noise                \
@@ -79,7 +88,7 @@ distclean-dispatch-wait:
 	$(MAKE) -C dispatch-wait distclean
 
 #===============================================================================
-# Hearbeat
+# Heartbeat
 #===============================================================================
 
 all-heartbeat:
@@ -92,7 +101,46 @@ distclean-heartbeat:
 	$(MAKE) -C heartbeat distclean
 
 #===============================================================================
-# Hearbeat Core Usage Benchmark
+# Lookup
+#===============================================================================
+
+all-lookup:
+	$(MAKE) -C lookup all
+
+clean-lookup:
+	$(MAKE) -C lookup clean
+
+distclean-lookup:
+	$(MAKE) -C lookup distclean
+
+#===============================================================================
+# Pginval
+#===============================================================================
+
+all-pginval:
+	$(MAKE) -C pginval all
+
+clean-pginval:
+	$(MAKE) -C pginval clean
+
+distclean-pginval:
+	$(MAKE) -C pginval distclean
+
+#===============================================================================
+# services-dispatcher
+#===============================================================================
+
+all-services-dispatcher:
+	$(MAKE) -C services-dispatcher all
+
+clean-services-dispatcher:
+	$(MAKE) -C services-dispatcher clean
+
+distclean-services-dispatcher:
+	$(MAKE) -C services-dispatcher distclean
+
+#===============================================================================
+# Heartbeat Core Usage Benchmark
 #===============================================================================
 
 all-heartbeat-core-usage:

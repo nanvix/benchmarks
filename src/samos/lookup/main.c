@@ -45,19 +45,25 @@
  *============================================================================*/
 
 /**
- * @brief Benchmarks heart beats.
+ * @brief Benchmarks look up a name.
  */
-static void benchmark_heartbeat(void)
+static void benchmark_lookup(void)
 {
-	ktask_t * beat;
+	ktask_t * look;
+	const char *pname;
 	uint64_t time_heartbeat;
+
+	int inbox = stdinbox_get();
+	int port  = stdinbox_get_port();
+
+	pname = nanvix_getpname();
 
 	for (int i = 0; i < (__SKIP + __NITERATIONS); ++i)
 	{
 		perf_start(0, PERF_CYCLES);
 
-			KASSERT((beat = nanvix_name_heartbeat_task_alloc()) != NULL);
-			KASSERT(ktask_wait(beat) == 0);
+			KASSERT((look = nanvix_name_lookup_task_alloc(pname, inbox, port)) != NULL);
+			KASSERT(ktask_wait(look) == 0);
 
 		perf_stop(0);
 		time_heartbeat = perf_read(0);
@@ -65,9 +71,9 @@ static void benchmark_heartbeat(void)
 		if (i >= __SKIP)
 		{
 #ifndef NDEBUG
-			uprintf("[benchmarks][heartbeat] %l",
+			uprintf("[benchmarks][lookup] %l",
 #else
-			uprintf("[benchmarks][heartbeat] %l",
+			uprintf("[benchmarks][lookup] %l",
 #endif
 				time_heartbeat
 			);
@@ -87,7 +93,7 @@ int __main3(int argc, const char *argv[])
 	((void) argc);
 	((void) argv);
 
-	benchmark_heartbeat();
+	benchmark_lookup();
 
 	return (0);
 }
