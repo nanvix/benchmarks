@@ -64,7 +64,7 @@ static void benchmark_lookup(void)
 		perf_start(0, PERF_CYCLES);
 
 #ifdef BENCHMARK_BASELINE
-			uassert(nanvix_name_lookup(pname) == nodenum);
+			nanvix_name_lookup(pname);
 #else
 			ktask_t * look;
 			KASSERT((look = nanvix_name_lookup_task_alloc(pname, inbox, port)) != NULL);
