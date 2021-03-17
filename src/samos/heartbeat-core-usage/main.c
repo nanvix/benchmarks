@@ -97,7 +97,13 @@ void kernel_heartbeat_core_usage(void)
 		perf_start(0, PERF_CYCLES);
 
 			/* Spawn threads. */
+#ifdef NAME_HEATBEAT_BASELINE
 			nanvix_name_heartbeat();
+#else
+			ktask_t * beat;
+			KASSERT((beat = nanvix_name_heartbeat_task_alloc()) != NULL);
+			KASSERT(ktask_wait(beat) == 0);
+#endif
 
 		perf_stop(0);
 		stats[3] = perf_read(0);

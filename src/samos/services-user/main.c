@@ -25,8 +25,6 @@
 #include <nanvix/runtime/runtime.h>
 #include <nanvix/runtime/barrier.h>
 #include <nanvix/sys/perf.h>
-#include <nanvix/sys/mutex.h>
-#include <nanvix/sys/thread.h>
 #include <nanvix/ulib.h>
 #include <nanvix/limits.h>
 #include <posix/sys/stat.h>
@@ -61,14 +59,10 @@
  */
 static char buffer[NANVIX_SHM_SIZE_MAX];
 
-int inboxes[2];
-int ports[2];
-struct nanvix_mutex ms[3];
-
 /**
  * @brief Benchmarks invalidation of shared memory regions.
  */
-static void benchmark_pgfetch(void)
+static void benchmark_services_user(void)
 {
 	int shmid;
 	barrier_t barrier;
@@ -103,17 +97,7 @@ static void benchmark_pgfetch(void)
 
 	uassert(barrier_wait(barrier) == 0);
 
-	ktask_t *shm, *look, *beat;
 	const char * pname = nanvix_getpname();
-
-	UNUSED(shm);
-	UNUSED(look);
-	UNUSED(beat);
-	UNUSED(pname);
-
-	kprintf("Heart mbx %d e port %d", stdinbox_get(), stdinbox_get_port());
-	kprintf("SHM mbx %d e port %d", inboxes[0], ports[0]);
-	kprintf("Look mbx %d e port %d", inboxes[1], ports[1]);
 
 	for (int i = 0; i < __NITERATIONS + __SKIP; i++)
 	{
@@ -121,23 +105,19 @@ static void benchmark_pgfetch(void)
 		{
 			perf_start(0, PERF_CYCLES);
 
-				KASSERT((shm = __nanvix_shm_inval_task_alloc(shmid, inboxes[0], ports[0])) != NULL);
-				KASSERT((look = nanvix_name_lookup_task_alloc(pname, inboxes[1], ports[1])) != NULL);
-				KASSERT((beat = nanvix_name_heartbeat_task_alloc()) != NULL);
-
-				KASSERT(ktask_wait(beat) == 0);
-				KASSERT(ktask_wait(look) == 0);
-				KASSERT(ktask_wait(shm) == 0);
+				nanvix_name_heartbeat();
+				nanvix_name_lookup(pname);
+				__nanvix_shm_inval(shmid);
 
 			perf_stop(0);
 			time_pgfetch = perf_read(0);
 
-			if (i >= 0)//__SKIP)
+			if (i >= __SKIP)
 			{
 #ifndef NDEBUG
-				uprintf("[benchmarks][services][dispatcher] %l",
+				uprintf("[benchmarks][services][user] %l",
 #else
-				uprintf("[benchmarks][services][dispatcher] %l",
+				uprintf("[benchmarks][services][user] %l",
 #endif
 					time_pgfetch
 				);
@@ -158,51 +138,15 @@ static void benchmark_pgfetch(void)
  * Benchmark Driver                                                           *
  *============================================================================*/
 
-void * setup_mailbox(void * arg)
-{
-	int i = (int) (intptr_t) arg;
-
-	__stdmailbox_setup();
-
-	inboxes[i] = stdinbox_get();
-	ports[i]   = stdinbox_get_port();
-
-	nanvix_mutex_unlock(&ms[i]);
-
-	nanvix_mutex_lock(&ms[2]);
-	nanvix_mutex_unlock(&ms[2]);
-
-	return (NULL);
-}
-
 /**
  * @brief Launches a benchmark.
  */
 int __main3(int argc, const char *argv[])
 {
-	kthread_t tids[2];
-
 	((void) argc);
 	((void) argv);
 
-	for (int i = 0; i < 3; i++)
-		nanvix_mutex_init(&ms[i]);
-
-	for (int i = 0; i < 3; i++)
-		nanvix_mutex_lock(&ms[i]);
-
-	for (int i = 0; i < 2; i++)
-		kthread_create(&tids[i], setup_mailbox, (void *) (intptr_t) i);
-
-	for (int i = 0; i < 2; i++)
-		nanvix_mutex_lock(&ms[i]);
-
-	benchmark_pgfetch();
-
-	nanvix_mutex_unlock(&ms[2]);
-
-	for (int i = 0; i < 2; i++)
-		kthread_join(tids[i], NULL);
+	benchmark_services_user();
 
 	return (0);
 }

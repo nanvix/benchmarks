@@ -1,7 +1,7 @@
 iocluster0:nanvix-spawn0.k1bio
 iocluster1:nanvix-spawn1.k1bio
-ccluster0:nanvix-samos-services-dispatcher.k1bdp
-ccluster1:nanvix-samos-services-dispatcher.k1bdp
+ccluster0:nanvix-samos-services-thread.k1bdp
+ccluster1:nanvix-samos-services-thread.k1bdp
 ccluster2:nanvix-zombie.k1bdp
 ccluster3:nanvix-zombie.k1bdp
 ccluster4:nanvix-zombie.k1bdp

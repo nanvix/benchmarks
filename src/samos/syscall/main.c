@@ -84,11 +84,11 @@ static void benchmark_dump_stats(
  */
 static void do_syscall(const char * benchmark)
 {
-	uint64_t stats[NITERATIONS];
+	uint64_t stats[2 * NITERATIONS];
 
 	fence(&_fence);
 
-	for (int i = 0; i < (NITERATIONS + SKIP); i++)
+	for (int i = 0; i < (2 * NITERATIONS + SKIP); i++)
 	{
 		perf_start(0, PERF_CYCLES);
 
@@ -102,7 +102,7 @@ static void do_syscall(const char * benchmark)
 			stats[i - SKIP] = perf_read(0);
 	}
 
-	for (int i = 0; i < NITERATIONS; i++)
+	for (int i = 0; i < 2 * NITERATIONS; i++)
 		benchmark_dump_stats(i, benchmark, stats[i]);
 }
 

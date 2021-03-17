@@ -25,8 +25,6 @@
 #include <nanvix/runtime/runtime.h>
 #include <nanvix/runtime/barrier.h>
 #include <nanvix/sys/perf.h>
-#include <nanvix/sys/mutex.h>
-#include <nanvix/sys/thread.h>
 #include <nanvix/ulib.h>
 #include <nanvix/limits.h>
 #include <posix/sys/stat.h>
@@ -61,20 +59,78 @@
  */
 static char buffer[NANVIX_SHM_SIZE_MAX];
 
-int inboxes[2];
-int ports[2];
-struct nanvix_mutex ms[3];
+/**
+ * @brief Fence.
+ */
+static struct fence_t _fence;
+
+static uint64_t shm_time;
+static uint64_t heartbeat_time;
+static uint64_t lookup_time;
+
+/**
+ * @brief Benchmarks heart beats.
+ */
+static void * benchmark_lookup(void * args)
+{
+	const char *pname;
+
+	UNUSED(args);
+
+	pname = nanvix_getpname();
+
+	for (int i = 0; i < (__SKIP + __NITERATIONS); ++i)
+	{
+		fence(&_fence);
+
+			perf_start(0, PERF_CYCLES);
+
+				nanvix_name_lookup(pname);
+
+			perf_stop(0);
+			heartbeat_time = perf_read(0);
+
+		fence(&_fence);
+	}
+
+	return (NULL);
+}
+/**
+ * @brief Benchmarks heart beats.
+ */
+static void * benchmark_heartbeat(void * args)
+{
+	UNUSED(args);
+
+	for (int i = 0; i < (__SKIP + __NITERATIONS); ++i)
+	{
+		fence(&_fence);
+
+			perf_start(0, PERF_CYCLES);
+
+				nanvix_name_heartbeat();
+
+			perf_stop(0);
+			heartbeat_time = perf_read(0);
+
+		fence(&_fence);
+	}
+
+	return (NULL);
+}
 
 /**
  * @brief Benchmarks invalidation of shared memory regions.
  */
-static void benchmark_pgfetch(void)
+static void * benchmark_services_thread(void * args)
 {
 	int shmid;
 	barrier_t barrier;
 	int nodes[__NPROCS];
 	uint64_t time_pgfetch;
 	const char *shm_name = "cool-region";
+
+	UNUSED(args);
 
 	/* Build list of nodes. */
 	for (int i = 0; i < __NPROCS; i++)
@@ -103,43 +159,32 @@ static void benchmark_pgfetch(void)
 
 	uassert(barrier_wait(barrier) == 0);
 
-	ktask_t *shm, *look, *beat;
-	const char * pname = nanvix_getpname();
-
-	UNUSED(shm);
-	UNUSED(look);
-	UNUSED(beat);
-	UNUSED(pname);
-
-	kprintf("Heart mbx %d e port %d", stdinbox_get(), stdinbox_get_port());
-	kprintf("SHM mbx %d e port %d", inboxes[0], ports[0]);
-	kprintf("Look mbx %d e port %d", inboxes[1], ports[1]);
-
-	for (int i = 0; i < __NITERATIONS + __SKIP; i++)
+	if (knode_get_num() == PROCESSOR_NODENUM_LEADER)
 	{
-		if (knode_get_num() == PROCESSOR_NODENUM_LEADER)
+		for (int i = 0; i < __NITERATIONS + __SKIP; i++)
 		{
+			fence(&_fence);
+
 			perf_start(0, PERF_CYCLES);
 
-				KASSERT((shm = __nanvix_shm_inval_task_alloc(shmid, inboxes[0], ports[0])) != NULL);
-				KASSERT((look = nanvix_name_lookup_task_alloc(pname, inboxes[1], ports[1])) != NULL);
-				KASSERT((beat = nanvix_name_heartbeat_task_alloc()) != NULL);
-
-				KASSERT(ktask_wait(beat) == 0);
-				KASSERT(ktask_wait(look) == 0);
-				KASSERT(ktask_wait(shm) == 0);
+				uassert(__nanvix_shm_inval(shmid) == 0);
 
 			perf_stop(0);
-			time_pgfetch = perf_read(0);
+			shm_time = perf_read(0);
 
-			if (i >= 0)//__SKIP)
+			fence(&_fence);
+
+			if (i >= __SKIP)
 			{
+				uint64_t major = shm_time;
+				major = major < heartbeat_time ? heartbeat_time : major;
+				major = major < lookup_time    ? lookup_time    : major;
 #ifndef NDEBUG
-				uprintf("[benchmarks][services][dispatcher] %l",
+				uprintf("[benchmarks][services][thread] %l",
 #else
-				uprintf("[benchmarks][services][dispatcher] %l",
+				uprintf("[benchmarks][services][thread] %l",
 #endif
-					time_pgfetch
+					major
 				);
 			}
 		}
@@ -152,28 +197,13 @@ static void benchmark_pgfetch(void)
 	if (knode_get_num() == PROCESSOR_NODENUM_LEADER)
 		uassert(__nanvix_shm_unlink(shm_name) == 0);
 	uassert(barrier_destroy(barrier) == 0);
+
+	return (NULL);
 }
 
 /*============================================================================*
  * Benchmark Driver                                                           *
  *============================================================================*/
-
-void * setup_mailbox(void * arg)
-{
-	int i = (int) (intptr_t) arg;
-
-	__stdmailbox_setup();
-
-	inboxes[i] = stdinbox_get();
-	ports[i]   = stdinbox_get_port();
-
-	nanvix_mutex_unlock(&ms[i]);
-
-	nanvix_mutex_lock(&ms[2]);
-	nanvix_mutex_unlock(&ms[2]);
-
-	return (NULL);
-}
 
 /**
  * @brief Launches a benchmark.
@@ -185,24 +215,21 @@ int __main3(int argc, const char *argv[])
 	((void) argc);
 	((void) argv);
 
-	for (int i = 0; i < 3; i++)
-		nanvix_mutex_init(&ms[i]);
+	if (knode_get_num() == PROCESSOR_NODENUM_LEADER)
+	{
+		fence_init(&_fence, 3);
 
-	for (int i = 0; i < 3; i++)
-		nanvix_mutex_lock(&ms[i]);
+		kthread_create(&tids[0], benchmark_services_heartbeat, NULL);
+		kthread_create(&tids[1], benchmark_services_lookup, NULL);
+	}
 
-	for (int i = 0; i < 2; i++)
-		kthread_create(&tids[i], setup_mailbox, (void *) (intptr_t) i);
+	benchmark_services_shm();
 
-	for (int i = 0; i < 2; i++)
-		nanvix_mutex_lock(&ms[i]);
-
-	benchmark_pgfetch();
-
-	nanvix_mutex_unlock(&ms[2]);
-
-	for (int i = 0; i < 2; i++)
-		kthread_join(tids[i], NULL);
+	if (knode_get_num() == PROCESSOR_NODENUM_LEADER)
+	{
+		for (int i = 0; i < 2; i++)
+			kthread_join(tids[i], NULL);
+	}
 
 	return (0);
 }

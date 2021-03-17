@@ -128,7 +128,12 @@ static void benchmark_pgfetch(void)
 #endif
 					time_pgfetch
 				);
+
+				if (time_pgfetch < 10000)
+					uprintf("ferrou -- %d", i);
 			}
+
+			uprintf("======================================================================= -- %d", i);
 		}
 	}
 

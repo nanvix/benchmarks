@@ -99,7 +99,13 @@ void kernel_lookup_core_usage(void)
 		perf_start(0, PERF_CYCLES);
 
 			/* Spawn threads. */
+#ifdef NAME_LOOKUP_BASELINE
 			nanvix_name_lookup(pname);
+#else
+			ktask_t * look;
+			KASSERT((look = nanvix_name_lookup_task_alloc(pname, inbox, port)) != NULL);
+			KASSERT(ktask_wait(look) == 0);
+#endif
 
 		perf_stop(0);
 		stats[3] = perf_read(0);

@@ -30,6 +30,8 @@ all:                               \
 	all-lookup                     \
 	all-pginval                    \
 	all-services-dispatcher        \
+	all-services-thread            \
+	all-services-user              \
 	all-heartbeat-core-usage       \
 	all-lookup-core-usage          \
 	all-noise                      \
@@ -43,6 +45,8 @@ clean:                             \
 	clean-lookup                   \
 	clean-pginval                  \
 	clean-services-dispatcher      \
+	clean-services-thread          \
+	clean-services-user            \
 	clean-heartbeat-core-usage     \
 	clean-lookup-core-usage        \
 	clean-noise                    \
@@ -56,6 +60,8 @@ distclean:                         \
 	distclean-lookup               \
 	distclean-pginval              \
 	distclean-services-dispatcher  \
+	distclean-services-thread      \
+	distclean-services-user        \
 	distclean-heartbeat-core-usage \
 	distclean-lookup-core-usage    \
 	distclean-noise                \
@@ -138,6 +144,32 @@ clean-services-dispatcher:
 
 distclean-services-dispatcher:
 	$(MAKE) -C services-dispatcher distclean
+
+#===============================================================================
+# services-thread
+#===============================================================================
+
+all-services-thread:
+	$(MAKE) -C services-thread all
+
+clean-services-thread:
+	$(MAKE) -C services-thread clean
+
+distclean-services-thread:
+	$(MAKE) -C services-thread distclean
+
+#===============================================================================
+# services-user
+#===============================================================================
+
+all-services-user:
+	$(MAKE) -C services-user all
+
+clean-services-user:
+	$(MAKE) -C services-user clean
+
+distclean-services-user:
+	$(MAKE) -C services-user distclean
 
 #===============================================================================
 # Heartbeat Core Usage Benchmark
