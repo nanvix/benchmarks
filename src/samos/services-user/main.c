@@ -67,7 +67,7 @@ static void benchmark_services_user(void)
 	int shmid;
 	barrier_t barrier;
 	int nodes[__NPROCS];
-	uint64_t time_pgfetch;
+	uint64_t time_services;
 	const char *shm_name = "cool-region";
 
 	/* Build list of nodes. */
@@ -110,7 +110,7 @@ static void benchmark_services_user(void)
 				__nanvix_shm_inval(shmid);
 
 			perf_stop(0);
-			time_pgfetch = perf_read(0);
+			time_services = perf_read(0);
 
 			if (i >= __SKIP)
 			{
@@ -119,7 +119,7 @@ static void benchmark_services_user(void)
 #else
 				uprintf("[benchmarks][services][user] %l",
 #endif
-					time_pgfetch
+					time_services
 				);
 			}
 		}

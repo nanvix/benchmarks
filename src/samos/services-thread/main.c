@@ -24,7 +24,9 @@
 
 #include <nanvix/runtime/runtime.h>
 #include <nanvix/runtime/barrier.h>
+#include <nanvix/sys/thread.h>
 #include <nanvix/sys/perf.h>
+#include <nanvix/runtime/fence.h>
 #include <nanvix/ulib.h>
 #include <nanvix/limits.h>
 #include <posix/sys/stat.h>
@@ -64,14 +66,14 @@ static char buffer[NANVIX_SHM_SIZE_MAX];
  */
 static struct fence_t _fence;
 
-static uint64_t shm_time;
-static uint64_t heartbeat_time;
-static uint64_t lookup_time;
+static uint64_t time_shm;
+static uint64_t time_heartbeat;
+static uint64_t time_lookup;
 
 /**
  * @brief Benchmarks heart beats.
  */
-static void * benchmark_lookup(void * args)
+static void * benchmark_services_lookup(void * args)
 {
 	const char *pname;
 
@@ -88,7 +90,7 @@ static void * benchmark_lookup(void * args)
 				nanvix_name_lookup(pname);
 
 			perf_stop(0);
-			heartbeat_time = perf_read(0);
+			time_lookup = perf_read(0);
 
 		fence(&_fence);
 	}
@@ -98,7 +100,7 @@ static void * benchmark_lookup(void * args)
 /**
  * @brief Benchmarks heart beats.
  */
-static void * benchmark_heartbeat(void * args)
+static void * benchmark_services_heartbeat(void * args)
 {
 	UNUSED(args);
 
@@ -111,7 +113,7 @@ static void * benchmark_heartbeat(void * args)
 				nanvix_name_heartbeat();
 
 			perf_stop(0);
-			heartbeat_time = perf_read(0);
+			time_heartbeat = perf_read(0);
 
 		fence(&_fence);
 	}
@@ -122,12 +124,11 @@ static void * benchmark_heartbeat(void * args)
 /**
  * @brief Benchmarks invalidation of shared memory regions.
  */
-static void * benchmark_services_thread(void * args)
+static void * benchmark_services_shm(void * args)
 {
 	int shmid;
 	barrier_t barrier;
 	int nodes[__NPROCS];
-	uint64_t time_pgfetch;
 	const char *shm_name = "cool-region";
 
 	UNUSED(args);
@@ -170,15 +171,15 @@ static void * benchmark_services_thread(void * args)
 				uassert(__nanvix_shm_inval(shmid) == 0);
 
 			perf_stop(0);
-			shm_time = perf_read(0);
+			time_shm = perf_read(0);
 
 			fence(&_fence);
 
 			if (i >= __SKIP)
 			{
-				uint64_t major = shm_time;
-				major = major < heartbeat_time ? heartbeat_time : major;
-				major = major < lookup_time    ? lookup_time    : major;
+				uint64_t major = time_shm;
+				major = major < time_heartbeat ? time_heartbeat : major;
+				major = major < time_lookup    ? time_lookup    : major;
 #ifndef NDEBUG
 				uprintf("[benchmarks][services][thread] %l",
 #else
@@ -223,7 +224,7 @@ int __main3(int argc, const char *argv[])
 		kthread_create(&tids[1], benchmark_services_lookup, NULL);
 	}
 
-	benchmark_services_shm();
+	benchmark_services_shm(NULL);
 
 	if (knode_get_num() == PROCESSOR_NODENUM_LEADER)
 	{

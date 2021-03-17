@@ -88,6 +88,11 @@ void kernel_lookup_core_usage(void)
 	perf_stop(0);
 	stats[5] = perf_read(0);
 
+#ifndef NAME_LOOKUP_BASELINE
+	int inbox = stdinbox_get();
+	int port  = stdinbox_get_port();
+#endif
+
 	for (int i = 0; i < (NITERATIONS + SKIP); i++)
 	{
 #if __NANVIX_USE_TASKS
