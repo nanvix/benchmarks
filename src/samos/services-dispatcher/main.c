@@ -103,17 +103,7 @@ static void benchmark_pgfetch(void)
 
 	uassert(barrier_wait(barrier) == 0);
 
-	ktask_t *shm, *look, *beat;
 	const char * pname = nanvix_getpname();
-
-	UNUSED(shm);
-	UNUSED(look);
-	UNUSED(beat);
-	UNUSED(pname);
-
-	kprintf("Heart mbx %d e port %d", stdinbox_get(), stdinbox_get_port());
-	kprintf("SHM mbx %d e port %d", inboxes[0], ports[0]);
-	kprintf("Look mbx %d e port %d", inboxes[1], ports[1]);
 
 	for (int i = 0; i < __NITERATIONS + __SKIP; i++)
 	{
@@ -121,6 +111,12 @@ static void benchmark_pgfetch(void)
 		{
 			perf_start(0, PERF_CYCLES);
 
+#ifdef BENCHMARK_BASELINE
+				nanvix_name_heartbeat();
+				nanvix_name_lookup(pname);
+				__nanvix_shm_inval(shmid);
+#else
+				ktask_t *shm, *look, *beat;
 				KASSERT((shm = __nanvix_shm_inval_task_alloc(shmid, inboxes[0], ports[0])) != NULL);
 				KASSERT((look = nanvix_name_lookup_task_alloc(pname, inboxes[1], ports[1])) != NULL);
 				KASSERT((beat = nanvix_name_heartbeat_task_alloc()) != NULL);
@@ -128,6 +124,7 @@ static void benchmark_pgfetch(void)
 				KASSERT(ktask_wait(beat) == 0);
 				KASSERT(ktask_wait(look) == 0);
 				KASSERT(ktask_wait(shm) == 0);
+#endif
 
 			perf_stop(0);
 			time_pgfetch = perf_read(0);

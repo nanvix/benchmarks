@@ -88,7 +88,7 @@ void kernel_lookup_core_usage(void)
 	perf_stop(0);
 	stats[5] = perf_read(0);
 
-#ifndef NAME_LOOKUP_BASELINE
+#ifndef BENCHMARK_BASELINE
 	int inbox = stdinbox_get();
 	int port  = stdinbox_get_port();
 #endif
@@ -104,7 +104,7 @@ void kernel_lookup_core_usage(void)
 		perf_start(0, PERF_CYCLES);
 
 			/* Spawn threads. */
-#ifdef NAME_LOOKUP_BASELINE
+#ifdef BENCHMARK_BASELINE
 			nanvix_name_lookup(pname);
 #else
 			ktask_t * look;

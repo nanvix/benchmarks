@@ -63,7 +63,7 @@ static char buffer[NANVIX_SHM_SIZE_MAX];
 /**
  * @brief Benchmarks invalidation of shared memory regions.
  */
-static void benchmark_pgfetch(void)
+static void benchmark_pginval(void)
 {
 	int shmid;
 	barrier_t barrier;
@@ -97,10 +97,12 @@ static void benchmark_pgfetch(void)
 
 	uassert(barrier_wait(barrier) == 0);
 
-	ktask_t *shm;
-	uint64_t time_pgfetch;
+	uint64_t time_pginval;
+
+#ifndef BENCHMARK_BASELINE
 	int inbox = stdinbox_get();
 	int port  = stdinbox_get_port();
+#endif
 
 	for (int i = 0; i < __NITERATIONS + __SKIP; i++)
 	{
@@ -108,16 +110,16 @@ static void benchmark_pgfetch(void)
 		{
 			perf_start(0, PERF_CYCLES);
 
-#if 0
-				KASSERT((shm = __nanvix_shm_inval_task_alloc(shmid, inbox, port)) != NULL);
-				KASSERT(ktask_wait(shm) == 0);
+#ifdef BENCHMARK_BASELINE
+				__nanvix_shm_inval(shmid);
 #else
+				ktask_t *shm;
 				shm = __nanvix_shm_inval_task_alloc(shmid, inbox, port);
 				ktask_wait(shm);
 #endif
 
 			perf_stop(0);
-			time_pgfetch = perf_read(0);
+			time_pginval = perf_read(0);
 
 			if (i >= __SKIP)
 			{
@@ -126,14 +128,9 @@ static void benchmark_pgfetch(void)
 #else
 				uprintf("[benchmarks][pginval] %l",
 #endif
-					time_pgfetch
+					time_pginval
 				);
-
-				if (time_pgfetch < 10000)
-					uprintf("ferrou -- %d", i);
 			}
-
-			uprintf("======================================================================= -- %d", i);
 		}
 	}
 
@@ -158,7 +155,7 @@ int __main3(int argc, const char *argv[])
 	((void) argc);
 	((void) argv);
 
-	benchmark_pgfetch();
+	benchmark_pginval();
 
 	return (0);
 }

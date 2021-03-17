@@ -49,15 +49,19 @@
  */
 static void benchmark_heartbeat(void)
 {
-	ktask_t * beat;
 	uint64_t time_heartbeat;
 
 	for (int i = 0; i < (__SKIP + __NITERATIONS); ++i)
 	{
 		perf_start(0, PERF_CYCLES);
 
+#ifdef BENCHMARK_BASELINE
+			nanvix_name_heartbeat();
+#else
+			ktask_t * beat;
 			KASSERT((beat = nanvix_name_heartbeat_task_alloc()) != NULL);
 			KASSERT(ktask_wait(beat) == 0);
+#endif
 
 		perf_stop(0);
 		time_heartbeat = perf_read(0);

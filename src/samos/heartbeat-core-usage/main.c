@@ -97,7 +97,7 @@ void kernel_heartbeat_core_usage(void)
 		perf_start(0, PERF_CYCLES);
 
 			/* Spawn threads. */
-#ifdef NAME_HEATBEAT_BASELINE
+#ifdef BENCHMARK_BASELINE
 			nanvix_name_heartbeat();
 #else
 			ktask_t * beat;

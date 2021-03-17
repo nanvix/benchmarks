@@ -49,12 +49,13 @@
  */
 static void benchmark_lookup(void)
 {
-	ktask_t * look;
 	const char *pname;
 	uint64_t time_heartbeat;
 
+#ifndef BENCHMARK_BASELINE
 	int inbox = stdinbox_get();
 	int port  = stdinbox_get_port();
+#endif
 
 	pname = nanvix_getpname();
 
@@ -62,8 +63,13 @@ static void benchmark_lookup(void)
 	{
 		perf_start(0, PERF_CYCLES);
 
+#ifdef BENCHMARK_BASELINE
+			uassert(nanvix_name_lookup(pname) == nodenum);
+#else
+			ktask_t * look;
 			KASSERT((look = nanvix_name_lookup_task_alloc(pname, inbox, port)) != NULL);
 			KASSERT(ktask_wait(look) == 0);
+#endif
 
 		perf_stop(0);
 		time_heartbeat = perf_read(0);
