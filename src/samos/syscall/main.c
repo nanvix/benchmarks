@@ -183,7 +183,7 @@ int __main3(int argc, const char *argv[])
 	uprintf(HLINE);
 
 	for (int i = 0; i < 2; ++i)
-		for (int j = 0; j < NTHREADS_LOCAL_MAX; ++j)
+		for (int j = 0; j <= NTHREADS_LOCAL_MAX; ++j)
 			kernel_syscall(j, i);
 
 	uprintf(HLINE);
