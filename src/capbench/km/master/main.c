@@ -38,9 +38,7 @@ int __main3(int argc, char **argv)
 	/* Master process? */
 	if (rank == 0)
 	{
-#if VERBOSE
 		uprintf("Master process executing...");
-#endif /* VERBOSE */
 
 		do_master();
 
@@ -65,15 +63,11 @@ int __main3(int argc, char **argv)
 	}
 	else
 	{
-#if VERBOSE
 		uprintf("Slave process %d executing...", rank);
-#endif /* VERBOSE */
 
 		do_slave();
 
-#if VERBOSE
 		uprintf("Slave process %d done...", rank);
-#endif /* VERBOSE */
 	}
 
 	/* Shutdown MPI runtime system. */

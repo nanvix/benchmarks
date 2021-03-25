@@ -58,6 +58,8 @@ static float points[PROBLEM_NUM_POINTS*DIMENSION_MAX];                          
 static void initialize_variables()
 {
 	srandnum(PROBLEM_SEED);
+
+	/* Initialize points. */
 	for (int i = 0; i < PROBLEM_NUM_POINTS*DIMENSION_MAX; i++)
 		points[i] = randnum() & 0xffff;
 
@@ -68,7 +70,7 @@ static void initialize_variables()
 	/* Initialize centroids. */
 	for (int i = 0; i < PROBLEM_NUM_CENTROIDS; i++)
 	{
-		int j = randnum()%PROBLEM_NUM_POINTS;
+		int j = randnum() % PROBLEM_NUM_POINTS;
 		umemcpy(CENTROID(i), POINT(j), DIMENSION_MAX*sizeof(float));
 		map[j] = i;
 	}
@@ -77,7 +79,7 @@ static void initialize_variables()
 	for (int i = 0; i < PROBLEM_NUM_POINTS; i++)
 	{
 		if (map[i] < 0)
-			map[i] = randnum()%PROBLEM_NUM_CENTROIDS;
+			map[i] = randnum() % PROBLEM_NUM_CENTROIDS;
 	}
 }
 
@@ -106,9 +108,9 @@ static void send_work(void)
 
 	for (int i = 0; i < PROBLEM_NUM_WORKERS; i++)
 	{
-#if VERBOSE
+#if DEBUG
 	uprintf("sending work to rank %d...", (i+1));
-#endif /* VERBOSE */
+#endif /* DEBUG */
 
 		/* Util information for the problem. */
 		data_send(i + 1, &lnpoints[i], sizeof(int));
@@ -120,9 +122,9 @@ static void send_work(void)
 
 		count += lnpoints[i];
 
-#if VERBOSE
+#if DEBUG
 	uprintf("Sent!");
-#endif /* VERBOSE */
+#endif /* DEBUG */
 	}
 
 	time_elapsed = perf_read(0);
@@ -144,15 +146,17 @@ static int sync(void)
 
 	for (int i = 0; i < PROBLEM_NUM_WORKERS; i++)
 	{
-#if VERBOSE
+#if DEBUG
 		uprintf("Syncing rank %d...", (i+1));
-#endif /* VERBOSE */
+#endif /* DEBUG */
+
 		data_receive(i + 1, PCENTROID(i,0), PROBLEM_NUM_CENTROIDS*DIMENSION_MAX*sizeof(float));
 		data_receive(i + 1, PPOPULATION(i,0), PROBLEM_NUM_CENTROIDS*sizeof(int));
 		data_receive(i + 1, &has_changed[i], sizeof(int));
-#if VERBOSE
-		uprintf("Done!", (i+1));
-#endif /* VERBOSE */
+
+#if DEBUG
+		uprintf("Done!");
+#endif /* DEBUG */
 	}
 
 	time_elapsed = perf_read(0);
@@ -174,7 +178,8 @@ static int sync(void)
 		vector_mult(CENTROID(i), __fdiv(1.0f, population[i]));
 	}
 
-	if ((++_iterations) < 131)
+	/* Should be 131. */
+	if ((++_iterations) < 31)
 	{
 		for (int i = 0; i < PROBLEM_NUM_WORKERS; i++)
 		{
@@ -189,11 +194,6 @@ static int sync(void)
 	master += perf_read(0);
 
 	perf_start(0, PERF_CYCLES);
-
-#if VERBOSE
-	if (again == 1)
-		uprintf("Necessity of executing AGAIN...");
-#endif
 
 	for (int i = 0; i < PROBLEM_NUM_WORKERS; i++)
 	{
@@ -252,14 +252,14 @@ void do_master(void)
 	/* Cluster data. */
 	do
 	{
-#if VERBOSE
+#if DEBUG
 	uprintf("iteration %d...", ++i);
-#endif /* VERBOSE */
+#endif /* DEBUG */
 	} while (sync());
 
-#if VERBOSE
+#if DEBUG
 	uprintf("getting results...");
-#endif /* VERBOSE */
+#endif /* DEBUG */
 
 	get_results();
 

@@ -125,14 +125,14 @@ static int sync(struct local_data *data)
 	data_send(0, data->ppopulation, PROBLEM_NUM_CENTROIDS*sizeof(int));
 	data_send(0, &data->has_changed, sizeof(int));
 
-#if VERBOSE
+#if DEBUG
 	uprintf("Waiting to receive again confirmation...");
 #endif
 	data_receive(0, &again, sizeof(int));
 
 	if (again == 1)
 	{
-#if VERBOSE
+#if DEBUG
 	uprintf("Waiting to receive recalculated centroids...");
 #endif
 		data_receive(0, data->centroids, PROBLEM_NUM_CENTROIDS*DIMENSION_MAX*sizeof(float));
@@ -175,8 +175,11 @@ void do_slave(void)
 {
 	int local_index;
 
-#if VERBOSE
+#if DEBUG
 	int iteration = 0;
+#endif
+
+#if VERBOSE
 	int rank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif /* VERBOSE */
@@ -196,21 +199,21 @@ void do_slave(void)
 	/* Cluster data. */
 	do
 	{
-#if VERBOSE
+#if DEBUG
 		uprintf("rank %d populating iteration %d...", rank, ++iteration);
 #endif /* VERBOSE */
 		populate(&_local_data[local_index]);
-#if VERBOSE
+#if DEBUG
 		uprintf("rank %d computing centroids...", rank);
 #endif /* VERBOSE */
 		compute_centroids(&_local_data[local_index]);
-#if VERBOSE
+#if DEBUG
 		uprintf("rank %d syncing...", rank);
 #endif /* VERBOSE */
 	} while (sync(&_local_data[local_index]));
 
 #if VERBOSE
-	uprintf("rank %d sending results...", rank);
+	uprintf("rank %d sending results back...", rank);
 #endif /* VERBOSE */
 
 	send_results(&_local_data[local_index]);

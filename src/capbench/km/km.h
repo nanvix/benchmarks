@@ -44,17 +44,19 @@
 	/**
 	 * @brief Enables benchmark verbose mode.
 	 */
-	#define VERBOSE 0
+	#define VERBOSE (DEBUG || 0)
+
+	#define DEBUG 0
 
 /*============================================================================*
  * Parameters                                                                 *
  *============================================================================*/
 
 	#define PROBLEM_SEED                                                    0
-	#define PROBLEM_LNPOINTS                                            (1024)
+	#define PROBLEM_LNPOINTS                                               64
 	#define PROBLEM_NUM_CENTROIDS                                          64
-	#define DIMENSION_MAX                                                   4
-	#define PROBLEM_NUM_POINTS    (PROBLEM_NUM_WORKERS / 2 * PROBLEM_LNPOINTS)
+	#define DIMENSION_MAX                                                   3
+	#define PROBLEM_NUM_POINTS        (PROBLEM_NUM_WORKERS * PROBLEM_LNPOINTS)
 	#define PROBLEM_NUM_WORKERS                         (MPI_PROCESSES_NR - 1)
 
 /*============================================================================*
