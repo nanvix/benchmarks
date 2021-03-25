@@ -22,6 +22,8 @@
  * SOFTWARE.
  */
 
+#include <nanvix/ulib.h>
+
 struct division
 {
 	int quotient;
@@ -31,6 +33,8 @@ struct division
 struct division divide(int a, int b)
 {
 	struct division result;
+
+	uassert(b > 0);
 
 	result.quotient = 0;
 	result.remainder = a;
