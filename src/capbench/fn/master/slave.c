@@ -25,7 +25,7 @@
 #include "../fn.h"
 
 /* FN Data. */
-PRIVATE struct local_data
+static struct local_data
 {
 	struct item task[CHUNK_MAX_SIZE];
 	int tasksize;
@@ -36,12 +36,17 @@ PRIVATE struct local_data
  */
 static int gcd(int a, int b)
 {
-	while (b != 0)
+	struct division result;
+	int i = a;
+	int mod;
+
+	while (b != 0 && i > 0)
 	{
-		struct division result = divide(a, b);
-		int mod = result.remainder;
+		result = divide(a, b);
+		mod = result.remainder;
 		a = b;
 		b = mod;
+		i--;
 	}
 
 	return a;
@@ -53,17 +58,23 @@ static int sumdiv(int n)
 	int factor; /* Working factor.      */
 	int maxD; 	/* Max divisor before n */
 
-	maxD = (int)n/2;
+	/* Initialization to avoid problems with n == 0. */
+	sum = 0;
 
-	sum = (n == 1) ? 1 : 1 + n;
+	maxD = (int) (n / 2);
+	sum = (n == 1) ? 1 : (1 + n);
 
 	/* Compute sum of divisors. */
 	for (factor = 2; factor <= maxD; factor++)
 	{
-		struct division result = divide(n, factor);
+		struct division result;
+
+		result = divide(n, factor);
+
 		if (result.remainder == 0)
 			sum += factor;
 	}
+
 	return (sum);
 }
 
@@ -79,8 +90,21 @@ static void send_result(struct local_data *data)
 
 	total_time = total();
 
+#if DEBUG
+	uprintf("Slave %d Sending first message...", rank);
+#endif /* DEBUG */
+
 	data_send(0, &data->task, data->tasksize*sizeof(struct item));
+
+#if DEBUG
+	uprintf("Slave %d Sending second message...", rank);
+#endif /* DEBUG */
+
 	data_send(0, &total_time, sizeof(uint64_t));
+
+#if DEBUG
+	uprintf("Slave %d Sent results!...", rank);
+#endif /* DEBUG */
 }
 
 void do_slave(void)
@@ -102,7 +126,7 @@ void do_slave(void)
 	get_work(data);
 
 #if VERBOSE
-	uprintf("Slave %d starting computation...", rank);
+	uprintf("Slave %d starting computation of %d numbers...", rank, data->tasksize);
 #endif /* VERBOSE */
 
 	perf_start(0, PERF_CYCLES);

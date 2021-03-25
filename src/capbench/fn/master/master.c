@@ -50,22 +50,22 @@ static void send_work(void)
 {
 	for (int i = 0, offset = 0; i < PROBLEM_NUM_WORKERS; i++)
 	{
-#if VERBOSE
-		uprintf("Sending work to slave %d...", (i+1));
-#endif /* VERBOSE */
+#if DEBUG
+		uprintf("Master sending work to slave %d...", (i+1));
+#endif /* DEBUG */
 
 		data_send(i + 1, &tasksize[i], sizeof(int));
 
-#if VERBOSE
-		uprintf("Sent first message...");
-#endif /* VERBOSE */
+#if DEBUG
+		uprintf("Master sent first message...");
+#endif /* DEBUG */
 
 		data_send(i + 1, &tasks[offset], tasksize[i]*sizeof(struct item));
 		offset += tasksize[i];
 
-#if VERBOSE
-		uprintf("Sent!");
-#endif /* VERBOSE */
+#if DEBUG
+		uprintf("Master Sent!");
+#endif /* DEBUG */
 	}
 }
 
@@ -73,22 +73,22 @@ static void receive_result(void)
 {
 	for (int i = 0, offset = 0; i < PROBLEM_NUM_WORKERS; i++)
 	{
-#if VERBOSE
-		uprintf("Waiting to receive results from slave %d...", (i+1));
-#endif /* VERBOSE */
+#if DEBUG
+		uprintf("Master waiting to receive results from slave %d...", (i+1));
+#endif /* DEBUG */
 
 		data_receive(i + 1, &tasks[offset], tasksize[i]*sizeof(struct item));
 
-#if VERBOSE
-		uprintf("Received first message...");
-#endif /* VERBOSE */
+#if DEBUG
+		uprintf("Master received first message...");
+#endif /* DEBUG */
 
 		data_receive(i + 1, &slave[i], sizeof(uint64_t));
 		offset += tasksize[i];
 
-#if VERBOSE
-		uprintf("Received");
-#endif /* VERBOSE */
+#if DEBUG
+		uprintf("Master Received");
+#endif /* DEBUG */
 	}
 }
 

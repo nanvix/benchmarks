@@ -44,13 +44,17 @@
 	/**
 	 * @brief Enables benchmark verbose mode.
 	 */
-	#define VERBOSE 0
+	#define VERBOSE (DEBUG || 0)
+
+	#define DEBUG 0
 
 /*============================================================================*
  * Parameters                                                                 *
  *============================================================================*/
 
-	#define PROBLEM_SIZE                                   128
+	#define PROBLEM_SEED 0
+
+	#define PROBLEM_SIZE                                  6144
 	#define PROBLEM_START_NUM                          1000001
 	#define PROBLEM_END_NUM      (PROBLEM_START + PROBLEM_SIZE)
 	#define PROBLEM_NUM_WORKERS          (MPI_PROCESSES_NR - 1)
