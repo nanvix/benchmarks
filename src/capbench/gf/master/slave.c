@@ -83,27 +83,58 @@ void do_slave(void)
 	uint64_t total_time;
 	struct local_data *data;
 
+#if DEBUG
+	int repetition = 0;
+	int rank;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif /* DEBUG */
+
 	local_index = curr_mpi_proc_index();
 	data = &_local_data[local_index];
 
-	/* Receive kernel parameters. */
+#if DEBUG
+	uprintf("Rank %d receiving gaussian mask...", rank);
+#endif /* DEBUG */
+
+	/* Receive mask. */
 	data_receive(0, data->mask, sizeof(float)*PROBLEM_MASKSIZE2);
 
+	/* Applies the gaussian filter until a DIE message. */
 	while (1)
 	{
 		int msg = 0;
+
+#if DEBUG
+		uprintf("Rank %d receiving control message...", rank);
+#endif /* DEBUG */
 
 		data_receive(0, &msg, sizeof(int));
 
 		if (msg == MSG_DIE)
 			break;
 
+#if DEBUG
+		uprintf("Rank %d receiving new chunk...", rank);
+#endif /* DEBUG */
+
 		data_receive(0, data->chunk, CHUNK_WITH_HALO_SIZE2*sizeof(unsigned char));
+
+#if DEBUG
+		uprintf("Rank %d applying filter for image %d...", rank, ++repetition);
+#endif /* DEBUG */
 
 		gauss_filter(data);
 
+#if DEBUG
+		uprintf("Rank %d sending chunk %d back...", rank, repetition);
+#endif /* DEBUG */
+
 		data_send(0, &data->newchunk, PROBLEM_CHUNK_SIZE2*sizeof(unsigned char));
 	}
+
+#if DEBUG
+	uprintf("Rank %d received DIE message...", rank);
+#endif /* DEBUG */
 
 	/* Send back statistics. */
 	total_time = total();

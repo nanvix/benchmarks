@@ -138,25 +138,13 @@ static void process_chunks(void)
 			ii += PROBLEM_CHUNK_SIZE;
 		}
 	}
-
-	/* Releasing slaves. */
-	msg = MSG_DIE;
-	for (int i = 0; i < PROBLEM_NUM_WORKERS; i++)
-		data_send(i + 1, &msg, sizeof(int));
 }
 
 /* Gaussian filter. */
 static void gauss_filter(void)
 {
-	 /* Send mask. */
-	for (int i = 0; i < PROBLEM_NUM_WORKERS; i++)
-		data_send(i + 1, mask, sizeof(float)*PROBLEM_MASKSIZE2);
-
 	/* Processing the chunks. */
 	process_chunks();
-
-	for (int i = 0; i < PROBLEM_NUM_WORKERS; i++)
-		data_receive(i + 1, &slave[i], sizeof(uint64_t));
 }
 
 static void generate_mask(void)
@@ -190,6 +178,30 @@ static void init(void)
 	for (int i = 0; i < PROBLEM_IMGSIZE2; i++)
 		img[i] = randnum() & 0xff;
 	generate_mask();
+
+	/* Send mask to slaves. */
+	for (int i = 0; i < PROBLEM_NUM_WORKERS; i++)
+		data_send(i + 1, mask, sizeof(float)*PROBLEM_MASKSIZE2);
+}
+
+static void update_image(void)
+{
+	for (int i = 0; i < PROBLEM_IMGSIZE2; i++)
+		img[i] = newimg[i];
+}
+
+static void finalize(void)
+{
+	int msg;
+
+	/* Releasing slaves. */
+	msg = MSG_DIE;
+	for (int i = 0; i < PROBLEM_NUM_WORKERS; i++)
+		data_send(i + 1, &msg, sizeof(int));
+
+	/* Collect slave statistics. */
+	for (int i = 0; i < PROBLEM_NUM_WORKERS; i++)
+		data_receive(i + 1, &slave[i], sizeof(uint64_t));
 }
 
 void do_master(void)
@@ -200,12 +212,29 @@ void do_master(void)
 
 	init();
 
+	for (int i = 0; i < FPS * SECONDS; ++i)
+	{
 #if VERBOSE
-	uprintf("applying filter...\n");
+		uprintf("applying filter in frame %d...\n", i);
 #endif /* VERBOSE */
 
-	/* Apply filter. */
-	gauss_filter();
+		/* Apply filter. */
+		gauss_filter();
+
+#if DEBUG
+		uprintf("updating next image...\n");
+#endif /* DEBUG */
+
+		/* Updates new img to be processed. */
+		update_image();
+	}
+
+#if VERBOSE
+		uprintf("preparing to collect statistics...\n");
+#endif /* VERBOSE */
+
+	/* Release slaves and collect statistics. */
+	finalize();
 
 	update_total(master + communication());
 }
