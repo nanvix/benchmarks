@@ -49,7 +49,7 @@ export SUPPRESS_TESTS ?= no
 export ADDONS ?=
 
 # Uses LWMPI?
-export NANVIX_LWMPI ?= 1
+export NANVIX_LWMPI ?= 0
 
 #===============================================================================
 # Directories
