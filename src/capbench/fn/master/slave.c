@@ -23,13 +23,7 @@
  */
 
 #include "../fn.h"
-
-/* FN Data. */
-static struct local_data
-{
-	struct item task[CHUNK_MAX_SIZE];
-	int tasksize;
-} _local_data[MPI_PROCS_PER_CLUSTER_MAX];
+#include <nanvix/kernel/kernel.h>
 
 /*
  * Computes the Greatest Common Divisor of two numbers.
@@ -78,15 +72,14 @@ static int sumdiv(int n)
 	return (sum);
 }
 
-static void get_work(struct local_data *data)
-{
-	data_receive(0, &data->tasksize, sizeof(int));
-	data_receive(0, &data->task, data->tasksize*sizeof(struct item));
-}
-
-static void send_result(struct local_data *data)
+static void send_result(struct item *data, int tasksize)
 {
 	uint64_t total_time;
+
+#if DEBUG
+	int rank;
+	rank = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif /* DEBUG */
 
 	total_time = total();
 
@@ -94,7 +87,7 @@ static void send_result(struct local_data *data)
 	uprintf("Slave %d Sending first message...", rank);
 #endif /* DEBUG */
 
-	data_send(0, &data->task, data->tasksize*sizeof(struct item));
+	data_send(0, data, tasksize*sizeof(struct item));
 
 #if DEBUG
 	uprintf("Slave %d Sending second message...", rank);
@@ -109,7 +102,8 @@ static void send_result(struct local_data *data)
 
 void do_slave(void)
 {
-	struct local_data *data;
+	struct item *task;
+	int tasksize;
 	uint64_t time_passed;
 
 #if VERBOSE
@@ -117,36 +111,45 @@ void do_slave(void)
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif /* VERBOSE */
 
-	data = &_local_data[curr_mpi_proc_index()];
-
 #if VERBOSE
 	uprintf("Slave %d waiting to receive work...", rank);
 #endif /* VERBOSE */
 
-	get_work(data);
+	/* Receive tasksize. */
+	data_receive(0, &tasksize, sizeof(int));
+
+	/* Allocates data structure to hold the task items. */
+	if ((task = (struct item *) umalloc(sizeof(struct item) * tasksize)) == NULL)
+		upanic("Failed when allocating task structure");
+
+	data_receive(0, task, tasksize*sizeof(struct item));
 
 #if VERBOSE
-	uprintf("Slave %d starting computation of %d numbers...", rank, data->tasksize);
+	uprintf("Slave %d starting computation of %d numbers...", rank, tasksize);
 #endif /* VERBOSE */
 
 	perf_start(0, PERF_CYCLES);
 
 	/* Compute abundances. */
-	for (int i = 0; i < data->tasksize; i++)
+	for (int i = 0; i < tasksize; i++)
 	{
 		int n;
 
-		data->task[i].num = sumdiv(data->task[i].number);
-		data->task[i].den = data->task[i].number;
+#if DEBUG
+		uprintf("Slave %d computing abundance of %dth number", rank, i);
+#endif
 
-		n = gcd(data->task[i].num, data->task[i].den);
+		task[i].num = sumdiv(task[i].number);
+		task[i].den = task[i].number;
+
+		n = gcd(task[i].num, task[i].den);
 
 		if (n != 0)
 		{
-			struct division result1 = divide(data->task[i].num, n);
-			struct division result2 = divide(data->task[i].den, n);
-			data->task[i].num = result1.quotient;
-			data->task[i].den = result2.quotient;
+			struct division result1 = divide(task[i].num, n);
+			struct division result2 = divide(task[i].den, n);
+			task[i].num = result1.quotient;
+			task[i].den = result2.quotient;
 		}
 	}
 
@@ -157,5 +160,8 @@ void do_slave(void)
 	uprintf("Slave %d preparing to send result back...", rank);
 #endif /* VERBOSE */
 
-	send_result(data);
+	send_result(task, tasksize);
+
+	/* Frees the allocated data structure. */
+	ufree(task);
 }

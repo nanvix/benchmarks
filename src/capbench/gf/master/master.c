@@ -85,7 +85,6 @@ static void process_chunks(void)
 				for (int ck = 0; ck < nchunks; ck++)
 				{
 					data_receive(ck + 1, chunk, PROBLEM_CHUNK_SIZE2*sizeof(unsigned char));
-
 					perf_start(0, PERF_CYCLES);
 
 						for (int k = 0; k < PROBLEM_CHUNK_SIZE; k++)
@@ -221,7 +220,7 @@ void do_master(void)
 		/* Apply filter. */
 		gauss_filter();
 
-#if DEBUG
+#if VERBOSE
 		uprintf("updating next image...\n");
 #endif /* DEBUG */
 
@@ -232,6 +231,10 @@ void do_master(void)
 #if VERBOSE
 		uprintf("preparing to collect statistics...\n");
 #endif /* VERBOSE */
+
+	int teste = (PROBLEM_IMGDIMENSION*PROBLEM_IMGDIMENSION) / (PROBLEM_CHUNK_SIZE2);
+	uprintf("TESTE: %d", teste);
+	uprintf("Chunk size: %d", PROBLEM_CHUNK_SIZE);
 
 	/* Release slaves and collect statistics. */
 	finalize();

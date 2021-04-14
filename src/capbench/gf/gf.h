@@ -55,8 +55,10 @@
 	#define PROBLEM_SEED 0
 
 	#define PROBLEM_MASKSIZE                              7
-	#define PROBLEM_CHUNK_SIZE                           16
-	#define PROBLEM_IMGSIZE     (256 + PROBLEM_MASKSIZE - 1)
+	#define PROBLEM_CHUNK_SIZE                           32
+	#define PROBLEM_IMGSIZE     (PROBLEM_IMGDIMENSION + PROBLEM_MASKSIZE - 1)
+
+	#define PROBLEM_IMGDIMENSION 256
 
 	#define PROBLEM_NUM_WORKERS (MPI_PROCESSES_NR - 1)
 
@@ -64,7 +66,7 @@
 	#define PROBLEM_CHUNK_SIZE2  (PROBLEM_CHUNK_SIZE*PROBLEM_CHUNK_SIZE)
 	#define PROBLEM_MASKSIZE2        (PROBLEM_MASKSIZE*PROBLEM_MASKSIZE)
 
-	#define FPS     10
+	#define FPS     5
 	#define SECONDS 3
 
 /*============================================================================*

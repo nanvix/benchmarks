@@ -97,9 +97,10 @@ static void send_work(void)
 	/* Distribute work among clusters. */
 	for (int i = 0; i < PROBLEM_NUM_WORKERS; i++)
 	{
-		lnpoints[i] = ((i + 1) < PROBLEM_NUM_WORKERS) ?
-			PROBLEM_NUM_POINTS/PROBLEM_NUM_WORKERS :
-			PROBLEM_NUM_POINTS - i*(PROBLEM_NUM_POINTS/PROBLEM_NUM_WORKERS);
+		// lnpoints[i] = ((i + 1) < PROBLEM_NUM_WORKERS) ?
+		// 	PROBLEM_NUM_POINTS/PROBLEM_NUM_WORKERS :
+		// 	PROBLEM_NUM_POINTS - i*(PROBLEM_NUM_POINTS/PROBLEM_NUM_WORKERS);
+		lnpoints[i] = PROBLEM_NUM_POINTS/PROBLEM_NUM_WORKERS;
 	}
 
 	master += perf_read(0);
@@ -230,9 +231,11 @@ static void get_results(void)
 
 void do_master(void)
 {
-#if VERBOSE
+#if DEBUG
 	int i = 0;
+#endif
 
+#if VERBOSE
 	uprintf("initializing...");
 #endif /* VERBOSE */
 
