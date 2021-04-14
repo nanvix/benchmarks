@@ -31,9 +31,11 @@ int __main3(int argc, char **argv)
 {
 	int rank;
 
-	/* Initialize MPI runtime system. */
-	MPI_Init(&argc, &argv);
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	/* Initialize runtime system. */
+	runtime_init(argc, argv);
+
+	/* Gets rank. */
+	runtime_get_rank(&rank);
 
 	/* Master process? */
 	if (rank == 0)
@@ -70,8 +72,9 @@ int __main3(int argc, char **argv)
 		uprintf("Slave process %d done...", rank);
 	}
 
-	/* Shutdown MPI runtime system. */
-	MPI_Finalize();
+	/* Shutdown runtime system. */
+	runtime_finalize();
 
 	return (0);
 }
+

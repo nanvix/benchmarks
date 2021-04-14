@@ -45,7 +45,7 @@ PRIVATE struct local_data
 	int map[PROBLEM_LNPOINTS];                            /* Map of clusters.          */
 	int ppopulation[PROBLEM_NUM_CENTROIDS];               /* Partial population.       */
 	int has_changed;                                      /* Has any centroid changed? */
-} _local_data[MPI_PROCS_PER_CLUSTER_MAX];
+} _local_data[PROCS_PER_CLUSTER_MAX];
 
 /*============================================================================*
  * populate()                                                                 *
@@ -181,10 +181,10 @@ void do_slave(void)
 
 #if VERBOSE
 	int rank;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	runtime_get_rank(&rank);
 #endif /* VERBOSE */
 
-	local_index = curr_mpi_proc_index();
+	local_index = runtime_get_index();
 
 #if VERBOSE
 	uprintf("rank %d getting work...", rank);
@@ -218,3 +218,4 @@ void do_slave(void)
 
 	send_results(&_local_data[local_index]);
 }
+

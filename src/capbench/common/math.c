@@ -78,3 +78,4 @@ float power(float a, float b)
 
 	return r * u.d;
 }
+

@@ -22,36 +22,39 @@
  * SOFTWARE.
  */
 
-#ifndef _FN_H_
-#define _FN_H_
+#include "../common.h"
 
-	#include "../common.h"
+#include <nanvix/sys/thread.h>
 
-/*============================================================================*
- * Parameters                                                                 *
- *============================================================================*/
+/**
+ * Initializes runtime.
+ */
+PUBLIC void runtime_init(int argc, char **argv)
+{
+	MPI_Init(&argc, &argv);
+}
 
-	#define PROBLEM_SEED 0
+/**
+ * Finalize runtime.
+ */
+PUBLIC void runtime_finalize(void)
+{
+	MPI_Finalize();
+}
 
-	#define PROBLEM_SIZE                                 (6144)
-	#define PROBLEM_START_NUM                         (1000001)
-	#define PROBLEM_END_NUM      (PROBLEM_START + PROBLEM_SIZE)
+/**
+ * Gets process rank.
+ */
+PUBLIC void runtime_get_rank(int * rank)
+{
+	MPI_Comm_rank(MPI_COMM_WORLD, rank);
+}
 
-	#define CHUNK_MAX_SIZE ((PROBLEM_SIZE / PROBLEM_NUM_WORKERS) * 2)
-
-/*============================================================================*
- * Kernel                                                                     *
- *============================================================================*/
-
-	struct item
-	{
-		int number;
-		int num;
-		int den;
-	};
-
-	extern void do_master(void);
-	extern void do_slave(void);
-
-#endif /* _FN_H_ */
+/**
+ * Gets process index.
+ */
+PUBLIC int runtime_get_index(void)
+{
+	return (curr_mpi_proc_index());
+}
 

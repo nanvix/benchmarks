@@ -135,3 +135,4 @@ void do_master(void)
 
 	update_total(master + communication());
 }
+

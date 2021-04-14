@@ -42,7 +42,7 @@ PRIVATE struct local_data
 	float mask[PROBLEM_MASKSIZE2];               /* Mask         */
 	unsigned char chunk[CHUNK_WITH_HALO_SIZE2];  /* Input Chunk  */
 	unsigned char newchunk[PROBLEM_CHUNK_SIZE2]; /* Output Chunk */
-} _local_data[MPI_PROCS_PER_CLUSTER_MAX];
+} _local_data[PROCS_PER_CLUSTER_MAX];
 /**@}*/
 
 /**
@@ -86,10 +86,10 @@ void do_slave(void)
 #if DEBUG
 	int repetition = 0;
 	int rank;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	runtime_get_rank(&rank);
 #endif /* DEBUG */
 
-	local_index = curr_mpi_proc_index();
+	local_index = runtime_get_index();
 	data = &_local_data[local_index];
 
 #if DEBUG
@@ -140,3 +140,4 @@ void do_slave(void)
 	total_time = total();
 	data_send(0, &total_time, sizeof(uint64_t));
 }
+

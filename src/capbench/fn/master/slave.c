@@ -78,7 +78,7 @@ static void send_result(struct item *data, int tasksize)
 
 #if DEBUG
 	int rank;
-	rank = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	runtime_get_rank(&rank);
 #endif /* DEBUG */
 
 	total_time = total();
@@ -108,7 +108,7 @@ void do_slave(void)
 
 #if VERBOSE
 	int rank;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	runtime_get_rank(&rank);
 #endif /* VERBOSE */
 
 #if VERBOSE
@@ -165,3 +165,4 @@ void do_slave(void)
 	/* Frees the allocated data structure. */
 	ufree(task);
 }
+

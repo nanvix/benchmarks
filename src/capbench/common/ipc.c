@@ -22,14 +22,9 @@
  * SOFTWARE.
  */
 
-#include <nanvix/sys/perf.h>
+#include "../common.h"
 
-#include <posix/stdint.h>
-#include <posix/stddef.h>
-
-#include <mputil/proc.h>
 #include <mpi/datatype.h>
-#include <mpi.h>
 
 PRIVATE struct
 {
@@ -121,7 +116,7 @@ PUBLIC unsigned nreceive()
 /**
  * @brief Sends data.
  */
-uint64_t data_send(int outfd, void *data, size_t n)
+PUBLIC uint64_t data_send(int outfd, void *data, size_t n)
 {
 	int local_index;
 
@@ -147,7 +142,7 @@ uint64_t data_send(int outfd, void *data, size_t n)
 /**
  * @brief Receives data.
  */
-uint64_t data_receive(int infd, void *data, size_t n)
+PUBLIC uint64_t data_receive(int infd, void *data, size_t n)
 {
 	int local_index;
 
@@ -170,3 +165,4 @@ uint64_t data_receive(int infd, void *data, size_t n)
 
 	return (0);
 }
+

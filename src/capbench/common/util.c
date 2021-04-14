@@ -58,3 +58,4 @@ unsigned randnum(void)
 
 	return (u);
 }
+
