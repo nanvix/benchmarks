@@ -55,8 +55,8 @@
 	#define PROBLEM_SEED                                                    0
 	#define PROBLEM_LNPOINTS      (PROBLEM_NUM_POINTS / PROBLEM_NUM_WORKERS)
 	#define PROBLEM_NUM_CENTROIDS                                          32
-	#define DIMENSION_MAX                                                   3
-	#define PROBLEM_NUM_POINTS                                          30720
+	#define DIMENSION_MAX                                                   2
+	#define PROBLEM_NUM_POINTS                                          19968
 	#define PROBLEM_NUM_WORKERS                         (MPI_PROCESSES_NR - 1)
 
 /*============================================================================*
