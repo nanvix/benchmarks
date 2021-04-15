@@ -34,6 +34,9 @@
 #include <nanvix/ulib.h>
 #include <nanvix/pm.h>
 
+#define MASTER_PORT     1 //! 1
+#define SLAVE_PORT_BASE 4 //! base + index | index = [1, PROCS_MAX)
+
 PRIVATE int ipc_processes_nr = MPI_PROCESSES_NR;
 PRIVATE int ipc_local_processes_nr;
 PRIVATE int ipc_master_tid;
@@ -203,7 +206,7 @@ PUBLIC int index_from_rank(int rank)
 {
 #if (__LWMPI_PROC_MAP == MPI_PROCESS_SCATTER)
 
-	return ((rank - first_from_node(node_from_rank(rank))) / (((int) MPI_PROCESSES_NR / MPI_NODES_NR) + 1));
+	return ((rank - first_from_node(node_from_rank(rank))) / MPI_NODES_NR);
 
 #elif (__LWMPI_PROC_MAP == MPI_PROCESS_COMPACT)
 
@@ -214,7 +217,12 @@ PUBLIC int index_from_rank(int rank)
 
 PUBLIC int port_from_rank(int rank)
 {
-	return (index_from_rank(rank));
+	int index;
+	
+	if ((index = index_from_rank(rank)) == 0)
+		return (MASTER_PORT);
+
+	return (SLAVE_PORT_BASE + index);
 }
 
 PRIVATE int spawn_processes(void)
@@ -289,9 +297,9 @@ PRIVATE int spawn_processes(void)
 #endif
 
 #if (__LWMPI_PROC_MAP == MPI_PROCESS_SCATTER)
-	uprintf("Spawning processes in SCATTER mode...");
+	uprintf("\033[93mSpawning processes in SCATTER mode...\033[0m");
 #elif (__LWMPI_PROC_MAP == MPI_PROCESS_COMPACT)
-	uprintf("Spawning processes in COMPACT mode...");
+	uprintf("\033[93mSpawning processes in COMPACT mode...\033[0m");
 #endif
 
 #if DEBUG
