@@ -24,7 +24,19 @@
 
 #include "../common.h"
 
+#if __NANVIX_USES_LWMPI
+
 #include <mpi/datatype.h>
+
+#else
+
+#include <nanvix/sys/thread.h>
+#include <nanvix/runtime/stdikc.h>
+#include <nanvix/runtime/runtime.h>
+#include <nanvix/ulib.h>
+#include <nanvix/pm.h>
+
+#endif
 
 PRIVATE struct
 {
@@ -40,17 +52,6 @@ PRIVATE struct
 } _statistics[MPI_PROCS_PER_CLUSTER_MAX] = {
 	[0 ... (MPI_PROCS_PER_CLUSTER_MAX - 1)] = {0, 0, 0, 0, 0, 0}
 };
-
-#if !__NANVIX_USES_LWMPI
-
-PRIVATE int ipc_rank_to_port(int rank)
-{
-	//index = rank - first_from_node(node_from_rank());
-
-	return (port_from_index(index_from_rank()))
-}
-
-#endif
 
 /*============================================================================*
  * Statistics                                                                 *
@@ -124,6 +125,19 @@ PUBLIC unsigned nreceive()
  * Communication                                                              *
  *============================================================================*/
 
+#if !__NANVIX_USES_LWMPI
+
+struct comm_info
+{
+	int target;
+	int source;
+	int mailbox_port;
+	int portal_port;
+	size_t size;
+};
+
+#endif
+
 /**
  * @brief Sends data.
  */
@@ -139,6 +153,7 @@ PUBLIC uint64_t data_send(int outfd, void *data, size_t n)
 	perf_start(0, PERF_CYCLES);
 
 #if __NANVIX_USES_LWMPI
+
 	uassert(
 		MPI_Send(
 			data,
@@ -149,17 +164,24 @@ PUBLIC uint64_t data_send(int outfd, void *data, size_t n)
 			MPI_COMM_WORLD
 		) == 0
 	);
+
 #else
 
 	int outbox;
 	int outportal;
 	struct comm_info req;
 
-	uassert((outbox    = kmailbox_open(local, remote, port)) == 0);
+	int local  = knode_get_num();
+	int remote = node_from_rank(outfd);
+	int port   = port_from_rank(outfd);
+
+	/* Open channels. */
+	uassert((outbox    = kmailbox_open(remote, port)) == 0);
 	uassert((outportal = kportal_open(local, remote, port))  == 0);
 
 	/* Config. communication. */
-	req.remote       = knode_get_num();
+	req.target       = outfd;
+	req.source       = local;
 	req.mailbox_port = kmailbox_get_port(outbox);
 	req.portal_port  = kportal_get_port(outportal);
 	req.size         = n;
@@ -174,8 +196,9 @@ PUBLIC uint64_t data_send(int outfd, void *data, size_t n)
 	);
 
 	/* Send data. */
-	uassert(kportal_write(outportal, data, n) == n);
+	uassert(kportal_write(outportal, data, n) == (ssize_t) n);
 
+	/* Close channels. */
 	uassert(kmailbox_close(outbox)   == 0);
 	uassert(kportal_close(outportal) == 0);
 
@@ -201,6 +224,7 @@ PUBLIC uint64_t data_receive(int infd, void *data, size_t n)
 	perf_start(0, PERF_CYCLES);
 
 #if __NANVIX_USES_LWMPI
+
 	uassert(
 		MPI_Recv(
 			data,
@@ -212,13 +236,16 @@ PUBLIC uint64_t data_receive(int infd, void *data, size_t n)
 			MPI_STATUS_IGNORE
 		) == 0
 	);
+
 #else
+
 	int inbox;
 	int inportal;
 	struct comm_info req;
 
-	inbox    = __stdinbox_get();
-	inportal = __stdinportal_get();
+	/* Gets input channels. */
+	inbox    = stdinbox_get();
+	inportal = stdinportal_get();
 
 	/* Receive a Request. */
 	uassert(
@@ -229,17 +256,19 @@ PUBLIC uint64_t data_receive(int infd, void *data, size_t n)
 		) == sizeof(struct comm_info)
 	);
 
-	uassert(req.size == n);
+	/* Assert communication size. */
+	uassert(req.size   == n);
+	uassert(req.target == infd);
 
 	/* Read data. */
 	uassert(
 		kportal_allow(
 			inportal,
-			req.remote,
+			req.source,
 			req.portal_port
-		) == n
+		) == 0
 	);
-	uassert(kportal_read(inportal, data, n) == n);
+	uassert(kportal_read(inportal, data, n) == (ssize_t) n);
 
 #endif
 

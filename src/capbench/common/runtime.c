@@ -75,7 +75,8 @@ PUBLIC void runtime_finalize(void)
 {
 #if __NANVIX_USES_LWMPI
 	MPI_Finalize();
-#else
+#elif (MPI_NODES_NR > 1)
+	barrier_wait(ipc_barrier);
 	barrier_destroy(ipc_barrier);
 #endif
 }
@@ -88,13 +89,7 @@ PUBLIC void runtime_get_rank(int * rank)
 #if __NANVIX_USES_LWMPI
 	MPI_Comm_rank(MPI_COMM_WORLD, rank);
 #else
-
-	int index;
-
-	uassert((index = runtime_get_index()) >= 0);
-
-	*rank = ipc_processes[index].rank;
-
+	*rank = ipc_processes[runtime_get_index()].rank;
 #endif
 }
 
@@ -113,6 +108,7 @@ PUBLIC int runtime_get_index(void)
 		if (ipc_processes[i].tid == tid)
 			return (i);
 
+	kpanic("[capbench] This shouldn't happen.");
 	return (-1);
 
 #endif
@@ -124,7 +120,8 @@ PUBLIC int runtime_get_index(void)
 PUBLIC void runtime_fence(void)
 {
 #if !__NANVIX_USES_LWMPI
-	fence(&ipc_fence);
+	if (ipc_local_processes_nr > 1)
+		fence(&ipc_fence);
 #endif
 }
 
@@ -133,7 +130,7 @@ PUBLIC void runtime_fence(void)
  */
 PUBLIC void runtime_barrier(void)
 {
-#if !__NANVIX_USES_LWMPI
+#if !__NANVIX_USES_LWMPI && (MPI_NODES_NR > 1)
 	barrier_wait(ipc_barrier);
 #endif
 }
@@ -163,8 +160,61 @@ PRIVATE void * wrapper_do_slave(void * arg)
 		stdinbox_get_port(),
 		stdinportal_get_port()
 	);
+	uprintf("[cluster %d][rank %d][index %d] node %d, first %d, index %d, port %d.",
+		kcluster_get_num(),
+		rank,
+		runtime_get_index(),
+		node_from_rank(rank),
+		first_from_node(node_from_rank(rank)),
+		index_from_rank(rank),
+		port_from_rank(rank)
+	);
 
 	return (NULL);
+}
+
+PUBLIC int node_from_rank(int rank)
+{
+#if (__LWMPI_PROC_MAP == MPI_PROCESS_SCATTER)
+
+	return ((rank % MPI_NODES_NR) + MPI_BASE_NODE);
+
+#elif (__LWMPI_PROC_MAP == MPI_PROCESS_COMPACT)
+
+	return (((int) (rank / MPI_PROCS_PER_CLUSTER_MAX)) + MPI_BASE_NODE);
+
+#endif
+}
+
+PUBLIC int first_from_node(int node)
+{
+#if (__LWMPI_PROC_MAP == MPI_PROCESS_SCATTER)
+
+	return (node - MPI_BASE_NODE);
+
+#elif (__LWMPI_PROC_MAP == MPI_PROCESS_COMPACT)
+
+	return ((node - MPI_BASE_NODE) * MPI_PROCS_PER_CLUSTER_MAX);
+
+#endif
+}
+
+PUBLIC int index_from_rank(int rank)
+{
+#if (__LWMPI_PROC_MAP == MPI_PROCESS_SCATTER)
+
+	return ((rank - first_from_node(node_from_rank(rank))) / (((int) MPI_PROCESSES_NR / MPI_NODES_NR) + 1));
+
+#elif (__LWMPI_PROC_MAP == MPI_PROCESS_COMPACT)
+
+	return (rank - first_from_node(node_from_rank(rank)));
+
+#endif
+}
+
+PUBLIC int port_from_rank(int rank)
+{
+	return (index_from_rank(rank));
 }
 
 PRIVATE int spawn_processes(void)
@@ -172,7 +222,6 @@ PRIVATE int spawn_processes(void)
 	int first_pid;       /* First Local process ID. */
 	int local_processes; /* Test verification.      */
 	kthread_t tid;     /* Created thread ID.      */
-	int nodes[MPI_NODES_NR];
 
 	/* Checks if the current node will be active. */
 	if (knode_get_num() >= (MPI_BASE_NODE + MPI_NODES_NR))
@@ -183,6 +232,8 @@ PRIVATE int spawn_processes(void)
 
 	/* Initializes the std_barrier if more than a single cluster is active. */
 #if (MPI_NODES_NR > 1)
+
+	int nodes[MPI_NODES_NR];
 
 	/* Initializes list of nodes for stdbarrier. */
 	for (int i = 0; i < MPI_NODES_NR; ++i)
@@ -268,6 +319,7 @@ PRIVATE int spawn_processes(void)
 #if (__LWMPI_PROC_MAP == MPI_PROCESS_SCATTER)
 		for (int i = 1, id = (first_pid + MPI_NODES_NR); id < ipc_processes_nr; id += MPI_NODES_NR, ++i)
 #elif (__LWMPI_PROC_MAP == MPI_PROCESS_COMPACT)
+		UNUSED(ipc_processes_nr);
 		for (int i = 1, id = (first_pid + 1); i < ipc_local_processes_nr; i++, id++)
 #endif
 		{
@@ -297,12 +349,8 @@ PRIVATE int spawn_processes(void)
 	int cid = kcluster_get_num();
 	uprintf("[cluster %d][rank %d][index 0] Barrier among nodes.", cid, first_pid);
 	runtime_barrier();
-
-	if (ipc_local_processes_nr > 1)
-	{
-		uprintf("[cluster %d][rank %d][index 0] Fence among processes.", cid, first_pid);
-		runtime_fence();
-	}
+	uprintf("[cluster %d][rank %d][index 0] Fence among processes.", cid, first_pid);
+	runtime_fence();
 	uprintf("[cluster %d][rank %d][index 0] Correct initialization.", cid, first_pid);
 
 	int rank;
@@ -313,6 +361,16 @@ PRIVATE int spawn_processes(void)
 		runtime_get_index(),
 		stdinbox_get_port(),
 		stdinportal_get_port()
+	);
+
+	uprintf("[cluster %d][rank %d][index %d] node %d, first %d, index %d, port %d.",
+		kcluster_get_num(),
+		rank,
+		runtime_get_index(),
+		node_from_rank(rank),
+		first_from_node(node_from_rank(rank)),
+		index_from_rank(rank),
+		port_from_rank(rank)
 	);
 
 	return (0);

@@ -108,6 +108,13 @@
  * Communication                                                              *
  *============================================================================*/
 
+#if !__NANVIX_USES_LWMPI
+	EXTERN int node_from_rank(int rank);
+	EXTERN int first_from_node(int node);
+	EXTERN int index_from_rank(int rank);
+	EXTERN int port_from_rank(int rank);
+#endif
+
 	EXTERN uint64_t data_send(int outfd, void *data, size_t n);
 	EXTERN uint64_t data_receive(int infd, void *data, size_t n);
 
