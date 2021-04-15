@@ -68,7 +68,7 @@
 	/**
 	 * Initializes runtime.
 	 */
-	EXTERN void runtime_init(int argc, char **argv);
+	EXTERN int runtime_init(int argc, char **argv);
 
 	/**
 	 * Finalize runtime.
@@ -84,6 +84,16 @@
 	 * Gets process index.
 	 */
 	EXTERN int runtime_get_index(void);
+
+	/**
+	 * Waits on a fence.
+	 */
+	EXTERN void runtime_fence(void);
+
+	/**
+	 * Waits on a barrier.
+	 */
+	EXTERN void runtime_barrier(void);
 
 /*============================================================================*
  * Kernel                                                                     *

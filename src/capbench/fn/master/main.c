@@ -23,7 +23,6 @@
  */
 
 #include "../fn.h"
-#include <nanvix/sys/thread.h>
 
 /**
  * @brief K-Means Clustering Benchmark
@@ -33,7 +32,13 @@ int __main3(int argc, char **argv)
 	int rank;
 
 	/* Initialize runtime system. */
-	runtime_init(argc, argv);
+	if (runtime_init(argc, argv) != 0)
+	{
+		uprintf("[capbench] Unused node.");
+		return (0);
+	}
+
+	return (0);
 
 	/* Get rank. */
 	runtime_get_rank(&rank);

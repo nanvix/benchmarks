@@ -41,6 +41,17 @@ PRIVATE struct
 	[0 ... (MPI_PROCS_PER_CLUSTER_MAX - 1)] = {0, 0, 0, 0, 0, 0}
 };
 
+#if !__NANVIX_USES_LWMPI
+
+PRIVATE int ipc_rank_to_port(int rank)
+{
+	//index = rank - first_from_node(node_from_rank());
+
+	return (port_from_index(index_from_rank()))
+}
+
+#endif
+
 /*============================================================================*
  * Statistics                                                                 *
  *============================================================================*/
@@ -50,7 +61,7 @@ PRIVATE struct
  */
 PUBLIC uint64_t total()
 {
-	return (_statistics[curr_mpi_proc_index()].total);
+	return (_statistics[runtime_get_index()].total);
 }
 
 /**
@@ -58,7 +69,7 @@ PUBLIC uint64_t total()
  */
 PUBLIC void update_total(uint64_t amnt)
 {
-	_statistics[curr_mpi_proc_index()].total += amnt;
+	_statistics[runtime_get_index()].total += amnt;
 }
 
 /**
@@ -66,7 +77,7 @@ PUBLIC void update_total(uint64_t amnt)
  */
 PUBLIC uint64_t communication()
 {
-	return (_statistics[curr_mpi_proc_index()].communication);
+	return (_statistics[runtime_get_index()].communication);
 }
 
 /**
@@ -74,7 +85,7 @@ PUBLIC uint64_t communication()
  */
 PUBLIC void update_communication(uint64_t amnt)
 {
-	_statistics[curr_mpi_proc_index()].communication += amnt;
+	_statistics[runtime_get_index()].communication += amnt;
 }
 
 /**
@@ -82,7 +93,7 @@ PUBLIC void update_communication(uint64_t amnt)
  */
 PUBLIC size_t data_sent()
 {
-	return (_statistics[curr_mpi_proc_index()].data_sent);
+	return (_statistics[runtime_get_index()].data_sent);
 }
 
 /**
@@ -90,7 +101,7 @@ PUBLIC size_t data_sent()
  */
 PUBLIC size_t data_received()
 {
-	return (_statistics[curr_mpi_proc_index()].data_received);
+	return (_statistics[runtime_get_index()].data_received);
 }
 
 /**
@@ -98,7 +109,7 @@ PUBLIC size_t data_received()
  */
 PUBLIC unsigned nsend()
 {
-	return (_statistics[curr_mpi_proc_index()].nsend);
+	return (_statistics[runtime_get_index()].nsend);
 }
 
 /**
@@ -106,7 +117,7 @@ PUBLIC unsigned nsend()
  */
 PUBLIC unsigned nreceive()
 {
-	return (_statistics[curr_mpi_proc_index()].nreceive);
+	return (_statistics[runtime_get_index()].nreceive);
 }
 
 /*============================================================================*
@@ -120,20 +131,56 @@ PUBLIC uint64_t data_send(int outfd, void *data, size_t n)
 {
 	int local_index;
 
-	local_index = curr_mpi_proc_index();
+	local_index = runtime_get_index();
 
 	_statistics[local_index].nsend++;
 	_statistics[local_index].data_sent += n;
 
 	perf_start(0, PERF_CYCLES);
-	uassert(MPI_Send(
+
+#if __NANVIX_USES_LWMPI
+	uassert(
+		MPI_Send(
 			data,
 			n,
 			MPI_BYTE,
 			outfd,
 			0,
 			MPI_COMM_WORLD
-		) == 0);
+		) == 0
+	);
+#else
+
+	int outbox;
+	int outportal;
+	struct comm_info req;
+
+	uassert((outbox    = kmailbox_open(local, remote, port)) == 0);
+	uassert((outportal = kportal_open(local, remote, port))  == 0);
+
+	/* Config. communication. */
+	req.remote       = knode_get_num();
+	req.mailbox_port = kmailbox_get_port(outbox);
+	req.portal_port  = kportal_get_port(outportal);
+	req.size         = n;
+
+	/* Request a communication. */
+	uassert(
+		kmailbox_write(
+			outbox,
+			&req,
+			sizeof(struct comm_info)
+		) == sizeof(struct comm_info)
+	);
+
+	/* Send data. */
+	uassert(kportal_write(outportal, data, n) == n);
+
+	uassert(kmailbox_close(outbox)   == 0);
+	uassert(kportal_close(outportal) == 0);
+
+#endif
+
 	_statistics[local_index].communication += perf_read(0);
 
 	return (0);
@@ -146,13 +193,16 @@ PUBLIC uint64_t data_receive(int infd, void *data, size_t n)
 {
 	int local_index;
 
-	local_index = curr_mpi_proc_index();
+	local_index = runtime_get_index();
 
 	_statistics[local_index].nreceive++;
 	_statistics[local_index].data_received += n;
 
 	perf_start(0, PERF_CYCLES);
-	uassert(MPI_Recv(
+
+#if __NANVIX_USES_LWMPI
+	uassert(
+		MPI_Recv(
 			data,
 			n,
 			MPI_BYTE,
@@ -160,7 +210,39 @@ PUBLIC uint64_t data_receive(int infd, void *data, size_t n)
 			0,
 			MPI_COMM_WORLD,
 			MPI_STATUS_IGNORE
-		) == 0);
+		) == 0
+	);
+#else
+	int inbox;
+	int inportal;
+	struct comm_info req;
+
+	inbox    = __stdinbox_get();
+	inportal = __stdinportal_get();
+
+	/* Receive a Request. */
+	uassert(
+		kmailbox_read(
+			inbox,
+			&req,
+			sizeof(struct comm_info)
+		) == sizeof(struct comm_info)
+	);
+
+	uassert(req.size == n);
+
+	/* Read data. */
+	uassert(
+		kportal_allow(
+			inportal,
+			req.remote,
+			req.portal_port
+		) == n
+	);
+	uassert(kportal_read(inportal, data, n) == n);
+
+#endif
+
 	_statistics[local_index].communication += perf_read(0);
 
 	return (0);
