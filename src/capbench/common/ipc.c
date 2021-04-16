@@ -134,7 +134,13 @@ PUBLIC unsigned nreceive()
 
 #if !__NANVIX_USES_LWMPI
 
-#define COMM_INFO_MAX 256
+#define COMM_INFO_MAX (2 * 256)
+
+#define MATCH_INFO(data, _mode, _source, _target) \
+	(data.mode == _mode && data.source_rank == _source && data.target_rank == _target)
+
+#define INFO_MODE_REQUEST    1
+#define INFO_MODE_PERMISSION 2
 
 struct information 
 {
@@ -148,6 +154,7 @@ struct information
 	 */
 	struct data 
 	{
+		int mode;
 		int source_rank;
 		int target_rank;
 		int source_node;
@@ -155,84 +162,49 @@ struct information
 		int portal_port;
 		size_t size;
 	} data;
-};
+} infos[COMM_INFO_MAX];
 
-PRIVATE struct information read_infos[COMM_INFO_MAX];
-PRIVATE struct information write_infos[COMM_INFO_MAX];
+PRIVATE struct resource_arrangement free_infos;
+PRIVATE struct resource_arrangement buffered_infos;
 
-PRIVATE struct resource_arrangement free_requests;
-PRIVATE struct resource_arrangement free_permissions;
-PRIVATE struct resource_arrangement read_requests;
-PRIVATE struct resource_arrangement write_permissions;
-
-PRIVATE spinlock_t ipc_request;
-PRIVATE spinlock_t ipc_permission;
+PRIVATE spinlock_t ipc_lock;
 
 /**
  * @brief Init request queue.
  */
 PUBLIC void data_init(void)
 {
-	free_requests     = RESOURCE_ARRANGEMENT_INITIALIZER;
-	free_permissions  = RESOURCE_ARRANGEMENT_INITIALIZER;
-	read_requests     = RESOURCE_ARRANGEMENT_INITIALIZER;
-	write_permissions = RESOURCE_ARRANGEMENT_INITIALIZER;
+	free_infos     = RESOURCE_ARRANGEMENT_INITIALIZER;
+	buffered_infos = RESOURCE_ARRANGEMENT_INITIALIZER;
 
 	for (int i = 0; i < COMM_INFO_MAX; ++i)
 	{
 		/* Populate free requests.    */
-		read_infos[i].resource = RESOURCE_INITIALIZER;
-		resource_enqueue(&free_requests, &read_infos[i].resource);
-
-		/* Populate free permissions. */
-		write_infos[i].resource = RESOURCE_INITIALIZER;
-		resource_enqueue(&free_permissions, &write_infos[i].resource);
+		infos[i].resource = RESOURCE_INITIALIZER;
+		resource_enqueue(&free_infos, &infos[i].resource);
 	}
 
-	spinlock_init(&ipc_request);
-	spinlock_init(&ipc_permission);
+	spinlock_init(&ipc_lock);
 }
 
 /**
- * @brief Wanted source rank.
+ * @brief Wanted match.
  */
-PRIVATE int request_source;
-PRIVATE int request_target;
-PRIVATE int permission_source;
-PRIVATE int permission_target;
-
-#define MATCH_INFO(data, source, target) (data.source_rank == source && data.target_rank == target)
+PRIVATE int verify_mode;
+PRIVATE int verify_source;
+PRIVATE int verify_target;
 
 /**
  * @brief Verify if a request contains the wanted source rank.
  */
-PRIVATE bool ipc_verify_request(struct resource * r)
+PRIVATE bool ipc_verify(struct resource * r)
 {
-	struct information * request = (struct information *) r;
+	struct information * info = (struct information *) r;
 
-	return (MATCH_INFO(request->data, request_source, request_target));
+	return (MATCH_INFO(info->data, verify_mode, verify_source, verify_target));
 }
 
-/**
- * @brief Verify if a request contains the wanted source rank.
- */
-PRIVATE bool ipc_verify_permission(struct resource * r)
-{
-	struct information * permission = (struct information *) r;
-
-	return (MATCH_INFO(permission->data, permission_source, permission_target));
-}
-
-struct information * ipc_read_information(
-	int source,
-	int target,
-	int * vsource,
-	int * vtarget,
-	verify_fn verify,
-	struct resource_arrangement * frees,
-	struct resource_arrangement * buffered,
-	spinlock_t * lock
-)
+struct information * ipc_read_information(int source, int target, int mode)
 {
 	struct information * info;
 	int inbox = stdinbox_get();
@@ -242,27 +214,28 @@ struct information * ipc_read_information(
 
 	do
 	{
-		spinlock_lock(lock);
+		spinlock_lock(&ipc_lock);
 
 			/* Didn't the previous read the expected information? */
 			if (info != NULL)
-				resource_enqueue(buffered, &info->resource);
+				resource_enqueue(&buffered_infos, &info->resource);
 
 			/* Does another process read this? */
-			*vsource = source;
-			*vtarget = target;
-			info = (struct information *) resource_remove_verify(buffered, verify);
+			verify_source = source;
+			verify_target = target;
+			verify_mode   = mode;
+			info = (struct information *) resource_remove_verify(&buffered_infos, ipc_verify);
 
 			/* Not found? Alloc a new one. */
 			if (info == NULL)
 			{
-				uassert((info = (struct information *) resource_dequeue(frees)) != NULL);
+				uassert((info = (struct information *) resource_dequeue(&free_infos)) != NULL);
 				info->data.source_rank = -1;
 			}
 
-		spinlock_unlock(lock);
+		spinlock_unlock(&ipc_lock);
 
-		if (MATCH_INFO(info->data, source, target))
+		if (MATCH_INFO(info->data, mode, source, target))
 			break;
 
 		/* Receive a Request. */
@@ -274,17 +247,17 @@ struct information * ipc_read_information(
 			) == sizeof(struct data)
 		);
 
-	} while (!MATCH_INFO(info->data, source, target));
+	} while (!MATCH_INFO(info->data, mode, source, target));
 
 	return (info);
 }
 
-void ipc_release_information(struct information * info, struct resource_arrangement * frees, spinlock_t * lock)
+void ipc_release_information(struct information * info)
 {
-	spinlock_lock(lock);
+	spinlock_lock(&ipc_lock);
 		info->data.source_rank = -1;
-		resource_enqueue(frees, &info->resource);
-	spinlock_unlock(lock);
+		resource_enqueue(&free_infos, &info->resource);
+	spinlock_unlock(&ipc_lock);
 }
 
 #endif
@@ -333,35 +306,32 @@ PUBLIC uint64_t data_send(int outfd, void *data, size_t n)
 	remote = node_from_rank(outfd);
 	local  = knode_get_num();
 
-#if DEBUG
-	uprintf("[process %d] P<- Waits a permission from process %d", rank, outfd);
+#if DEBUG && DEBUG_IPC
+		uprintf("\033[0%sm[process %d] P<- Waits a permission from process %d\033[0m",
+			(rank == 0) ? ";31" : ((rank == 1) ? ";32" : ""),
+			rank,
+			outfd
+		);
 #endif
 
 	/**
 	 * Waits for a permission.
 	 */
-	perm = ipc_read_information(
-		outfd,
-		rank,
-		&permission_source,
-		&permission_target,
-		ipc_verify_permission,
-		&free_permissions,
-		&write_permissions,
-		&ipc_permission
-	);
+	perm = ipc_read_information(outfd, rank, INFO_MODE_PERMISSION);
 
 		/* Assert permission information. */
 		uassert(perm->data.source_rank == outfd);
 		uassert(perm->data.target_rank == rank);
+		uassert(perm->data.mode        == INFO_MODE_PERMISSION);
 
-	ipc_release_information(perm, &free_permissions, &ipc_permission);
+	ipc_release_information(perm);
 
 	/* Open channels. */
 	uassert((outbox    = kmailbox_open(remote, port)) >= 0);
 	uassert((outportal = kportal_open(local, remote, port))  >= 0);
 
 		/* Config. communication. */
+		req.data.mode         = INFO_MODE_REQUEST;
 		req.data.source_rank  = rank;
 		req.data.target_rank  = outfd;
 		req.data.source_node  = local;
@@ -369,8 +339,9 @@ PUBLIC uint64_t data_send(int outfd, void *data, size_t n)
 		req.data.portal_port  = kportal_get_port(outportal);
 		req.data.size         = n;
 
-#if DEBUG
-		uprintf("[process %d] ->M Send message to process %d: source_node:%d, mailbox:%d, portal:%d | remote:%d, port:%d",
+#if DEBUG && DEBUG_IPC
+		uprintf("\033[0%sm[process %d] ->R Send request to process %d: source_node:%d, mailbox:%d, portal:%d | remote:%d, port:%d\033[0m",
+			(rank == 0) ? ";31" : ((rank == 1) ? ";32" : ""),
 			req.data.source_rank,
 			req.data.target_rank,
 			req.data.source_node,
@@ -390,12 +361,33 @@ PUBLIC uint64_t data_send(int outfd, void *data, size_t n)
 			) == sizeof(struct data)
 		);
 
+#if DEBUG && DEBUG_IPC
+		uprintf("\033[0%sm[process %d] ->M Send message to process %d: source_node:%d, mailbox:%d, portal:%d | remote:%d, port:%d\033[0m",
+			(rank == 0) ? ";31" : ((rank == 1) ? ";32" : ""),
+			req.data.source_rank,
+			req.data.target_rank,
+			req.data.source_node,
+			req.data.mailbox_port,
+			req.data.portal_port,
+			remote,
+			port
+		);
+#endif
+
 		/* Send data. */
 		uassert(kportal_write(outportal, data, n) == (ssize_t) n);
 
 	/* Close channels. */
 	uassert(kmailbox_close(outbox)   == 0);
 	uassert(kportal_close(outportal) == 0);
+
+#if DEBUG && DEBUG_IPC
+		uprintf("\033[0%sm[process %d] ->X Finish send from process %d\033[0m",
+			(rank == 0) ? ";31" : ((rank == 1) ? ";32" : ""),
+			rank,
+			outfd
+		);
+#endif
 
 #endif
 
@@ -454,6 +446,7 @@ PUBLIC uint64_t data_receive(int infd, void *data, size_t n)
 	uassert((outbox = kmailbox_open(remote, port)) >= 0);
 
 		/* Config. communication. */
+		perm.data.mode         = INFO_MODE_PERMISSION;
 		perm.data.source_rank  = rank;
 		perm.data.target_rank  = infd;
 		perm.data.source_node  = local;
@@ -461,8 +454,9 @@ PUBLIC uint64_t data_receive(int infd, void *data, size_t n)
 		perm.data.portal_port  = -1;
 		perm.data.size         = -1;
 
-#if DEBUG
-		uprintf("[process %d] P-> Send a permission to process %d: source_node:%d, mailbox:%d, portal:%d | remote:%d, port:%d",
+#if DEBUG && DEBUG_IPC
+		uprintf("\033[0%sm[process %d] P-> Send a permission to process %d: source_node:%d, mailbox:%d, portal:%d | remote:%d, port:%d\033[0m",
+			(rank == 0) ? ";31" : ((rank == 1) ? ";32" : ""),
 			perm.data.source_rank,
 			perm.data.target_rank,
 			perm.data.source_node,
@@ -485,24 +479,25 @@ PUBLIC uint64_t data_receive(int infd, void *data, size_t n)
 	/* Close channels. */
 	uassert(kmailbox_close(outbox) == 0);
 
+#if DEBUG && DEBUG_IPC
+	if (rank >= 0)
+		uprintf("\33[0%sm[process %d] R<- Waits a request from process %d\33[0m",
+			(rank == 0) ? ";31" : ((rank == 1) ? ";32" : ""),
+			rank,
+			infd
+		);
+#endif
+
 	/**
 	 * Waits for a request.
 	 */
-	req = ipc_read_information(
-		infd,
-		rank,
-		&request_source,
-		&request_target,
-		ipc_verify_request,
-		&free_requests,
-		&read_requests,
-		&ipc_request
-	);
+	req = ipc_read_information(infd, rank, INFO_MODE_REQUEST);
 
-#if DEBUG
-		uprintf("[process %d] M<- Read message from process %d: mailbox:%d, portal:%d",
-			req->data.source_rank,
+#if DEBUG && DEBUG_IPC
+		uprintf("\033[0%sm[process %d] M<- Read message from process %d: mailbox:%d, portal:%d\033[0m",
+			(rank == 0) ? ";31" : ((rank == 1) ? ";32" : ""),
 			req->data.target_rank,
+			req->data.source_rank,
 			req->data.mailbox_port,
 			req->data.portal_port
 		);
@@ -512,6 +507,7 @@ PUBLIC uint64_t data_receive(int infd, void *data, size_t n)
 		uassert(req->data.size        == n);
 		uassert(req->data.source_rank == infd);
 		uassert(req->data.target_rank == rank);
+		uassert(req->data.mode        == INFO_MODE_REQUEST);
 
 		inportal = stdinportal_get();
 
@@ -525,7 +521,15 @@ PUBLIC uint64_t data_receive(int infd, void *data, size_t n)
 		);
 		uassert(kportal_read(inportal, data, n) == (ssize_t) n);
 
-	ipc_release_information(req, &free_requests, &ipc_request);
+	ipc_release_information(req);
+
+#if DEBUG && DEBUG_IPC
+		uprintf("\033[0%sm[process %d] X<- Finish read from process %d\033[0m",
+			(rank == 0) ? ";31" : ((rank == 1) ? ";32" : ""),
+			rank,
+			infd
+		);
+#endif
 
 #endif
 
