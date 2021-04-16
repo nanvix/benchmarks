@@ -74,6 +74,12 @@
 	 */
 	#define PROCS_PER_CLUSTER_MAX MPI_PROCS_PER_CLUSTER_MAX
 
+#if __NANVIX_USES_LWMPI
+	#define RUNTIME_RULE "mpi"
+#else
+	#define RUNTIME_RULE "ipc"
+#endif
+
 	/**
 	 * Initializes runtime.
 	 */

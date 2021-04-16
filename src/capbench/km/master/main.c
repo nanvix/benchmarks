@@ -50,21 +50,22 @@ int __main3(int argc, char **argv)
 
 		/* Print timing statistics. */
 		uprintf("---------------------------------------------");
-		uprintf("[capbench][km] timing statistics:");
-		uprintf("[capbench][km]   master:         %l", master);
+		uprintf("[capbench][km][%s] timing statistics:", RUNTIME_RULE);
+		uprintf("[capbench][km][%s]   master:         %l", RUNTIME_RULE, master);
 		for (int i = 0; i < PROBLEM_NUM_WORKERS; i++)
 		{
-			uprintf("[capbench][km]   slave %s%d:       %l",
+			uprintf("[capbench][km][%s]   slave %s%d:       %l",
+				RUNTIME_RULE,
 				(i < 10) ? " " : "",
 				i, slave[i]);
 		}
-		uprintf("[capbench][km]   communication:  %l", communication());
-		uprintf("[capbench][km]   total time:     %l", total());
-		uprintf("[capbench][km] data exchange statistics:");
-		uprintf("[capbench][km]   data sent:            %d", (int)data_sent());
-		uprintf("[capbench][km]   number sends:         %d", nsend());
-		uprintf("[capbench][km]   data received:        %d", (int)data_received());
-		uprintf("[capbench][km]   number receives:      %d", nreceive());
+		uprintf("[capbench][km][%s]   communication:  %l", RUNTIME_RULE, communication());
+		uprintf("[capbench][km][%s]   total time:     %l", RUNTIME_RULE, total());
+		uprintf("[capbench][km][%s] data exchange statistics:", RUNTIME_RULE);
+		uprintf("[capbench][km][%s]   data sent:            %d", RUNTIME_RULE, (int)data_sent());
+		uprintf("[capbench][km][%s]   number sends:         %d", RUNTIME_RULE, nsend());
+		uprintf("[capbench][km][%s]   data received:        %d", RUNTIME_RULE, (int)data_received());
+		uprintf("[capbench][km][%s]   number receives:      %d", RUNTIME_RULE, nreceive());
 		uprintf("---------------------------------------------");
 	}
 	else
