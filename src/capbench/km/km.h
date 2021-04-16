@@ -47,12 +47,5 @@
 	extern float *vector_assign(float *v1, const float *v2);
 	extern int vector_equal(const float *v1, const float *v2);
 
-/*============================================================================*
- * Kernel                                                                     *
- *============================================================================*/
-
-	extern void do_master();
-	extern void do_slave();
-
 #endif /* _KM_H_ */
 

@@ -231,9 +231,9 @@ static void get_results(void)
 
 void do_master(void)
 {
-#if DEBUG
+//#if DEBUG
 	int i = 0;
-#endif
+//endif
 
 #if VERBOSE
 	uprintf("initializing...");
@@ -242,27 +242,27 @@ void do_master(void)
 	/* Benchmark initialization. */
 	initialize_variables();
 
-#if VERBOSE
+//#if VERBOSE
 	uprintf("sending work...");
-#endif /* VERBOSE */
+//#endif /* VERBOSE */
 
 	send_work();
 
-#if VERBOSE
+//#if VERBOSE
 	uprintf("clustering data...");
-#endif /* VERBOSE */
+//#endif /* VERBOSE */
 
 	/* Cluster data. */
 	do
 	{
-#if DEBUG
+//#if DEBUG
 	uprintf("iteration %d...", ++i);
-#endif /* DEBUG */
+//#endif /* DEBUG */
 	} while (sync());
 
-#if DEBUG
+//#if DEBUG
 	uprintf("getting results...");
-#endif /* DEBUG */
+//#endif /* DEBUG */
 
 	get_results();
 

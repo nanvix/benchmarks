@@ -67,6 +67,8 @@ PUBLIC int runtime_init(int argc, char **argv)
 	UNUSED(argc);
 	UNUSED(argv);
 
+	data_init();
+
 	return (spawn_processes());
 #endif
 }
@@ -146,32 +148,18 @@ PRIVATE void * wrapper_do_slave(void * arg)
 
 	UNUSED(arg);
 
-	uprintf("[cluster %d][rank %d][index %d][run] Running %d.",
-		kthread_self()
-	);
-
-	runtime_fence();
-
 	__stdmailbox_setup();
 	__stdportal_setup();
 
+	runtime_fence();
+
 	runtime_get_rank(&rank);
-	uprintf("[cluster %d][rank %d][index %d][run] Running (port %d : %d).",
-		kcluster_get_num(),
-		rank,
-		runtime_get_index(),
-		stdinbox_get_port(),
-		stdinportal_get_port()
-	);
-	uprintf("[cluster %d][rank %d][index %d] node %d, first %d, index %d, port %d.",
-		kcluster_get_num(),
-		rank,
-		runtime_get_index(),
-		node_from_rank(rank),
-		first_from_node(node_from_rank(rank)),
-		index_from_rank(rank),
-		port_from_rank(rank)
-	);
+
+	uprintf("Slave process %d executing...", rank);
+
+	do_slave();
+
+	uprintf("Slave process %d done...", rank);
 
 	return (NULL);
 }
@@ -360,26 +348,6 @@ PRIVATE int spawn_processes(void)
 	uprintf("[cluster %d][rank %d][index 0] Fence among processes.", cid, first_pid);
 	runtime_fence();
 	uprintf("[cluster %d][rank %d][index 0] Correct initialization.", cid, first_pid);
-
-	int rank;
-	runtime_get_rank(&rank);
-	uprintf("[cluster %d][rank %d][index %d] Running (port %d : %d).",
-		kcluster_get_num(),
-		rank,
-		runtime_get_index(),
-		stdinbox_get_port(),
-		stdinportal_get_port()
-	);
-
-	uprintf("[cluster %d][rank %d][index %d] node %d, first %d, index %d, port %d.",
-		kcluster_get_num(),
-		rank,
-		runtime_get_index(),
-		node_from_rank(rank),
-		first_from_node(node_from_rank(rank)),
-		index_from_rank(rank),
-		port_from_rank(rank)
-	);
 
 	return (0);
 }

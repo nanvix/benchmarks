@@ -50,8 +50,5 @@
 		int den;
 	};
 
-	extern void do_master(void);
-	extern void do_slave(void);
-
 #endif /* _FN_H_ */
 

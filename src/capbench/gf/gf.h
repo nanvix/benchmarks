@@ -62,8 +62,5 @@
 	#define CHUNK_WITH_HALO_SIZE    (PROBLEM_CHUNK_SIZE + PROBLEM_MASKSIZE - 1)
 	#define CHUNK_WITH_HALO_SIZE2 (CHUNK_WITH_HALO_SIZE * CHUNK_WITH_HALO_SIZE)
 
-	extern void do_master(void);
-	extern void do_slave(void);
-
 #endif /* _GF_H_ */
 

@@ -22,6 +22,13 @@
  * SOFTWARE.
  */
 
+#if !__NANVIX_USES_LWMPI
+
+#define __NEED_RESOURCE
+#include <nanvix/hal/resource.h>
+
+#endif
+
 #include "../common.h"
 
 #if __NANVIX_USES_LWMPI
@@ -127,14 +134,65 @@ PUBLIC unsigned nreceive()
 
 #if !__NANVIX_USES_LWMPI
 
-struct comm_info
+#define COMM_INFO_MAX 256
+
+PRIVATE struct request 
 {
-	int target;
-	int source;
-	int mailbox_port;
-	int portal_port;
-	size_t size;
-};
+	/*
+	 * XXX: Don't Touch! This Must Come First!
+	 */
+	struct resource resource; /**< Generic resource information. */
+
+	/**
+	 * Information.
+	 */
+	struct info
+	{
+		int source_rank;
+		int target_rank;
+		int source_node;
+		int mailbox_port;
+		int portal_port;
+		size_t size;
+	} info;
+
+} requests[COMM_INFO_MAX];
+
+PRIVATE struct resource_arrangement free_requests;
+PRIVATE struct resource_arrangement buffered_requests;
+PRIVATE spinlock_t ipc_lock;
+
+/**
+ * @brief Init request queue.
+ */
+PUBLIC void data_init(void)
+{
+	free_requests     = RESOURCE_ARRANGEMENT_INITIALIZER;
+	buffered_requests = RESOURCE_ARRANGEMENT_INITIALIZER;
+
+	for (int i = 0; i < COMM_INFO_MAX; ++i)
+	{
+		requests[i].resource = RESOURCE_INITIALIZER;
+		resource_enqueue(&free_requests, &requests[i].resource);
+	}
+
+	spinlock_init(&ipc_lock);
+}
+
+/**
+ * @brief Wanted source rank.
+ */
+PRIVATE int wanted_source_rank;
+
+/**
+ * @brief Verify if a request contains the wanted source rank.
+ */
+PRIVATE bool ipc_verify(struct resource * r)
+{
+	struct request * request = (struct request *) r;
+
+	return (request->info.source_rank == wanted_source_rank);
+}
 
 #endif
 
@@ -169,30 +227,45 @@ PUBLIC uint64_t data_send(int outfd, void *data, size_t n)
 
 	int outbox;
 	int outportal;
-	struct comm_info req;
+	struct request req;
 
 	int local  = knode_get_num();
 	int remote = node_from_rank(outfd);
 	int port   = port_from_rank(outfd);
 
 	/* Open channels. */
-	uassert((outbox    = kmailbox_open(remote, port)) == 0);
-	uassert((outportal = kportal_open(local, remote, port))  == 0);
+	uassert((outbox    = kmailbox_open(remote, port)) >= 0);
+	uassert((outportal = kportal_open(local, remote, port))  >= 0);
 
 	/* Config. communication. */
-	req.target       = outfd;
-	req.source       = local;
-	req.mailbox_port = kmailbox_get_port(outbox);
-	req.portal_port  = kportal_get_port(outportal);
-	req.size         = n;
+	req.info.target_rank  = outfd;
+	runtime_get_rank(&req.info.source_rank);
+	req.info.source_node  = local;
+	req.info.mailbox_port = kmailbox_get_port(outbox);
+	req.info.portal_port  = kportal_get_port(outportal);
+	req.info.size         = n;
+
+#if DEBUG
+	uprintf("[process %d] Send message (out:%d): source_rank:%d, target_rank:%d, source_node:%d, mailbox:%d, portal:%d | remote:%d, port:%d",
+		req.info.source_rank,
+		outfd,
+		req.info.source_rank,
+		req.info.target_rank,
+		req.info.source_node,
+		req.info.mailbox_port,
+		req.info.portal_port,
+		remote,
+		port
+	);
+#endif
 
 	/* Request a communication. */
 	uassert(
 		kmailbox_write(
 			outbox,
-			&req,
-			sizeof(struct comm_info)
-		) == sizeof(struct comm_info)
+			&req.info,
+			sizeof(struct info)
+		) == sizeof(struct info)
 	);
 
 	/* Send data. */
@@ -239,36 +312,91 @@ PUBLIC uint64_t data_receive(int infd, void *data, size_t n)
 
 #else
 
+	int rank;
 	int inbox;
 	int inportal;
-	struct comm_info req;
+	struct request * req;
+
+	runtime_get_rank(&rank);
 
 	/* Gets input channels. */
 	inbox    = stdinbox_get();
 	inportal = stdinportal_get();
 
-	/* Receive a Request. */
-	uassert(
-		kmailbox_read(
-			inbox,
-			&req,
-			sizeof(struct comm_info)
-		) == sizeof(struct comm_info)
+	req = NULL;
+
+	do
+	{
+		spinlock_lock(&ipc_lock);
+
+			/* Didn't the previous read the expected request? */
+			if (req != NULL)
+			{
+				uassert(req->resource.next == NULL);
+				resource_enqueue(&buffered_requests, &req->resource);
+			}
+
+			/* Does another process read this? */
+			wanted_source_rank = infd;
+			req = (struct request *) resource_remove_verify(&buffered_requests, ipc_verify);
+
+			/* Not found? Alloc a new one. */
+			if (req == NULL)
+			{
+				uassert((req = (struct request *) resource_dequeue(&free_requests)) != NULL);
+				req->info.source_rank = -1;
+				uassert(req->resource.next == NULL);
+			}
+			else
+				uassert(req->resource.next == NULL);
+
+		spinlock_unlock(&ipc_lock);
+
+		if (req->info.source_rank == infd)
+			break;
+
+		/* Receive a Request. */
+		uassert(
+			kmailbox_read(
+				inbox,
+				&req->info,
+				sizeof(struct info)
+			) == sizeof(struct info)
+		);
+
+	} while (req->info.source_rank != infd);
+
+#if DEBUG
+	uprintf("[process %d] Read message (in:%d): source_rank:%d, target_rank:%d, mailbox:%d, portal:%d",
+		rank,
+		infd,
+		req->info.source_rank,
+		req->info.target_rank,
+		req->info.mailbox_port,
+		req->info.portal_port
 	);
+#endif
 
 	/* Assert communication size. */
-	uassert(req.size   == n);
-	uassert(req.target == infd);
+	uassert(req->info.size        == n);
+	uassert(req->info.source_rank == infd);
+	uassert(req->info.target_rank == rank);
 
 	/* Read data. */
 	uassert(
 		kportal_allow(
 			inportal,
-			req.source,
-			req.portal_port
+			req->info.source_node,
+			req->info.portal_port
 		) == 0
 	);
 	uassert(kportal_read(inportal, data, n) == (ssize_t) n);
+
+	spinlock_lock(&ipc_lock);
+		req->info.source_rank = -1;
+		uassert(req->resource.next == NULL);
+		resource_enqueue(&free_requests, &req->resource);
+	spinlock_unlock(&ipc_lock);
 
 #endif
 

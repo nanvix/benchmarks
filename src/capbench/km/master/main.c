@@ -38,8 +38,6 @@ int __main3(int argc, char **argv)
 		return (0);
 	}
 
-	return (0);
-
 	/* Gets rank. */
 	runtime_get_rank(&rank);
 

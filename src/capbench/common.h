@@ -95,6 +95,15 @@
 	 */
 	EXTERN void runtime_barrier(void);
 
+#if !__NANVIX_USES_LWMPI
+
+	/**
+	 * Init request queues.
+	 */
+	EXTERN void data_init(void);
+
+#endif
+
 /*============================================================================*
  * Kernel                                                                     *
  *============================================================================*/
@@ -103,6 +112,9 @@
 	 * Number of workers.
 	 */
 	#define PROBLEM_NUM_WORKERS (PROCESSES_NR - 1)
+
+	extern void do_master(void);
+	extern void do_slave(void);
 
 /*============================================================================*
  * Communication                                                              *
