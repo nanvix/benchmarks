@@ -38,6 +38,8 @@ uint64_t master = 0;                 /* Time spent on master.       */
 uint64_t spawn = 0;                  /* Time spent spawning slaves. */
 uint64_t slave[PROBLEM_NUM_WORKERS]; /* Time spent on slaves.       */
 
+static int current_chunk = 0;
+
 /**
  * @brief Kernel Data
  */
@@ -49,6 +51,158 @@ static unsigned char chunk[CHUNK_WITH_HALO_SIZE2]; /* Working Chunk */
 /**@}*/
 
 #define HALF (PROBLEM_MASKSIZE/2)
+
+#define CHUNKS_PER_IMAGE (PROBLEM_IMGDIMENSION2 / PROBLEM_CHUNK_SIZE2)
+#define TOTAL_CHUNKS                (CHUNKS_PER_IMAGE * FPS * SECONDS)
+
+static void generate_image(void)
+{
+	for (int i = 0; i < PROBLEM_IMGSIZE2; i++)
+		img[i] = randnum() & 0xff;
+}
+
+static void send_work(void)
+{
+	int ii;
+	int jj;
+	int msg = MSG_CHUNK;
+	int ck;
+	int last_chunk;
+
+	while (current_chunk < TOTAL_CHUNKS)
+	{
+#if DEBUG
+		uprintf("Generating new image");
+#endif
+		/* Generates a new image to be processed. */
+		perf_start(0, PERF_CYCLES);
+			generate_image();
+		master += perf_read(0);
+
+		ii = 0;
+		jj = 0;
+
+		for (int i = HALF; i < PROBLEM_IMGSIZE - HALF; i += PROBLEM_CHUNK_SIZE)
+		{
+			for (int j = HALF; j < PROBLEM_IMGSIZE - HALF; j += PROBLEM_CHUNK_SIZE)
+			{
+				ck = current_chunk % PROBLEM_NUM_WORKERS;
+
+				if (current_chunk >= PROBLEM_NUM_WORKERS)
+				{
+#if DEBUG
+					uprintf("Receiving data from rank %d", ck+1);
+#endif
+					/* Receives a chunk from the slave. */
+					data_receive(ck + 1, chunk, PROBLEM_CHUNK_SIZE2*sizeof(unsigned char));
+					perf_start(0, PERF_CYCLES);
+
+						for (int k = 0; k < PROBLEM_CHUNK_SIZE; k++)
+						{
+							umemcpy(
+								&newimg[(ii + k)*PROBLEM_IMGSIZE + jj],
+								&chunk[k*PROBLEM_CHUNK_SIZE],
+								PROBLEM_CHUNK_SIZE*sizeof(unsigned char)
+							);
+						}
+
+						jj += PROBLEM_CHUNK_SIZE;
+						if ((jj + PROBLEM_MASKSIZE - 1) == PROBLEM_IMGSIZE)
+						{
+							jj = 0;
+							ii += PROBLEM_CHUNK_SIZE;
+						}
+
+					master += perf_read(0);
+				}
+
+				perf_start(0, PERF_CYCLES);
+
+					/* Build chunk. */
+					for (int k = 0; k < CHUNK_WITH_HALO_SIZE; k++)
+					{
+						umemcpy(
+							&chunk[k*CHUNK_WITH_HALO_SIZE],
+							&img[(i - HALF + k)*PROBLEM_IMGSIZE + j - HALF],
+							CHUNK_WITH_HALO_SIZE*sizeof(unsigned char)
+						);
+					}
+
+				master += perf_read(0);
+
+#if DEBUG
+				uprintf("Sending chunk to rank %d", ck+1);
+#endif
+				/* Sending chunk to slave. */
+				data_send(ck + 1, &msg, sizeof(int));
+				data_send(ck + 1, chunk, CHUNK_WITH_HALO_SIZE2*sizeof(unsigned char));
+
+				/* Remaining chunks of this image need a receive before. */
+				current_chunk++;
+
+				if (current_chunk >= TOTAL_CHUNKS)
+					last_chunk = ck;
+			}
+		}
+	}
+
+	/* Get remaining chunks. */
+	for (int i = last_chunk + 1; i != last_chunk; i++)
+	{
+		if (i == PROBLEM_NUM_WORKERS)
+			i = 0;
+
+#if DEBUG
+		uprintf("Receiving last chunk from rank %d", i+1);
+#endif
+
+		data_receive(i + 1, chunk, PROBLEM_CHUNK_SIZE2*sizeof(unsigned char));
+
+		perf_start(0, PERF_CYCLES);
+
+		/* Build chunk. */
+		for (int k = 0; k < PROBLEM_CHUNK_SIZE; k++)
+		{
+			umemcpy(
+				&newimg[(ii + k)*PROBLEM_IMGSIZE + jj],
+				&chunk[k*PROBLEM_CHUNK_SIZE],
+				PROBLEM_CHUNK_SIZE*sizeof(unsigned char)
+			);
+		}
+
+		master += perf_read(0);
+
+		jj += PROBLEM_CHUNK_SIZE;
+		if ((jj+PROBLEM_MASKSIZE-1) == PROBLEM_IMGSIZE)
+		{
+			jj = 0;
+			ii += PROBLEM_CHUNK_SIZE;
+		}
+
+		if ((ii+PROBLEM_MASKSIZE-1) == PROBLEM_IMGSIZE)
+			ii = 0;
+	}
+
+#if DEBUG
+	uprintf("Receiving final chunk from rank %d", last_chunk + 1);
+#endif
+
+	data_receive(last_chunk + 1, chunk, PROBLEM_CHUNK_SIZE2*sizeof(unsigned char));
+
+	perf_start(0, PERF_CYCLES);
+
+		/* Build chunk. */
+		for (int k = 0; k < PROBLEM_CHUNK_SIZE; k++)
+		{
+			umemcpy(
+				&newimg[(ii + k)*PROBLEM_IMGSIZE + jj],
+				&chunk[k*PROBLEM_CHUNK_SIZE],
+				PROBLEM_CHUNK_SIZE*sizeof(unsigned char)
+			);
+		}
+
+	master += perf_read(0);
+}
 
 static void process_chunks(void)
 {
@@ -142,8 +296,10 @@ static void process_chunks(void)
 /* Gaussian filter. */
 static void gauss_filter(void)
 {
+	send_work();
+
 	/* Processing the chunks. */
-	process_chunks();
+	//process_chunks();
 }
 
 static void generate_mask(void)
@@ -174,8 +330,8 @@ static void generate_mask(void)
 
 static void init(void)
 {
-	for (int i = 0; i < PROBLEM_IMGSIZE2; i++)
-		img[i] = randnum() & 0xff;
+	//generate_image();
+
 	generate_mask();
 
 	/* Send mask to slaves. */
@@ -211,30 +367,16 @@ void do_master(void)
 
 	init();
 
-	for (int i = 0; i < FPS * SECONDS; ++i)
-	{
 #if VERBOSE
-		uprintf("applying filter in frame %d...\n", i);
+	uprintf("applying filter...\n");
 #endif /* VERBOSE */
 
-		/* Apply filter. */
-		gauss_filter();
-
-#if VERBOSE
-		uprintf("updating next image...\n");
-#endif /* DEBUG */
-
-		/* Updates new img to be processed. */
-		update_image();
-	}
+	/* Apply filter. */
+	gauss_filter();
 
 #if VERBOSE
 		uprintf("preparing to collect statistics...\n");
 #endif /* VERBOSE */
-
-	int teste = (PROBLEM_IMGDIMENSION*PROBLEM_IMGDIMENSION) / (PROBLEM_CHUNK_SIZE2);
-	uprintf("TESTE: %d", teste);
-	uprintf("Chunk size: %d", PROBLEM_CHUNK_SIZE);
 
 	/* Release slaves and collect statistics. */
 	finalize();
