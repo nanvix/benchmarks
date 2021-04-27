@@ -47,7 +47,7 @@
  * @brief Write Size
  */
 #ifndef __NUM_PAGES
-#define __NUM_PAGES RCACHE_LENGTH
+#define __NUM_PAGES RMEM_CACHE_LENGTH
 #endif
 
 /**
