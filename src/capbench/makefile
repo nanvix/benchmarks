@@ -31,13 +31,13 @@ export SRC = $(wildcard $(CURDIR)/common/*.c)
 #===============================================================================
 
 # Builds Everything
-all: all-km all-fn all-gf
+all: all-km all-fn all-gf all-all-to-all
 
 # Cleans Build Objects
-clean: clean-km clean-fn clean-gf
+clean: clean-km clean-fn clean-gf clean-all-to-all
 
 # Cleans Everything
-distclean: distclean-km distclean-fn distclean-gf
+distclean: distclean-km distclean-fn distclean-gf distclean-all-to-all
 
 #===============================================================================
 # KM Benchmark
@@ -77,3 +77,16 @@ clean-gf:
 
 distclean-gf:
 	$(MAKE) -C gf distclean
+
+#===============================================================================
+# All-to-all Benchmark
+#===============================================================================
+
+all-all-to-all:
+	$(MAKE) -C all-to-all all
+
+clean-all-to-all:
+	$(MAKE) -C all-to-all clean
+
+distclean-all-to-all:
+	$(MAKE) -C all-to-all distclean

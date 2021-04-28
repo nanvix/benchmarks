@@ -80,6 +80,12 @@
 	#define RUNTIME_RULE "ipc"
 #endif
 
+#if (__LWMPI_PROC_MAP == MPI_PROCESS_SCATTER)
+	#define RUNTIME_MODE "scatter"
+#else
+	#define RUNTIME_MODE "compact"
+#endif
+
 	/**
 	 * Initializes runtime.
 	 */
