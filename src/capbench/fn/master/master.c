@@ -24,6 +24,10 @@
 
 #include "../fn.h"
 
+#define SUBMASTERS_NUM (ACTIVE_CLUSTERS)
+
+#define SUBMASTER_RANK(i) ((i == 0) ? 1 : (i * PROCS_PER_CLUSTER_MAX))
+
 /* Timing statistics. */
 uint64_t master = 0;                 /* Time spent on master.       */
 uint64_t spawn = 0;                  /* Time spent spawning slaves. */
@@ -31,36 +35,48 @@ uint64_t slave[PROBLEM_NUM_WORKERS]; /* Time spent on slaves.       */
 
 /* FN Data. */
 static struct item tasks[PROBLEM_SIZE];
-static int tasksize[PROBLEM_NUM_WORKERS]; /* Tasks size. */
+static int tasksize[SUBMASTERS_NUM]; /* Tasks size. */
 static int friendlyNumbers = 0;
 
 static void init(void)
 {
 	int aux = PROBLEM_START_NUM;
-	int avgtasksize = PROBLEM_SIZE/PROBLEM_NUM_WORKERS;
+	int avgtasksize = PROBLEM_SIZE/SUBMASTERS_NUM;
 
 	for (int i = 0; i < PROBLEM_SIZE; i++)
 		tasks[i].number = aux++;
 
-	for (int i = 0; i < PROBLEM_NUM_WORKERS; i++)
-		tasksize[i] = (i + 1 < PROBLEM_NUM_WORKERS)?avgtasksize:PROBLEM_SIZE-i*avgtasksize;
+	for (int i = 0; i < SUBMASTERS_NUM; i++)
+		tasksize[i] = (i + 1 < SUBMASTERS_NUM)?avgtasksize:PROBLEM_SIZE-i*avgtasksize;
 }
 
 static void send_work(void)
 {
-	for (int i = 0, offset = 0; i < PROBLEM_NUM_WORKERS; i++)
+	int rank;
+	int slaves;
+
+	for (int i = 0, offset = 0; i < SUBMASTERS_NUM; i++)
 	{
+		rank = SUBMASTER_RANK(i);
+
+		if (rank == 1)
+			slaves = CLUSTER_PROCESSES_NR(i) - 1;
+		else
+			slaves = CLUSTER_PROCESSES_NR(i);
+
+		// if (rank == 1)
+		// 	slaves = PROCS_PER_CLUSTER_MAX - 1;
+		// else
+		// 	slaves = PROCS_PER_CLUSTER_MAX;
+
 #if DEBUG
-		uprintf("Master sending work to slave %d...", (i+1));
+		uprintf("Master sending work to submaster %d...", rank);
 #endif /* DEBUG */
 
-		data_send(i + 1, &tasksize[i], sizeof(int));
+		data_send(rank, &slaves, sizeof(int));
 
-#if DEBUG
-		uprintf("Master sent first message...");
-#endif /* DEBUG */
-
-		data_send(i + 1, &tasks[offset], tasksize[i]*sizeof(struct item));
+		data_send(rank, &tasksize[i], sizeof(int));
+		data_send(rank, &tasks[offset], tasksize[i]*sizeof(struct item));
 		offset += tasksize[i];
 
 #if DEBUG
@@ -71,25 +87,30 @@ static void send_work(void)
 
 static void receive_result(void)
 {
-	for (int i = 0, offset = 0; i < PROBLEM_NUM_WORKERS; i++)
+	int rank;
+
+	for (int i = 0, offset = 0; i < SUBMASTERS_NUM; i++)
 	{
-#if DEBUG
-		uprintf("Master waiting to receive results from slave %d...", (i+1));
-#endif /* DEBUG */
-
-		data_receive(i + 1, &tasks[offset], tasksize[i]*sizeof(struct item));
+		rank = SUBMASTER_RANK(i);
 
 #if DEBUG
-		uprintf("Master received first message...");
+		uprintf("Master waiting to receive results from submaster %d...", rank);
 #endif /* DEBUG */
 
-		data_receive(i + 1, &slave[i], sizeof(uint64_t));
+		data_receive(rank, &tasks[offset], tasksize[i]*sizeof(struct item));
 		offset += tasksize[i];
 
 #if DEBUG
 		uprintf("Master Received");
 #endif /* DEBUG */
 	}
+
+#if DEBUG
+		uprintf("Master starting to collect statistics...");
+#endif /* DEBUG */
+
+	for (int i = 0; i < PROBLEM_NUM_WORKERS; ++i)
+		data_receive(i+1, &slave[i], sizeof(uint64_t));
 }
 
 static void sum_friendly_numbers(void)

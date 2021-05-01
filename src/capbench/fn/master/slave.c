@@ -25,6 +25,15 @@
 #include "../fn.h"
 #include <nanvix/kernel/kernel.h>
 
+/**
+ * @brief Kernel Data
+ */
+/**@{*/
+PRIVATE struct local_data
+{
+	struct item task[PROBLEM_SIZE/ACTIVE_CLUSTERS/PROCS_PER_CLUSTER_MAX*2];
+} _local_data[PROCS_PER_CLUSTER_MAX-1];
+
 /*
  * Computes the Greatest Common Divisor of two numbers.
  */
@@ -72,7 +81,7 @@ static int sumdiv(int n)
 	return (sum);
 }
 
-static void send_result(struct item *data, int tasksize)
+static void send_result(struct item *data, int tasksize, int submaster_rank)
 {
 	uint64_t total_time;
 
@@ -84,27 +93,29 @@ static void send_result(struct item *data, int tasksize)
 	total_time = total();
 
 #if DEBUG
-	uprintf("Slave %d Sending first message...", rank);
+	uprintf("Slave %d Sending result to submaster...", rank);
 #endif /* DEBUG */
 
-	data_send(0, data, tasksize*sizeof(struct item));
+	data_send(submaster_rank, data, tasksize*sizeof(struct item));
 
 #if DEBUG
-	uprintf("Slave %d Sending second message...", rank);
+	uprintf("Slave %d Sending statistics back for master...", rank);
 #endif /* DEBUG */
 
 	data_send(0, &total_time, sizeof(uint64_t));
-
-#if DEBUG
-	uprintf("Slave %d Sent results!...", rank);
-#endif /* DEBUG */
 }
 
 void do_slave(void)
 {
-	struct item *task;
+	//struct item *task;
 	int tasksize;
+	int submaster_rank;
 	uint64_t time_passed;
+	int local_index;
+	struct local_data *data;
+
+	local_index = runtime_get_index() - 1;
+	data = &_local_data[local_index];
 
 #if VERBOSE
 	int rank;
@@ -115,14 +126,23 @@ void do_slave(void)
 	uprintf("Slave %d waiting to receive work...", rank);
 #endif /* VERBOSE */
 
+	/* Here we make a little trick to avoid problems with nanvix IPC. */
+	submaster_rank = (cluster_get_num() - MPI_PROCESSES_COMPENSATION) * PROCS_PER_CLUSTER_MAX;
+
+	if (submaster_rank == 0)
+		submaster_rank++;
+
+	/* Receive rank of submaster. */
+	data_receive(submaster_rank, &submaster_rank, sizeof(int));
+
 	/* Receive tasksize. */
-	data_receive(0, &tasksize, sizeof(int));
+	data_receive(submaster_rank, &tasksize, sizeof(int));
 
 	/* Allocates data structure to hold the task items. */
-	if ((task = (struct item *) umalloc(sizeof(struct item) * tasksize)) == NULL)
-		upanic("Failed when allocating task structure");
+	// if ((task = (struct item *) umalloc(sizeof(struct item) * tasksize)) == NULL)
+	// 	upanic("Failed when allocating task structure");
 
-	data_receive(0, task, tasksize*sizeof(struct item));
+	data_receive(submaster_rank, &data->task, tasksize*sizeof(struct item));
 
 #if VERBOSE
 	uprintf("Slave %d starting computation of %d numbers...", rank, tasksize);
@@ -139,17 +159,17 @@ void do_slave(void)
 		uprintf("Slave %d computing abundance of %dth number", rank, i);
 #endif
 
-		task[i].num = sumdiv(task[i].number);
-		task[i].den = task[i].number;
+		data->task[i].num = sumdiv(data->task[i].number);
+		data->task[i].den = data->task[i].number;
 
-		n = gcd(task[i].num, task[i].den);
+		n = gcd(data->task[i].num, data->task[i].den);
 
 		if (n != 0)
 		{
-			struct division result1 = divide(task[i].num, n);
-			struct division result2 = divide(task[i].den, n);
-			task[i].num = result1.quotient;
-			task[i].den = result2.quotient;
+			struct division result1 = divide(data->task[i].num, n);
+			struct division result2 = divide(data->task[i].den, n);
+			data->task[i].num = result1.quotient;
+			data->task[i].den = result2.quotient;
 		}
 	}
 
@@ -160,9 +180,9 @@ void do_slave(void)
 	uprintf("Slave %d preparing to send result back...", rank);
 #endif /* VERBOSE */
 
-	send_result(task, tasksize);
+	send_result(data->task, tasksize, submaster_rank);
 
 	/* Frees the allocated data structure. */
-	ufree(task);
+	// ufree(task);
 }
 

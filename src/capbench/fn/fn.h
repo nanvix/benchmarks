@@ -33,11 +33,12 @@
 
 	#define PROBLEM_SEED 0
 
-	#define PROBLEM_SIZE                                 (6144)
-	#define PROBLEM_START_NUM                         (1000001)
-	#define PROBLEM_END_NUM      (PROBLEM_START + PROBLEM_SIZE)
+	//#define PROBLEM_SIZE                                 (6144)
+	#define PROBLEM_SIZE                       ((1536) * ACTIVE_CLUSTERS)
+	#define PROBLEM_START_NUM                                   (1000001)
+	#define PROBLEM_END_NUM                (PROBLEM_START + PROBLEM_SIZE)
 
-	#define CHUNK_MAX_SIZE ((PROBLEM_SIZE / PROBLEM_NUM_WORKERS) * 2)
+	#define CHUNK_MAX_SIZE     ((PROBLEM_SIZE / PROBLEM_NUM_WORKERS) * 2)
 
 /*============================================================================*
  * Kernel                                                                     *
