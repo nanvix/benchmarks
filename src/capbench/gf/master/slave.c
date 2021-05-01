@@ -42,8 +42,24 @@ PRIVATE struct local_data
 	float mask[PROBLEM_MASKSIZE2];               /* Mask         */
 	unsigned char chunk[CHUNK_WITH_HALO_SIZE2];  /* Input Chunk  */
 	unsigned char newchunk[PROBLEM_CHUNK_SIZE2]; /* Output Chunk */
-} _local_data[PROCS_PER_CLUSTER_MAX];
+	int submaster_rank;
+} _local_data[PROCS_PER_CLUSTER_MAX-1];
 /**@}*/
+
+static void init(struct local_data *data)
+{
+	/* Here we make a little trick to avoid problems with nanvix IPC. */
+	int master_rank = (cluster_get_num() - MPI_PROCESSES_COMPENSATION) * PROCS_PER_CLUSTER_MAX;
+
+	if (master_rank == 0)
+		master_rank++;
+
+	/* Receive rank of submaster. */
+	data_receive(master_rank, &data->submaster_rank, sizeof(int));
+
+	/* Receive mask. */
+	data_receive(master_rank, &data->mask, sizeof(float)*PROBLEM_MASKSIZE2);
+}
 
 /**
  * @brief Gaussian Filter kernel.
@@ -89,15 +105,16 @@ void do_slave(void)
 	runtime_get_rank(&rank);
 #endif /* DEBUG */
 
-	local_index = runtime_get_index();
+	local_index = runtime_get_index() - 1;
 	data = &_local_data[local_index];
 
 #if DEBUG
-	uprintf("Rank %d receiving gaussian mask...", rank);
-#endif /* DEBUG */
+	uprintf("Rank %d receiving initialization...", rank);
+#endif
 
-	/* Receive mask. */
-	data_receive(0, data->mask, sizeof(float)*PROBLEM_MASKSIZE2);
+	init(data);
+
+	mpi_std_barrier();
 
 	/* Applies the gaussian filter until a DIE message. */
 	while (1)
@@ -108,7 +125,7 @@ void do_slave(void)
 		uprintf("Rank %d receiving control message...", rank);
 #endif /* DEBUG */
 
-		data_receive(0, &msg, sizeof(int));
+		data_receive(data->submaster_rank, &msg, sizeof(int));
 
 		if (msg == MSG_DIE)
 			break;
@@ -117,7 +134,7 @@ void do_slave(void)
 		uprintf("Rank %d receiving new chunk...", rank);
 #endif /* DEBUG */
 
-		data_receive(0, data->chunk, CHUNK_WITH_HALO_SIZE2*sizeof(unsigned char));
+		data_receive(data->submaster_rank, data->chunk, CHUNK_WITH_HALO_SIZE2*sizeof(unsigned char));
 
 #if DEBUG
 		uprintf("Rank %d applying filter for image %d...", rank, ++repetition);
@@ -129,7 +146,7 @@ void do_slave(void)
 		uprintf("Rank %d sending chunk %d back...", rank, repetition);
 #endif /* DEBUG */
 
-		data_send(0, &data->newchunk, PROBLEM_CHUNK_SIZE2*sizeof(unsigned char));
+		data_send(data->submaster_rank, &data->newchunk, PROBLEM_CHUNK_SIZE2*sizeof(unsigned char));
 	}
 
 #if DEBUG

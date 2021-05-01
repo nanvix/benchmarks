@@ -33,18 +33,17 @@
 
 	#define PROBLEM_SEED 0
 
-	#define PROBLEM_MASKSIZE                                                7
-	#define PROBLEM_CHUNK_SIZE                                             32
-	#define PROBLEM_IMGDIMENSION                                          256
-	#define PROBLEM_IMGSIZE      (PROBLEM_IMGDIMENSION + PROBLEM_MASKSIZE - 1)
+	#define PROBLEM_MASKSIZE                                                 7
+	#define PROBLEM_CHUNK_SIZE                                              64
+	#define PROBLEM_IMGDIMENSION                                           256
+	#define PROBLEM_IMGSIZE       (PROBLEM_IMGDIMENSION + PROBLEM_MASKSIZE - 1)
 
 	#define PROBLEM_IMGDIMENSION2 (PROBLEM_IMGDIMENSION * PROBLEM_IMGDIMENSION)
 	#define PROBLEM_IMGSIZE2                (PROBLEM_IMGSIZE * PROBLEM_IMGSIZE)
 	#define PROBLEM_CHUNK_SIZE2       (PROBLEM_CHUNK_SIZE * PROBLEM_CHUNK_SIZE)
 	#define PROBLEM_MASKSIZE2             (PROBLEM_MASKSIZE * PROBLEM_MASKSIZE)
 
-	#define FPS     24
-	#define SECONDS 5
+	#define PROBLEM_NUM_IMAGES (1200 * ACTIVE_CLUSTERS)
 
 /*============================================================================*
  * Kernel                                                                     *
