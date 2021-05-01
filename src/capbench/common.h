@@ -64,6 +64,11 @@
  * Runtime                                                                    *
  *============================================================================*/
 
+#define CLUSTER_PROCESSES_NR(clusternum)                               \
+	(((clusternum) < (MPI_NODES_NR - 1))  \
+		  ? MPI_PROCS_PER_CLUSTER_MAX                                  \
+		  : (MPI_PROCESSES_NR % MPI_PROCS_PER_CLUSTER_MAX == 0) ? MPI_PROCS_PER_CLUSTER_MAX : MPI_PROCESSES_NR % MPI_PROCS_PER_CLUSTER_MAX)
+
 	/**
 	 * Number of processes per cluster.
 	 */
@@ -73,6 +78,11 @@
 	 * Number of processes per cluster.
 	 */
 	#define PROCS_PER_CLUSTER_MAX MPI_PROCS_PER_CLUSTER_MAX
+
+	/**
+	 * Number of active clusters.
+	 */
+	#define ACTIVE_CLUSTERS MPI_NODES_NR
 
 #if __NANVIX_USES_LWMPI
 	#define RUNTIME_RULE "mpi"
@@ -136,6 +146,7 @@
 
 	extern void do_master(void);
 	extern void do_slave(void);
+	extern void do_submaster(void);
 
 /*============================================================================*
  * Communication                                                              *

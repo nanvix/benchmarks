@@ -155,11 +155,22 @@ PRIVATE void * wrapper_do_slave(void * arg)
 
 	runtime_get_rank(&rank);
 
-	uprintf("Slave process %d executing...", rank);
+	if (rank == 1)
+	{
+		uprintf("Submaster of cluster %d executing with rank %d...", cluster_get_num(), rank);
 
-	do_slave();
+		do_submaster();
 
-	uprintf("Slave process %d done...", rank);
+		uprintf("Submaster %d done...", rank);
+	}
+	else
+	{
+		uprintf("Slave process %d executing...", rank);
+
+		do_slave();
+
+		uprintf("Slave process %d done...", rank);
+	}
 
 	return (NULL);
 }
