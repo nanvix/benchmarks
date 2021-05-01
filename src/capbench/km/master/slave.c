@@ -45,7 +45,8 @@ PRIVATE struct local_data
 	int map[PROBLEM_LNPOINTS];                            /* Map of clusters.          */
 	int ppopulation[PROBLEM_NUM_CENTROIDS];               /* Partial population.       */
 	int has_changed;                                      /* Has any centroid changed? */
-} _local_data[PROCS_PER_CLUSTER_MAX];
+	int submaster_rank;
+} _local_data[PROCS_PER_CLUSTER_MAX - 1];
 
 /*============================================================================*
  * populate()                                                                 *
@@ -120,22 +121,25 @@ static void compute_centroids(struct local_data *data)
 
 static int sync(struct local_data *data)
 {
+	int rank;
+	runtime_get_rank(&rank);
+
 	int again = 0;
-	data_send(0, data->centroids, PROBLEM_NUM_CENTROIDS*DIMENSION_MAX*sizeof(float));
-	data_send(0, data->ppopulation, PROBLEM_NUM_CENTROIDS*sizeof(int));
-	data_send(0, &data->has_changed, sizeof(int));
+	data_send(data->submaster_rank, data->centroids, PROBLEM_NUM_CENTROIDS*DIMENSION_MAX*sizeof(float));
+	data_send(data->submaster_rank, data->ppopulation, PROBLEM_NUM_CENTROIDS*sizeof(int));
+	data_send(data->submaster_rank, &data->has_changed, sizeof(int));
 
 #if DEBUG
-	uprintf("Waiting to receive again confirmation...");
+	uprintf("Rank %d Waiting to receive again confirmation...", rank);
 #endif
-	data_receive(0, &again, sizeof(int));
+	data_receive(data->submaster_rank, &again, sizeof(int));
 
 	if (again == 1)
 	{
 #if DEBUG
-	uprintf("Waiting to receive recalculated centroids...");
+	uprintf("Rank %d Waiting to receive recalculated centroids...", rank);
 #endif
-		data_receive(0, data->centroids, PROBLEM_NUM_CENTROIDS*DIMENSION_MAX*sizeof(float));
+		data_receive(data->submaster_rank, data->centroids, PROBLEM_NUM_CENTROIDS*DIMENSION_MAX*sizeof(float));
 	}
 
 	return (again);
@@ -147,10 +151,21 @@ static int sync(struct local_data *data)
 
 static void get_work(struct local_data *data)
 {
-	data_receive(0, (void *) &data->lnpoints, sizeof(int));
-	data_receive(0, data->points, data->lnpoints*DIMENSION_MAX*sizeof(float));
-	data_receive(0, data->map, data->lnpoints*sizeof(int));
-	data_receive(0, data->centroids, PROBLEM_NUM_CENTROIDS*DIMENSION_MAX*sizeof(float));
+	int rank;
+	runtime_get_rank(&rank);
+
+	/* Here we make a little trick to avoid problems with nanvix IPC. */
+	int master_rank = (cluster_get_num() - MPI_PROCESSES_COMPENSATION) * PROCS_PER_CLUSTER_MAX;
+
+	if (master_rank == 0)
+		master_rank++;
+
+	data_receive(master_rank, &data->submaster_rank, sizeof(int));
+	data_receive(data->submaster_rank, (void *) &data->lnpoints, sizeof(int));
+
+	data_receive(data->submaster_rank, data->points, data->lnpoints*DIMENSION_MAX*sizeof(float));
+	data_receive(data->submaster_rank, data->map, data->lnpoints*sizeof(int));
+	data_receive(data->submaster_rank, data->centroids, PROBLEM_NUM_CENTROIDS*DIMENSION_MAX*sizeof(float));
 }
 
 /*============================================================================*
@@ -159,11 +174,19 @@ static void get_work(struct local_data *data)
 
 static void send_results(struct local_data *data)
 {
+	data_send(data->submaster_rank, data->map, data->lnpoints*sizeof(int));
+}
+
+/*============================================================================*
+ * send_statistics()                                                          *
+ *============================================================================*/
+
+static void send_statistics(void)
+{
 	uint64_t total_time;
 
 	total_time = total();
 
-	data_send(0, data->map, data->lnpoints*sizeof(int));
 	data_send(0, &total_time, sizeof(uint64_t));
 }
 
@@ -184,17 +207,17 @@ void do_slave(void)
 	runtime_get_rank(&rank);
 #endif /* VERBOSE */
 
-	local_index = runtime_get_index();
+	local_index = runtime_get_index() - 1;
 
 #if VERBOSE
 	uprintf("rank %d getting work...", rank);
 #endif /* VERBOSE */
 
-	get_work(&_local_data[local_index]);
+		get_work(&_local_data[local_index]);
 
-#if VERBOSE
-	uprintf("rank %d clustering data...", rank);
-#endif /* VERBOSE */
+	#if VERBOSE
+		uprintf("rank %d clustering data...", rank);
+	#endif /* VERBOSE */
 
 	/* Cluster data. */
 	do
@@ -217,5 +240,7 @@ void do_slave(void)
 #endif /* VERBOSE */
 
 	send_results(&_local_data[local_index]);
+
+	send_statistics();
 }
 

@@ -68,6 +68,14 @@ int __main3(int argc, char **argv)
 		uprintf("[capbench][km][%s]   number receives:      %d", RUNTIME_RULE, nreceive());
 		uprintf("---------------------------------------------");
 	}
+	else if ((rank % PROCS_PER_CLUSTER_MAX == 0) || (rank == 1))
+	{
+		uprintf("Submaster of cluster %d executing with rank %d...", cluster_get_num(), rank);
+
+		do_submaster();
+
+		uprintf("Submaster %d done...", rank);
+	}
 	else
 	{
 		uprintf("Slave process %d executing...", rank);

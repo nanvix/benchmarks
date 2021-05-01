@@ -24,6 +24,10 @@
 
 #include "../km.h"
 
+#define SUBMASTERS_NUM (ACTIVE_CLUSTERS)
+
+#define SUBMASTER_RANK(i) ((i == 0) ? 1 : (i * PROCS_PER_CLUSTER_MAX))
+
 #define CENTROID(i) \
 	(&centroids[(i)*DIMENSION_MAX])
 
@@ -43,13 +47,13 @@ uint64_t slave[PROBLEM_NUM_WORKERS]; /* Time spent on slaves.       */
 
 /* Kernel Data. */
 static float centroids[PROBLEM_NUM_CENTROIDS*DIMENSION_MAX];                      /* Data centroids.            */
-static int map[PROBLEM_NUM_POINTS];                                               /* Map of clusters.           */
+//static int map[PROBLEM_NUM_POINTS];                                               /* Map of clusters.           */
 static int population[PROBLEM_NUM_CENTROIDS];                                     /* Population of centroids.   */
 static int ppopulation[PROBLEM_NUM_CENTROIDS];                                    /* Partial population.        */
-static float pcentroids[PROBLEM_NUM_CENTROIDS*DIMENSION_MAX*PROBLEM_NUM_WORKERS]; /* Partial centroids.         */
-static int lnpoints[PROBLEM_NUM_WORKERS];                                         /* Local number of points.    */
-static int has_changed[PROBLEM_NUM_WORKERS];                                      /* Has any centroid changed?  */
-static float points[PROBLEM_NUM_POINTS*DIMENSION_MAX];                            /* Data points.               */
+static float pcentroids[PROBLEM_NUM_CENTROIDS*DIMENSION_MAX*SUBMASTERS_NUM]; /* Partial centroids.         */
+static int lnpoints[SUBMASTERS_NUM];                                         /* Local number of points.    */
+static int has_changed[SUBMASTERS_NUM];                                      /* Has any centroid changed?  */
+//static float points[PROBLEM_NUM_POINTS*DIMENSION_MAX];                            /* Data points.               */
 
 /*============================================================================*
  * initialize_variables()                                                     *
@@ -58,29 +62,40 @@ static float points[PROBLEM_NUM_POINTS*DIMENSION_MAX];                          
 static void initialize_variables()
 {
 	srandnum(PROBLEM_SEED);
+	float point[DIMENSION_MAX];
 
-	/* Initialize points. */
-	for (int i = 0; i < PROBLEM_NUM_POINTS*DIMENSION_MAX; i++)
-		points[i] = randnum() & 0xffff;
+	// /* Initialize points. */
+	// for (int i = 0; i < PROBLEM_NUM_POINTS*DIMENSION_MAX; i++)
+	// 	points[i] = randnum() & 0xffff;
 
-	/* Initialize mapping. */
-	for (int i = 0; i < PROBLEM_NUM_POINTS; i++)
-		map[i] = -1;
+	// /* Initialize mapping. */
+	// for (int i = 0; i < PROBLEM_NUM_POINTS; i++)
+	// 	map[i] = -1;
 
 	/* Initialize centroids. */
 	for (int i = 0; i < PROBLEM_NUM_CENTROIDS; i++)
 	{
-		int j = randnum() % PROBLEM_NUM_POINTS;
-		umemcpy(CENTROID(i), POINT(j), DIMENSION_MAX*sizeof(float));
-		map[j] = i;
+		/* Generate a new point. */
+		for (int j = 0; j < DIMENSION_MAX; ++j)
+			point[j] = randnum() & 0xffff;
+
+		umemcpy(CENTROID(i), point, DIMENSION_MAX*sizeof(float));
 	}
 
-	/* Map unmapped data points. */
-	for (int i = 0; i < PROBLEM_NUM_POINTS; i++)
-	{
-		if (map[i] < 0)
-			map[i] = randnum() % PROBLEM_NUM_CENTROIDS;
-	}
+	/* Initialize centroids. */
+	// for (int i = 0; i < PROBLEM_NUM_CENTROIDS; i++)
+	// {
+	// 	int j = randnum() % PROBLEM_NUM_POINTS;
+	// 	umemcpy(CENTROID(i), POINT(j), DIMENSION_MAX*sizeof(float));
+	// 	map[j] = i;
+	// }
+
+	// /* Map unmapped data points. */
+	// for (int i = 0; i < PROBLEM_NUM_POINTS; i++)
+	// {
+	// 	if (map[i] < 0)
+	// 		map[i] = randnum() % PROBLEM_NUM_CENTROIDS;
+	// }
 }
 
 /*============================================================================*
@@ -90,46 +105,51 @@ static void initialize_variables()
 static void send_work(void)
 {
 	int count = 0;
-	uint64_t time_elapsed;
+	int rank;
+	int slaves;
 
 	perf_start(0, PERF_CYCLES);
 
 	/* Distribute work among clusters. */
-	for (int i = 0; i < PROBLEM_NUM_WORKERS; i++)
+	for (int i = 0; i < SUBMASTERS_NUM; i++)
 	{
 		// lnpoints[i] = ((i + 1) < PROBLEM_NUM_WORKERS) ?
 		// 	PROBLEM_NUM_POINTS/PROBLEM_NUM_WORKERS :
 		// 	PROBLEM_NUM_POINTS - i*(PROBLEM_NUM_POINTS/PROBLEM_NUM_WORKERS);
-		lnpoints[i] = PROBLEM_NUM_POINTS/PROBLEM_NUM_WORKERS;
+		lnpoints[i] = PROBLEM_NUM_POINTS/SUBMASTERS_NUM;
 	}
 
 	master += perf_read(0);
 
-	perf_start(0, PERF_CYCLES);
-
-	for (int i = 0; i < PROBLEM_NUM_WORKERS; i++)
+	for (int i = 0; i < SUBMASTERS_NUM; i++)
 	{
+		rank = SUBMASTER_RANK(i);
+
+		if (rank == 1)
+			slaves = CLUSTER_PROCESSES_NR(i) - 1;
+		else
+			slaves = CLUSTER_PROCESSES_NR(i);
+
+		// if (rank == 1)
+		// 	slaves = PROCS_PER_CLUSTER_MAX - 1;
+		// else
+		// 	slaves = PROCS_PER_CLUSTER_MAX;
+
 #if DEBUG
-	uprintf("sending work to rank %d...", (i+1));
+	uprintf("Master sending work to rank %d...", rank);
 #endif /* DEBUG */
 
 		/* Util information for the problem. */
-		data_send(i + 1, &lnpoints[i], sizeof(int));
+		data_send(rank, &slaves, sizeof(int));
+		data_send(rank, &lnpoints[i], sizeof(int));
 
 		/* Actual initial tasks. */
-		data_send(i + 1, &points[count*DIMENSION_MAX], lnpoints[i]*DIMENSION_MAX*sizeof(float));
-		data_send(i + 1, &map[count], lnpoints[i]*sizeof(int));
-		data_send(i + 1, centroids, PROBLEM_NUM_CENTROIDS*DIMENSION_MAX*sizeof(float));
+		//data_send(rank, &points[count*DIMENSION_MAX], lnpoints[i]*DIMENSION_MAX*sizeof(float));
+		//data_send(rank, &map[count], lnpoints[i]*sizeof(int));
+		data_send(rank, &centroids, PROBLEM_NUM_CENTROIDS*DIMENSION_MAX*sizeof(float));
 
 		count += lnpoints[i];
-
-#if DEBUG
-	uprintf("Sent!");
-#endif /* DEBUG */
 	}
-
-	time_elapsed = perf_read(0);
-	update_communication(time_elapsed);
 }
 
 /*============================================================================*
@@ -141,27 +161,19 @@ static int _iterations = 0;
 static int sync(void)
 {
 	int again = 0;
-	uint64_t time_elapsed;
+	int rank;
 
-	perf_start(0, PERF_CYCLES);
-
-	for (int i = 0; i < PROBLEM_NUM_WORKERS; i++)
+	for (int i = 0; i < SUBMASTERS_NUM; i++)
 	{
+		rank = SUBMASTER_RANK(i);
 #if DEBUG
-		uprintf("Syncing rank %d...", (i+1));
+		uprintf("Master Syncing rank %d...", rank);
 #endif /* DEBUG */
 
-		data_receive(i + 1, PCENTROID(i,0), PROBLEM_NUM_CENTROIDS*DIMENSION_MAX*sizeof(float));
-		data_receive(i + 1, PPOPULATION(i,0), PROBLEM_NUM_CENTROIDS*sizeof(int));
-		data_receive(i + 1, &has_changed[i], sizeof(int));
-
-#if DEBUG
-		uprintf("Done!");
-#endif /* DEBUG */
+		data_receive(rank, PCENTROID(i,0), PROBLEM_NUM_CENTROIDS*DIMENSION_MAX*sizeof(float));
+		data_receive(rank, PPOPULATION(i,0), PROBLEM_NUM_CENTROIDS*sizeof(int));
+		data_receive(rank, &has_changed[i], sizeof(int));
 	}
-
-	time_elapsed = perf_read(0);
-	update_communication(time_elapsed);
 
 	perf_start(0, PERF_CYCLES);
 
@@ -171,7 +183,7 @@ static int sync(void)
 
 	for (int i = 0; i < PROBLEM_NUM_CENTROIDS; i++)
 	{
-		for (int j = 0; j < PROBLEM_NUM_WORKERS; j++)
+		for (int j = 0; j < SUBMASTERS_NUM; j++)
 		{
 			vector_add(CENTROID(i), PCENTROID(j, i));
 			population[i] += *PPOPULATION(j, i);
@@ -180,31 +192,33 @@ static int sync(void)
 	}
 
 	/* Should be 131. */
-	if ((++_iterations) < 31)
+	if ((++_iterations) < 1031)
 	{
-		for (int i = 0; i < PROBLEM_NUM_WORKERS; i++)
-		{
-			if (has_changed[i])
-			{
-				again = 1;
-				break;
-			}
-		}
+		// for (int i = 0; i < SUBMASTERS_NUM; i++)
+		// {
+		// 	if (has_changed[i])
+		// 	{
+		// 		again = 1;
+		// 		break;
+		// 	}
+		// }
+		again = 1;
 	}
+
+#if DEBUG
+	uprintf("Master going to signalize submasters...");
+#endif
 
 	master += perf_read(0);
 
-	perf_start(0, PERF_CYCLES);
-
-	for (int i = 0; i < PROBLEM_NUM_WORKERS; i++)
+	for (int i = 0; i < SUBMASTERS_NUM; i++)
 	{
-		data_send(i + 1, &again, sizeof(int));
-		if (again == 1)
-			data_send(i + 1, centroids, PROBLEM_NUM_CENTROIDS*DIMENSION_MAX*sizeof(float));
-	}
+		rank = SUBMASTER_RANK(i);
 
-	time_elapsed = perf_read(0);
-	update_communication(time_elapsed);
+		data_send(rank, &again, sizeof(int));
+		if (again == 1)
+			data_send(rank, centroids, PROBLEM_NUM_CENTROIDS*DIMENSION_MAX*sizeof(float));
+	}
 
 	return again;
 }
@@ -217,12 +231,17 @@ static void get_results(void)
 {
 	int counter = 0; /* Points counter. */
 
-	for (int i = 0; i < PROBLEM_NUM_WORKERS; i++)
+	for (int i = 0; i < SUBMASTERS_NUM; i++)
 	{
-		data_receive(i + 1, &map[counter], lnpoints[i]*sizeof(int));
-		data_receive(i + 1, &slave[i], sizeof(uint64_t));
+		//data_receive(SUBMASTER_RANK(i), &map[counter], lnpoints[i]*sizeof(int));
 		counter += lnpoints[i];
 	}
+}
+
+static void get_statistics(void)
+{
+	for (int i = 0; i < PROBLEM_NUM_WORKERS; ++i)
+		data_receive(i + 1, &slave[i], sizeof(uint64_t));
 }
 
 /*============================================================================*
@@ -231,9 +250,7 @@ static void get_results(void)
 
 void do_master(void)
 {
-#if DEBUG
 	int i = 0;
-#endif
 
 #if VERBOSE
 	uprintf("initializing...");
@@ -255,17 +272,27 @@ void do_master(void)
 	/* Cluster data. */
 	do
 	{
-#if DEBUG
-	uprintf("iteration %d...", ++i);
+#if VERBOSE
+		uprintf("iteration %d...", i);
 #endif /* DEBUG */
+
+		i++;
 	} while (sync());
 
 #if DEBUG
 	uprintf("getting results...");
 #endif /* DEBUG */
 
-	get_results();
+	//get_results();
+
+#if DEBUG
+	uprintf("getting statistics...");
+#endif /* DEBUG */
+
+	get_statistics();
 
 	update_total(master + communication());
+
+	uprintf("Realized %d iterations", i);
 }
 
