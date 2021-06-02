@@ -60,7 +60,7 @@ int __main3(int argc, char **argv)
 		if (rank == 0)
 			perf_start(0, PERF_CYCLES);
 
-			do_work(rank, size);
+		do_work(rank, size);
 
 		all_barrier();
 

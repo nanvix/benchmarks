@@ -30,6 +30,10 @@
 /* Data. */
 PRIVATE char tasks[PROCESSES_NR][PROBLEM_SIZE_MAX];
 
+PUBLIC void do_submaster(void){}
+
+PUBLIC void do_slave(void){}
+
 PUBLIC void do_work(int rank, size_t size)
 {
 	for (int it = 0; it < PROBLEM_ITERATIONS; ++it)

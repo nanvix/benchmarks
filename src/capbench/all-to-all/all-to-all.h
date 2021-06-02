@@ -31,10 +31,10 @@
  * Parameters                                                                 *
  *============================================================================*/
 
-	#define PROBLEM_ITERATIONS                    (50)
-	#define PROBLEM_SIZE_MIN                     (128)
-	#define PROBLEM_SIZE_MAX               (32 * 1024)
-	#define PROBLEM_SIZE_STEP(previous) (2 * previous)
+	#define PROBLEM_ITERATIONS                    (100)
+	#define PROBLEM_SIZE_MIN                      (128)
+	#define PROBLEM_SIZE_MAX                (32 * 1024)
+	#define PROBLEM_SIZE_STEP (previous) (2 * previous)
 
 /*============================================================================*
  * Kernel                                                                     *
